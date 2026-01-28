@@ -1,0 +1,162 @@
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <flux:heading size="xl">Congregations</flux:heading>
+        <flux:button variant="primary" wire:click="create">Add Congregation</flux:button>
+    </div>
+
+    <div class="flex items-center justify-between gap-4">
+        <div class="flex flex-1 items-center gap-4">
+            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass"
+                placeholder="Search congregations..." class="max-w-xs" />
+
+            <select wire:model.live="filterCarParkId"
+                class="block rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                <option value="">All Car Parks</option>
+                @foreach($carParks as $park)
+                    <option value="{{ $park->id }}">{{ $park->name }}</option>
+                @endforeach
+            </select>
+        </div>
+    </div>
+
+    <div class="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
+        <table class="w-full text-left text-sm text-zinc-500 dark:text-zinc-400">
+            <thead class="bg-zinc-50 text-xs uppercase text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                <tr>
+                    <th class="px-6 py-3">Name</th>
+                    <th class="px-6 py-3">Assigned Car Park</th>
+                    <th class="px-6 py-3">Active Vehicles</th>
+                    <th class="px-6 py-3">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700 bg-white dark:bg-zinc-800">
+                @forelse ($congregations as $congregation)
+                    <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
+                        <td class="px-6 py-4 font-medium text-zinc-900 dark:text-white">{{ $congregation->name }}</td>
+                        <td class="px-6 py-4">
+                            <flux:badge color="zinc">{{ $congregation->carPark->name }}</flux:badge>
+                        </td>
+                        <td class="px-6 py-4">
+                            <flux:badge color="{{ $congregation->parked_count > 0 ? 'green' : 'zinc' }}">
+                                {{ $congregation->parked_count }}
+                            </flux:badge>
+                        </td>
+                        <td class="px-6 py-4">
+                            <flux:dropdown>
+                                <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" />
+
+                                <flux:menu>
+                                    <flux:menu.item wire:click="edit({{ $congregation->id }})" icon="pencil">Edit
+                                    </flux:menu.item>
+                                    <flux:menu.item :href="route('admin.congregations.show', $congregation)" icon="truck">
+                                        View
+                                        Vehicles</flux:menu.item>
+                                    <flux:menu.item wire:click="openQrModal({{ $congregation->id }})" icon="qr-code">View
+                                        Master Pass</flux:menu.item>
+                                    <flux:menu.item wire:click="delete({{ $congregation->id }})" icon="trash"
+                                        variant="danger">Delete</flux:menu.item>
+                                </flux:menu>
+                            </flux:dropdown>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="4" class="px-6 py-8 text-center text-zinc-500">
+                            No congregations found.
+                        </td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <div>
+        {{ $congregations->links() }}
+    </div>
+
+    {{-- Create/Edit Modal --}}
+    <flux:modal wire:model="modalOpen" class="min-w-[400px]">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ $congregationId ? 'Edit Congregation' : 'Add Congregation' }}</flux:heading>
+                <flux:subheading>Manage congregation details and assignments.</flux:subheading>
+            </div>
+
+            <flux:input wire:model="name" label="Name" placeholder="e.g. West London" />
+
+            <div class="space-y-2">
+                <label for="carParkId" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Assigned Car
+                    Park</label>
+                <select wire:model="carParkId" id="carParkId"
+                    class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                    <option value="">Select a car park</option>
+                    @foreach ($carParks as $park)
+                        <option value="{{ $park->id }}">{{ $park->name }} (Cap: {{ $park->capacity }})</option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <flux:button variant="ghost" wire:click="$set('modalOpen', false)">Cancel</flux:button>
+                <flux:button variant="primary" wire:click="save">Save</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- View QR Modal --}}
+    <flux:modal wire:model="qrModalOpen" class="min-w-[450px]">
+        @php
+            $convName = \App\Models\Setting::get('convention_name', "Convention of Jehovah's Witness");
+            $convYear = \App\Models\Setting::get('convention_year', date('Y'));
+            $convLoc = \App\Models\Setting::get('convention_location', 'Twickenham');
+            $ticketLogo = \App\Models\Setting::get('ticket_logo');
+        @endphp
+
+        <div class="print-container space-y-6 text-center">
+            {{-- This content is the UI Preview - the ACTUAL print happens on the dedicated page --}}
+            <div class="bg-white p-8 rounded-2xl border border-zinc-200 shadow-sm">
+                @if($ticketLogo)
+                    <div class="mb-4 flex justify-center">
+                        <img src="{{ $ticketLogo }}" alt="Logo" class="h-12 w-auto">
+                    </div>
+                @endif
+
+                <div class="space-y-1 mb-6">
+                    <div class="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">{{ $convName }}</div>
+                    <div class="text-xl font-black text-zinc-900">{{ $convLoc }} {{ $convYear }}</div>
+                </div>
+
+                <div class="py-4 border-y-2 border-dashed border-zinc-100 mb-6">
+                    <div class="text-[10px] text-zinc-400 uppercase font-black tracking-widest mb-1">CONGREGATION</div>
+                    <div class="text-3xl font-black text-indigo-600 tracking-tight">{{ $qrCodeName }}</div>
+                </div>
+
+                <div class="flex flex-col items-center justify-center p-4 bg-white mb-4">
+                    @if($qrCodeUuid)
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={{ route('attendant.scan', ['code' => $qrCodeUuid]) }}"
+                            alt="QR Code" class="h-auto w-full max-w-[180px]" />
+                    @endif
+                </div>
+
+                <div class="text-[10px] text-zinc-400 font-mono mb-6">
+                    VALID PASS: {{ $qrCodeUuid }}
+                </div>
+
+                <div class="text-xs font-bold text-zinc-500 uppercase tracking-widest border border-zinc-200 rounded-lg px-3 py-2 inline-block">
+                    DISPLAY ON DASHBOARD
+                </div>
+            </div>
+
+            <div class="flex justify-center gap-2 no-print">
+                <flux:button variant="ghost" wire:click="$set('qrModalOpen', false)">Close</flux:button>
+                <flux:button variant="primary"
+                    onclick="window.open('{{ $qrCodeUuid ? route('admin.congregations.print', $qrCodeUuid) : '#' }}', '_blank')"
+                    icon="printer">
+                    Open Print Page
+                </flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+
+</div>
