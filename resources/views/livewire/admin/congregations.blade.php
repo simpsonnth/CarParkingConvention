@@ -10,6 +10,7 @@
         <select wire:model.live="filterCarParkId"
             class="block w-full sm:w-auto min-w-0 rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
             <option value="">All Car Parks</option>
+            <option value="unassigned">Not assigned to a car park</option>
             @foreach($carParks as $park)
                 <option value="{{ $park->id }}">{{ $park->name }}</option>
             @endforeach
@@ -35,7 +36,11 @@
                             <code class="text-xs font-mono text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-700 px-2 py-1 rounded" title="{{ $congregation->uuid }}">{{ \Illuminate\Support\Str::limit($congregation->uuid, 8) }}</code>
                         </td>
                         <td class="px-6 py-4">
-                            <flux:badge color="zinc">{{ $congregation->carPark->name }}</flux:badge>
+                            @if($congregation->carPark)
+                                <flux:badge color="zinc">{{ $congregation->carPark->name }}</flux:badge>
+                            @else
+                                <span class="text-zinc-400 text-sm">Not assigned</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4">
                             <flux:badge color="{{ $congregation->parked_count > 0 ? 'green' : 'zinc' }}">

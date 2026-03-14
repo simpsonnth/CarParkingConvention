@@ -109,10 +109,10 @@
             </div>
 
             <div class="w-full py-6 border-y-2 border-dashed border-zinc-900 mb-8"
-                style="border-color: {{ $congregation->carPark->color ?? '#18181b' }}">
+                style="border-color: {{ $congregation->carPark?->color ?? '#18181b' }}">
                 <div class="text-zinc-400 uppercase font-bold tracking-[0.3em] text-[10px] mb-2">CONGREGATION</div>
                 <h1 class="cong-name uppercase tracking-tighter"
-                    style="color: {{ $congregation->carPark->color ?? '#4338ca' }}">
+                    style="color: {{ $congregation->carPark?->color ?? '#4338ca' }}">
                     {{ $congregation->name }}
                 </h1>
             </div>

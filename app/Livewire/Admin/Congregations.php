@@ -54,8 +54,12 @@ class Congregations extends Component
             $query->where('name', 'like', '%' . $this->search . '%');
         }
 
-        if ($this->filterCarParkId) {
-            $query->where('car_park_id', $this->filterCarParkId);
+        if ($this->filterCarParkId !== '') {
+            if ($this->filterCarParkId === 'unassigned') {
+                $query->whereNull('car_park_id');
+            } else {
+                $query->where('car_park_id', $this->filterCarParkId);
+            }
         }
 
         return view('livewire.admin.congregations', [
@@ -75,17 +79,18 @@ class Congregations extends Component
         $this->congregationId = $congregation->id;
         $this->name = $congregation->name;
         $this->code = $congregation->uuid ?? '';
-        $this->carParkId = $congregation->car_park_id;
+        $this->carParkId = $congregation->car_park_id ?? '';
         $this->modalOpen = true;
     }
 
     public function save()
     {
         $this->code = trim($this->code);
+        $this->carParkId = $this->carParkId ?: null;
 
         $rules = [
             'name' => 'required|string|max:255',
-            'carParkId' => 'required|exists:car_parks,id',
+            'carParkId' => 'nullable|exists:car_parks,id',
             'code' => [
                 'required',
                 'string',

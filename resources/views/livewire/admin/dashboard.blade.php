@@ -144,7 +144,7 @@
                                         @endif
                                     </td>
                                     <td class="px-6 py-3">
-                                        <flux:badge size="sm" color="zinc">{{ $scan->congregation->carPark->name }}</flux:badge>
+                                        <flux:badge size="sm" color="zinc">{{ $scan->congregation->carPark?->name ?? '—' }}</flux:badge>
                                     </td>
                                 </tr>
                             @endforeach

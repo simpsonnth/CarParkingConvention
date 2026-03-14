@@ -138,6 +138,11 @@ class Scan extends Component
             return;
         }
 
+        if (!$this->scannedCongregation->carPark) {
+            $this->setResult('error', 'NO CAR PARK', 'This congregation is not assigned to a car park. Assign one in Admin first.');
+            return;
+        }
+
         $this->validate([
             'vehicleReg' => 'required|string|min:2',
             'contactNumber' => 'required|string|min:6',

@@ -10,7 +10,7 @@
             </div>
             <flux:heading size="xl">{{ $congregation->name }}</flux:heading>
             <flux:subheading>
-                Assigned to: {{ $congregation->carPark->name ?? 'Unassigned' }}
+                Assigned to: {{ $congregation->carPark?->name ?? 'Unassigned' }}
             </flux:subheading>
         </div>
     </div>
