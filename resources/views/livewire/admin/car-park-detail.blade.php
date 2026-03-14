@@ -1,6 +1,6 @@
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
-        <div>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0">
             <div class="mb-2">
                 <a href="{{ route('admin.car-parks') }}"
                     class="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1">
@@ -11,14 +11,14 @@
             <div class="flex items-center gap-3">
                 <flux:heading size="xl">{{ $carPark->name }}</flux:heading>
                 @if($carPark->color)
-                    <div class="w-4 h-4 rounded-full border border-zinc-200 dark:border-zinc-600 shadow-sm"
+                    <div class="w-4 h-4 shrink-0 rounded-full border border-zinc-200 dark:border-zinc-600 shadow-sm"
                         style="background-color: {{ $carPark->color }}"></div>
                 @endif
             </div>
             <flux:subheading>{{ $carPark->location ?? 'No location specified' }}</flux:subheading>
         </div>
-        <div>
-            <flux:button variant="ghost" icon="pencil" wire:click="edit">Edit Details</flux:button>
+        <div class="shrink-0">
+            <flux:button variant="ghost" icon="pencil" wire:click="edit" class="w-full sm:w-auto">Edit Details</flux:button>
         </div>
     </div>
 
@@ -81,16 +81,17 @@
 
     {{-- Parked Vehicles List --}}
     <div class="space-y-4">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <flux:heading size="lg">Parked Vehicles</flux:heading>
             <flux:button wire:click="checkoutAll" variant="danger" icon="arrow-right-start-on-rectangle"
-                wire:confirm="Are you sure you want to mark ALL vehicles as left? This cannot be undone.">
+                wire:confirm="Are you sure you want to mark ALL vehicles as left? This cannot be undone."
+                class="w-full sm:w-auto">
                 Check Out All
             </flux:button>
         </div>
 
-        <div class="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
-            <table class="w-full text-left text-sm text-zinc-500 dark:text-zinc-400">
+        <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700 -mx-4 sm:mx-0">
+            <table class="w-full min-w-[640px] text-left text-sm text-zinc-500 dark:text-zinc-400">
                 <thead class="bg-zinc-50 text-xs uppercase text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                     <tr>
                         <th class="px-6 py-3">Vehicle Reg</th>
@@ -148,8 +149,8 @@
             <flux:icon name="clock" class="size-5 text-zinc-400" />
             <flux:heading size="lg">Recent Checkout History (Today)</flux:heading>
         </div>
-        <div class="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
-            <table class="w-full text-left text-sm text-zinc-500 dark:text-zinc-400">
+        <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700 -mx-4 sm:mx-0">
+            <table class="w-full min-w-[480px] text-left text-sm text-zinc-500 dark:text-zinc-400">
                 <thead class="bg-zinc-50 text-xs uppercase text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                     <tr>
                         <th class="px-6 py-3">Vehicle Reg</th>
@@ -192,7 +193,7 @@
     </div>
 
     {{-- Edit Modal --}}
-    <flux:modal wire:model="modalOpen" class="min-w-[400px]">
+    <flux:modal wire:model="modalOpen" class="w-[calc(100vw-2rem)] max-w-lg">
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">Edit Car Park</flux:heading>
@@ -222,7 +223,7 @@
     </flux:modal>
 
     {{-- View Details Modal --}}
-    <flux:modal wire:model="detailsModalOpen" class="min-w-[400px]">
+    <flux:modal wire:model="detailsModalOpen" class="w-[calc(100vw-2rem)] max-w-lg">
         @if($viewingPass)
             <div class="space-y-6">
                 <div>
@@ -262,7 +263,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="p-3 rounded-lg border border-zinc-200 dark:border-zinc-700">
                             <div class="text-xs text-zinc-500">Scanned At</div>
                             <div class="font-medium">{{ $viewingPass->scanned_at->format('H:i') }}</div>

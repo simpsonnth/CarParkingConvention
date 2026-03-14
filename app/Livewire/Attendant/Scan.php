@@ -15,9 +15,12 @@ class Scan extends Component
     public $name = '';
     public $email = '';
     public $days = [];
+    public $elderlyInfirmParking = false;
+    public $notes = '';
 
     public $step = 'scan'; // 'scan', 'confirm'
     public $scannedCongregation = null;
+
 
     public $lastScanResult = null; // 'success', 'error', 'warning'
     public $lastScanMessage = '';
@@ -72,10 +75,13 @@ class Scan extends Component
 
         $this->scannedCongregation = $congregation;
         $this->step = 'confirm';
-        $this->reset('vehicleReg'); // Clear previous input
+        $this->reset('vehicleReg', 'elderlyInfirmParking', 'notes', 'existingParkedPass');
     }
 
     public $foundRegistration = null;
+
+    /** Single parked pass when the typed reg matches an already-parked vehicle (for display only). */
+    public $existingParkedPass = null;
 
     public function toggleDay($day)
     {
@@ -96,11 +102,11 @@ class Scan extends Component
 
             if ($reg) {
                 $this->foundRegistration = $reg;
-                $this->contactNumber = $reg->contact_number; // Autofill
+                $this->contactNumber = $reg->contact_number;
                 $this->name = $reg->name;
-                $this->email = $reg->email;
+                $this->email = $reg->email ?? '';
                 $this->days = $reg->days ?? [];
-                // Flux::toast('Registration Found: ' . $reg->name); 
+                $this->elderlyInfirmParking = (bool) ($reg->elderly_infirm_parking ?? false);
             } else {
                 $this->foundRegistration = null;
                 // Keep contact number if user typed it, or reset? 
@@ -109,6 +115,16 @@ class Scan extends Component
             }
         } else {
             $this->foundRegistration = null;
+            $this->existingParkedPass = null;
+        }
+
+        if (strlen($this->vehicleReg) > 2 && auth()->check() && $this->scannedCongregation) {
+            $formattedReg = strtoupper(str_replace(' ', '', $this->vehicleReg));
+            $pass = ParkingPass::where('congregation_id', $this->scannedCongregation->id)
+                ->where('status', 'parked')
+                ->whereRaw('REPLACE(UPPER(vehicle_reg), " ", "") = ?', [$formattedReg])
+                ->first();
+            $this->existingParkedPass = $pass;
         }
     }
 
@@ -128,21 +144,20 @@ class Scan extends Component
             'name' => 'nullable|string',
             'email' => 'nullable|email',
             'days' => 'nullable|array',
+            'notes' => 'nullable|string|max:255',
         ]);
 
         // Format registration for consistency
         $formattedReg = strtoupper(str_replace(' ', '', trim($this->vehicleReg)));
 
-        // Check for duplicate vehicle
-        if ($formattedReg) {
-            \Log::info('Checking duplicate for: ' . $formattedReg);
-            $existingPass = ParkingPass::whereRaw('replace(upper(vehicle_reg), " ", "") = ?', [$formattedReg])
-                ->where('status', 'parked')
-                ->exists();
+        // Prevent clocking in the same vehicle more than once (any car park)
+        if (strlen($formattedReg) >= 2) {
+            $alreadyParked = ParkingPass::where('status', 'parked')
+                ->get()
+                ->contains(fn (ParkingPass $p) => strtoupper(str_replace(' ', '', (string) ($p->vehicle_reg ?? ''))) === $formattedReg);
 
-            if ($existingPass) {
-                \Log::warning('Duplicate entry found for: ' . $formattedReg);
-                $this->setResult('error', 'DUPLICATE ENTRY', 'Vehicle ' . $this->vehicleReg . ' is already parked.');
+            if ($alreadyParked) {
+                $this->setResult('error', 'ALREADY PARKED', 'This vehicle is already clocked in and cannot be registered again.');
                 return;
             }
         }
@@ -174,6 +189,8 @@ class Scan extends Component
                 'name' => $this->name,
                 'email' => $this->email,
                 'days' => $this->days,
+                'elderly_infirm_parking' => $this->elderlyInfirmParking,
+                'notes' => trim($this->notes) ?: null,
                 'scanned_at' => now(),
                 'scanned_by_user_id' => auth()->check() ? auth()->id() : null,
             ]);
@@ -197,16 +214,45 @@ class Scan extends Component
             $pass->load('congregation.carPark');
             $this->lastScanPass = $pass;
 
-            $this->reset('uuid', 'step', 'scannedCongregation', 'vehicleReg', 'contactNumber', 'name', 'email', 'days', 'foundRegistration');
+            $this->reset('uuid', 'step', 'scannedCongregation', 'vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass');
         } catch (\Exception $e) {
             \Log::error('Check-in database error: ' . $e->getMessage());
             Flux::toast('Error: ' . $e->getMessage(), variant: 'danger');
         }
     }
 
+    public function clockOut(int $passId): void
+    {
+        if (!auth()->check()) {
+            return;
+        }
+
+        $pass = ParkingPass::where('id', $passId)->where('status', 'parked')->first();
+
+        if (!$pass) {
+            Flux::toast('Pass not found or already clocked out.', variant: 'warning');
+            $this->existingParkedPass = null;
+            return;
+        }
+
+        $pass->update([
+            'status' => 'left',
+            'left_at' => now(),
+        ]);
+
+        $reg = $pass->vehicle_reg;
+        $this->existingParkedPass = null;
+        Flux::toast('Vehicle ' . ($reg ?? '') . ' clocked out.');
+    }
+
+    public function checkInAnotherCar(): void
+    {
+        $this->reset('vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass');
+    }
+
     public function cancel()
     {
-        $this->reset('uuid', 'step', 'scannedCongregation', 'vehicleReg', 'contactNumber', 'name', 'email', 'days', 'foundRegistration');
+        $this->reset('uuid', 'step', 'scannedCongregation', 'vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass');
     }
 
     protected function setResult($type, $title, $message)

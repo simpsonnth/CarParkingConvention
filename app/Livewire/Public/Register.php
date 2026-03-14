@@ -5,49 +5,100 @@ namespace App\Livewire\Public;
 use App\Models\Congregation;
 use App\Models\ParkingRegistration;
 use Flux\Flux;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class Register extends Component
 {
+    public $vehicleType = 'car'; // 'car' or 'coach'
+
+    public $congregationCode = '';
+
     public $name = '';
-    public $congregation = '';
+
     public $contactNumber = '';
+
     public $vehicleReg = '';
+
     public $days = []; // ['Friday', 'Saturday', 'Sunday']
+
     public $email = '';
+
+    public $elderlyInfirmParking = '0'; // Do you need parking for Elderly and Infirm? yes/no (string '0'/'1' for radio binding)
 
     public $registered = false;
 
+    protected static array $allDays = ['Friday', 'Saturday', 'Sunday'];
+
     #[Layout('components.layouts.public')]
-    public function render()
+    #[Computed]
+    public function resolvedCongregation(): ?Congregation
     {
-        return view('livewire.public.register', [
-            'congregations' => Congregation::orderBy('name')->get(),
-        ]);
+        $code = trim($this->congregationCode);
+        if ($code === '') {
+            return null;
+        }
+        return Congregation::where('uuid', $code)->first();
     }
 
-    public function register()
+    public function render()
     {
-        $this->validate([
+        return view('livewire.public.register');
+    }
+
+    public function toggleAllDays(): void
+    {
+        if (count($this->days) === count(self::$allDays)) {
+            $this->days = [];
+        } else {
+            $this->days = self::$allDays;
+        }
+    }
+
+    public function register(): void
+    {
+        $congregation = $this->resolvedCongregation;
+
+        $rules = [
+            'vehicleType' => 'required|in:car,coach',
+            'congregationCode' => 'required|string',
             'name' => 'required|string|max:255',
-            'congregation' => 'required|string|max:255',
             'contactNumber' => 'required|string|max:255',
-            'vehicleReg' => 'required|string|max:20|uppercase',
             'days' => 'required|array|min:1',
             'email' => 'required|email|max:255',
-        ]);
+        ];
 
-        // Format Registration
-        $formattedReg = strtoupper(str_replace(' ', '', trim($this->vehicleReg)));
+        if ($this->vehicleType === 'car') {
+            $rules['vehicleReg'] = 'required|string|max:20|uppercase';
+            $rules['elderlyInfirmParking'] = 'required|in:0,1';
+        } else {
+            $rules['vehicleReg'] = 'nullable|string|max:20|uppercase';
+            $rules['elderlyInfirmParking'] = 'nullable|in:0,1';
+        }
+
+        $this->validate($rules);
+
+        if (!$congregation) {
+            $this->addError('congregationCode', __('register.invalid_congregation_code'));
+            return;
+        }
+
+        $formattedReg = $this->vehicleType === 'car' && trim($this->vehicleReg) !== ''
+            ? strtoupper(str_replace(' ', '', trim($this->vehicleReg)))
+            : null;
 
         ParkingRegistration::create([
             'name' => $this->name,
-            'congregation' => $this->congregation,
+            'congregation' => $congregation->name,
             'contact_number' => $this->contactNumber,
             'vehicle_registration' => $formattedReg,
             'days' => $this->days,
             'email' => $this->email,
+            'vehicle_type' => $this->vehicleType,
+            'elderly_infirm_parking' => $this->vehicleType === 'car'
+                ? filter_var($this->elderlyInfirmParking, FILTER_VALIDATE_BOOLEAN)
+                : false,
         ]);
 
         $this->registered = true;
@@ -55,7 +106,6 @@ class Register extends Component
         try {
             Flux::toast('Registration Successful!');
         } catch (\Throwable $e) {
-            // Fallback if Flux is not available or fails
             session()->flash('status', 'Registration Successful!');
         }
     }

@@ -1,11 +1,11 @@
 <div class="space-y-8">
     {{-- Header --}}
-    <div class="flex items-center justify-between">
-        <div>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
             <flux:heading size="xl">Command Center</flux:heading>
             <flux:subheading>Real-time parking attendance monitoring</flux:subheading>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 shrink-0">
             <span class="relative flex h-3 w-3">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
               <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
@@ -111,13 +111,13 @@
                 <div class="text-xs text-zinc-500">Latest check-ins</div>
             </div>
             
-            <div class="rounded-xl border border-zinc-200 bg-white overflow-hidden dark:border-zinc-700 dark:bg-zinc-800">
+            <div class="rounded-xl border border-zinc-200 bg-white overflow-x-auto dark:border-zinc-700 dark:bg-zinc-800 -mx-4 sm:mx-0">
                 @if($recentScans->isEmpty())
                     <div class="p-8 text-center text-zinc-500">
                         No activity recorded yet.
                     </div>
                 @else
-                    <table class="w-full text-left text-sm">
+                    <table class="w-full min-w-[520px] text-left text-sm">
                         <thead class="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
                             <tr>
                                 <th class="px-6 py-3">Time</th>
@@ -189,13 +189,13 @@
             <div class="text-xs text-zinc-500">Recent online registrations</div>
         </div>
         
-        <div class="rounded-xl border border-zinc-200 bg-white overflow-hidden dark:border-zinc-700 dark:bg-zinc-800">
+        <div class="rounded-xl border border-zinc-200 bg-white overflow-x-auto dark:border-zinc-700 dark:bg-zinc-800 -mx-4 sm:mx-0">
              @if($registrations->isEmpty())
                 <div class="p-8 text-center text-zinc-500">
                     No registrations yet.
                 </div>
             @else
-                <table class="w-full text-left text-sm">
+                <table class="w-full min-w-[640px] text-left text-sm">
                     <thead class="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
                         <tr>
                             <th class="px-6 py-3">Date</th>
@@ -240,7 +240,7 @@
     </div>
 
     {{-- View Cars Modal --}}
-    <flux:modal wire:model="viewCarsModal" class="min-w-[600px] max-h-[85vh] overflow-y-auto">
+    <flux:modal wire:model="viewCarsModal" class="w-[calc(100vw-2rem)] max-w-2xl max-h-[85vh] overflow-y-auto">
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">{{ $selectedPark->name ?? 'Car Park' }}</flux:heading>

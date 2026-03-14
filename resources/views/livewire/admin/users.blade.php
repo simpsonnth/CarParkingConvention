@@ -1,16 +1,16 @@
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <flux:heading size="xl">Users</flux:heading>
-        <flux:button variant="primary" wire:click="create">Add User</flux:button>
+        <flux:button variant="primary" wire:click="create" class="w-full sm:w-auto">Add User</flux:button>
     </div>
 
-    <div class="flex items-center justify-between gap-4">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="Search users..."
-            class="max-w-xs" />
+            class="w-full min-w-0 sm:max-w-xs" />
     </div>
 
-    <div class="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
-        <table class="w-full text-left text-sm text-zinc-500 dark:text-zinc-400">
+    <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700 -mx-4 sm:mx-0">
+        <table class="w-full min-w-[640px] text-left text-sm text-zinc-500 dark:text-zinc-400">
             <thead class="bg-zinc-50 text-xs uppercase text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                 <tr>
                     <th class="px-6 py-3">Name</th>
@@ -68,7 +68,7 @@
         {{ $users->links() }}
     </div>
 
-    <flux:modal wire:model="modalOpen" class="min-w-[400px]">
+    <flux:modal wire:model="modalOpen" class="w-[calc(100vw-2rem)] max-w-lg">
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">{{ $userId ? 'Edit User' : 'Add User' }}</flux:heading>

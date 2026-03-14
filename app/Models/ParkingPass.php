@@ -19,12 +19,15 @@ class ParkingPass extends Model
         'name',
         'email',
         'days',
+        'elderly_infirm_parking',
+        'notes',
     ];
 
     protected $casts = [
         'scanned_at' => 'datetime',
         'left_at' => 'datetime',
         'days' => 'array',
+        'elderly_infirm_parking' => 'boolean',
     ];
 
     public function congregation(): BelongsTo

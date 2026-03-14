@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\CarPark;
 use App\Models\Congregation;
 use App\Models\ParkingPass;
+use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Flux\Flux;
@@ -15,12 +16,14 @@ class Congregations extends Component
     use WithPagination;
 
     public $name = '';
+    public $code = '';
     public $carParkId = '';
     public $congregationId = null;
 
     public $qrCodeUrl = '';
     public $qrCodeName = '';
     public $qrCodeUuid = '';
+    public $qrCodeCongregationId = null;
 
     public bool $modalOpen = false;
     public bool $qrModalOpen = false;
@@ -63,7 +66,7 @@ class Congregations extends Component
 
     public function create()
     {
-        $this->reset('name', 'carParkId', 'congregationId');
+        $this->reset('name', 'code', 'carParkId', 'congregationId');
         $this->modalOpen = true;
     }
 
@@ -71,33 +74,46 @@ class Congregations extends Component
     {
         $this->congregationId = $congregation->id;
         $this->name = $congregation->name;
+        $this->code = $congregation->uuid ?? '';
         $this->carParkId = $congregation->car_park_id;
         $this->modalOpen = true;
     }
 
     public function save()
     {
-        $this->validate([
+        $this->code = trim($this->code);
+
+        $rules = [
             'name' => 'required|string|max:255',
             'carParkId' => 'required|exists:car_parks,id',
-        ]);
+            'code' => [
+                'required',
+                'string',
+                'max:36',
+                Rule::unique('congregations', 'uuid')->ignore($this->congregationId),
+            ],
+        ];
+
+        $this->validate($rules);
 
         if ($this->congregationId) {
             $congregation = Congregation::findOrFail($this->congregationId);
             $congregation->update([
                 'name' => $this->name,
+                'uuid' => $this->code,
                 'car_park_id' => $this->carParkId,
             ]);
         } else {
             Congregation::create([
                 'name' => $this->name,
+                'uuid' => $this->code,
                 'car_park_id' => $this->carParkId,
             ]);
         }
 
         $this->modalOpen = false;
         Flux::toast($this->congregationId ? 'Congregation updated successfully.' : 'Congregation created successfully.');
-        $this->reset('name', 'carParkId', 'congregationId');
+        $this->reset('name', 'code', 'carParkId', 'congregationId');
     }
 
     public function delete(Congregation $congregation)
@@ -108,8 +124,9 @@ class Congregations extends Component
 
     public function openQrModal(Congregation $congregation)
     {
-        $this->qrCodeUuid = $congregation->uuid;
+        $this->qrCodeUuid = $congregation->uuid ?? '';
         $this->qrCodeName = $congregation->name;
+        $this->qrCodeCongregationId = $congregation->id;
         $this->qrModalOpen = true;
     }
 

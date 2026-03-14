@@ -11,10 +11,10 @@
 </head>
 
 <body
-    class="h-full bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 antialiased flex flex-col items-center justify-center p-6">
+    class="h-full bg-zinc-50 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 antialiased flex flex-col items-center justify-center p-4 sm:p-6">
 
     <div
-        class="max-w-md w-full space-y-8 bg-white dark:bg-zinc-800 p-8 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-700">
+        class="max-w-md w-full space-y-8 bg-white dark:bg-zinc-800 p-4 sm:p-8 rounded-2xl shadow-xl border border-zinc-200 dark:border-zinc-700">
         <div class="text-center">
             <div class="mx-auto w-16 h-16 bg-zinc-900 dark:bg-white rounded-xl flex items-center justify-center mb-6">
                 <svg class="w-8 h-8 text-white dark:text-zinc-900" fill="none" stroke="currentColor"

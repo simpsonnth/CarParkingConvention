@@ -32,6 +32,9 @@
                 <flux:navlist.item icon="clipboard-document-list" :href="route('admin.registrations')"
                     :current="request()->routeIs('admin.registrations')" wire:navigate>{{ __('Registrations') }}
                 </flux:navlist.item>
+                <flux:navlist.item icon="trash" :href="route('admin.registrations.trash')"
+                    :current="request()->routeIs('admin.registrations.trash')" wire:navigate>{{ __('registrations.recycle_bin') }}
+                </flux:navlist.item>
                 <flux:navlist.item icon="cog-6-tooth" :href="route('admin.settings')"
                     :current="request()->routeIs('admin.settings')" wire:navigate>{{ __('Settings') }}
                 </flux:navlist.item>

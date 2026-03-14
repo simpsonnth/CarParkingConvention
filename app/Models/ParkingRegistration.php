@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ParkingRegistration extends Model
 {
+    use SoftDeletes;
     protected $fillable = [
         'name',
         'congregation',
@@ -13,9 +15,12 @@ class ParkingRegistration extends Model
         'vehicle_registration',
         'days',
         'email',
+        'vehicle_type',
+        'elderly_infirm_parking',
     ];
 
     protected $casts = [
         'days' => 'array',
+        'elderly_infirm_parking' => 'boolean',
     ];
 }

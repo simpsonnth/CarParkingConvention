@@ -207,7 +207,7 @@
         </div>
 
     @elseif($step === 'confirm')
-        <div class="bg-white dark:bg-zinc-800 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-700 shadow-2xl space-y-8 animate-in slide-in-from-bottom-4 duration-300">
+        <div class="bg-white dark:bg-zinc-800 p-4 sm:p-8 rounded-3xl border border-zinc-200 dark:border-zinc-700 shadow-2xl space-y-8 animate-in slide-in-from-bottom-4 duration-300">
             <div class="text-center">
                 <div class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-1">Pass Authorized</div>
                 <flux:heading size="xl" class="text-3xl">{{ $scannedCongregation->name }}</flux:heading>
@@ -241,6 +241,28 @@
                         @enderror
                     </div>
 
+                    @if(auth()->check() && $existingParkedPass)
+                        <div class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20 p-4 space-y-3">
+                            <div class="flex items-center gap-2 text-sm font-bold text-amber-800 dark:text-amber-200">
+                                <flux:icon name="truck" class="size-5" />
+                                Currently parked (1)
+                            </div>
+                            <div class="text-sm font-mono font-semibold text-zinc-900 dark:text-white">{{ $existingParkedPass->vehicle_reg ?? '–' }}</div>
+                            <div class="text-sm text-zinc-600 dark:text-zinc-400">{{ $existingParkedPass->name ?? '–' }}</div>
+                            <div class="text-sm text-zinc-500 dark:text-zinc-500 font-mono">{{ $existingParkedPass->contact_number ?? '–' }}</div>
+                            @if($existingParkedPass->notes)
+                                <div class="text-xs text-amber-700 dark:text-amber-300">({{ $existingParkedPass->notes }})</div>
+                            @endif
+                            <button type="button"
+                                wire:click="clockOut({{ $existingParkedPass->id }})"
+                                wire:confirm="Clock out this vehicle?"
+                                class="mt-3 inline-flex items-center gap-2 rounded-lg border border-amber-300 dark:border-amber-600 bg-transparent px-3 py-2 text-sm font-medium text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition">
+                                <flux:icon name="arrow-right-start-on-rectangle" class="size-4" />
+                                Clock out
+                            </button>
+                        </div>
+                    @endif
+
                     @if($foundRegistration)
                         <div class="bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-200 dark:border-indigo-500/30 p-4 rounded-xl animate-in fade-in slide-in-from-top-2">
                              <div class="flex items-center gap-3 mb-2">
@@ -264,15 +286,20 @@
                             Name <span class="text-zinc-400 font-normal normal-case">(Optional)</span>
                         </label>
                         <div class="relative">
-                            <flux:input 
-                                wire:model="name" 
-                                placeholder="Driver's Name" 
-                                class="text-center text-lg h-12 bg-zinc-50 dark:bg-zinc-900 border-none rounded-xl"
-                            />
                             @if($foundRegistration)
-                                <div class="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                                <input type="text" value="{{ $name }}"
+                                    readonly
+                                    class="w-full text-center text-lg h-12 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-xl text-zinc-700 dark:text-zinc-300 cursor-not-allowed"
+                                />
+                                <div class="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 pointer-events-none">
                                     <flux:icon name="lock-closed" class="size-4" />
                                 </div>
+                            @else
+                                <flux:input 
+                                    wire:model="name" 
+                                    placeholder="Driver's Name" 
+                                    class="text-center text-lg h-12 bg-zinc-50 dark:bg-zinc-900 border-none rounded-xl"
+                                />
                             @endif
                         </div>
                     </div>
@@ -281,17 +308,22 @@
                         <label class="block text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                             Email <span class="text-zinc-400 font-normal normal-case">(Optional)</span>
                         </label>
-                         <div class="relative">
-                            <flux:input 
-                                wire:model="email" 
-                                type="email"
-                                placeholder="email@example.com" 
-                                class="text-center text-lg h-12 bg-zinc-50 dark:bg-zinc-900 border-none rounded-xl"
-                            />
+                        <div class="relative">
                             @if($foundRegistration)
-                                <div class="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                                <input type="email" value="{{ $email }}"
+                                    readonly
+                                    class="w-full text-center text-lg h-12 bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 rounded-xl text-zinc-700 dark:text-zinc-300 cursor-not-allowed"
+                                />
+                                <div class="absolute right-3 top-1/2 -translate-y-1/2 text-green-500 pointer-events-none">
                                     <flux:icon name="lock-closed" class="size-4" />
                                 </div>
+                            @else
+                                <flux:input 
+                                    wire:model="email" 
+                                    type="email"
+                                    placeholder="email@example.com" 
+                                    class="text-center text-lg h-12 bg-zinc-50 dark:bg-zinc-900 border-none rounded-xl"
+                                />
                             @endif
                         </div>
                     </div>
@@ -335,15 +367,43 @@
                             <span class="text-red-500 text-sm text-center block mt-1">{{ $message }}</span>
                         @enderror
                     </div>
+
+                    <div class="space-y-3">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="checkbox" wire:model="elderlyInfirmParking"
+                                class="w-5 h-5 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                            <span class="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Needs Elderly &amp; Infirm parking</span>
+                        </label>
+                    </div>
+
+                    <div class="space-y-3">
+                        <label class="block text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                            Notes <span class="text-zinc-400 font-normal normal-case">(Optional) e.g. Section A</span>
+                        </label>
+                        <flux:input 
+                            wire:model="notes" 
+                            placeholder="Where they have parked..." 
+                            class="text-center text-lg h-12 bg-zinc-50 dark:bg-zinc-900 border-none rounded-xl"
+                        />
+                    </div>
                 </div>
 
                 <div class="flex flex-col gap-3">
-                    <flux:button type="submit" variant="primary" 
-                        wire:loading.attr="disabled"
-                        class="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-indigo-500/20">
-                        <span wire:loading.remove>CLOCK IN / PARK CAR</span>
-                        <span wire:loading>PROCESSING...</span>
-                    </flux:button>
+                    @if($existingParkedPass)
+                        <div class="w-full py-4 px-4 rounded-xl border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/30 text-center text-sm font-semibold text-amber-800 dark:text-amber-200">
+                            Already parked – cannot clock in again
+                        </div>
+                        <flux:button type="button" variant="primary" disabled class="w-full h-14 text-lg font-bold rounded-xl opacity-60 cursor-not-allowed">
+                            CLOCK IN / PARK CAR
+                        </flux:button>
+                    @else
+                        <flux:button type="submit" variant="primary" 
+                            wire:loading.attr="disabled"
+                            class="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-indigo-500/20">
+                            <span wire:loading.remove>CLOCK IN / PARK CAR</span>
+                            <span wire:loading>PROCESSING...</span>
+                        </flux:button>
+                    @endif
                     <flux:button type="button" variant="ghost" wire:click="cancel" wire:loading.attr="disabled" class="w-full h-12">
                         Abort Scan
                     </flux:button>

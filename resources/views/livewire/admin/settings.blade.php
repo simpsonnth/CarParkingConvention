@@ -10,7 +10,7 @@
             <flux:input wire:model="conventionName" label="Convention Name"
                 placeholder="e.g. Convention of Jehovah's Witness" />
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <flux:input wire:model="conventionYear" label="Year" placeholder="e.g. 2025" />
                 <flux:input wire:model="conventionLocation" label="Location" placeholder="e.g. Twickenham" />
             </div>

@@ -1,6 +1,6 @@
 <div class="space-y-6">
-    <div class="flex items-center justify-between">
-        <div>
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="min-w-0">
             <div class="mb-2">
                 <a href="{{ route('admin.congregations') }}"
                     class="text-sm text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 flex items-center gap-1">
@@ -13,23 +13,21 @@
                 Assigned to: {{ $congregation->carPark->name ?? 'Unassigned' }}
             </flux:subheading>
         </div>
-        <div>
-            {{-- Edit action could go here if needed --}}
-        </div>
     </div>
 
     {{-- Active Vehicles List --}}
     <div class="space-y-4">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <flux:heading size="lg">Active Vehicles</flux:heading>
             <flux:button wire:click="checkoutAll" variant="danger" icon="arrow-right-start-on-rectangle"
-                wire:confirm="Are you sure you want to mark ALL vehicles as left? This cannot be undone.">
+                wire:confirm="Are you sure you want to mark ALL vehicles as left? This cannot be undone."
+                class="w-full sm:w-auto">
                 Check Out All
             </flux:button>
         </div>
 
-        <div class="overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
-            <table class="w-full text-left text-sm text-zinc-500 dark:text-zinc-400">
+        <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700 -mx-4 sm:mx-0">
+            <table class="w-full min-w-[640px] text-left text-sm text-zinc-500 dark:text-zinc-400">
                 <thead class="bg-zinc-50 text-xs uppercase text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                     <tr>
                         <th class="px-6 py-3">Vehicle Reg</th>
