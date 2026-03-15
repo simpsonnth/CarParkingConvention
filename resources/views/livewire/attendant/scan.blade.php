@@ -192,7 +192,7 @@
                                 </div>
                                 <div class="text-zinc-500 dark:text-zinc-400 text-sm flex items-center gap-1.5 mt-1">
                                     <flux:icon name="map-pin" class="size-3.5" />
-                                    {{ $lastScanPass->congregation->carPark?->name ?? 'Unassigned' }}
+                                    {{ $lastScanPass->carPark?->name ?? $lastScanPass->congregation->carPark?->name ?? 'Unassigned' }}
                                 </div>
                                 @if($lastScanPass->vehicle_reg)
                                     <div class="mt-3 inline-block px-3 py-1 bg-white/20 dark:bg-zinc-900/50 backdrop-blur-sm border border-white/30 dark:border-zinc-700/50 rounded-lg text-lg font-mono tracking-wider text-zinc-900 dark:text-white">
@@ -211,10 +211,13 @@
             <div class="text-center">
                 <div class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-1">Pass Authorized</div>
                 <flux:heading size="xl" class="text-3xl">{{ $scannedCongregation->name }}</flux:heading>
-                @if($scannedCongregation->carPark)
+                @if($effectiveCarPark ?? null)
                     <div class="mt-3 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-indigo-500/10 text-indigo-500 font-bold text-sm">
                         <flux:icon name="map-pin" class="size-4" />
-                        {{ $scannedCongregation->carPark->name }}
+                        {{ $effectiveCarPark->name }}
+                        @if($foundRegistration?->car_park_id)
+                            <span class="text-xs font-normal opacity-90">(individual)</span>
+                        @endif
                     </div>
                 @else
                     <div class="mt-3 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-sm">

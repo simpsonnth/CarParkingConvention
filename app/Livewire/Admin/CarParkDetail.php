@@ -71,14 +71,10 @@ class CarParkDetail extends Component
 
     public function checkoutAll()
     {
-        ParkingPass::where('status', 'parked')
-            ->whereHas('congregation', function ($q) {
-                $q->where('car_park_id', $this->carPark->id);
-            })
-            ->update([
-                'status' => 'left',
-                'left_at' => now(),
-            ]);
+        ParkingPass::parkedAtCarPark($this->carPark->id)->update([
+            'status' => 'left',
+            'left_at' => now(),
+        ]);
 
         Flux::toast('All vehicles checked out.');
     }
@@ -93,10 +89,7 @@ class CarParkDetail extends Component
         // Calculate stats
         $capacity = $this->carPark->capacity;
 
-        $occupancyQuery = ParkingPass::where('status', 'parked')
-            ->whereHas('congregation', function ($q) {
-                $q->where('car_park_id', $this->carPark->id);
-            });
+        $occupancyQuery = ParkingPass::parkedAtCarPark($this->carPark->id);
 
         $occupancy = $occupancyQuery->count();
 
@@ -108,8 +101,12 @@ class CarParkDetail extends Component
             ->paginate(15, pageName: 'parked_page');
 
         $history = ParkingPass::where('status', 'left')
-            ->whereHas('congregation', function ($q) {
-                $q->where('car_park_id', $this->carPark->id);
+            ->where(function ($q) {
+                $q->where('car_park_id', $this->carPark->id)
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('car_park_id')
+                            ->whereHas('congregation', fn ($c) => $c->where('car_park_id', $this->carPark->id));
+                    });
             })
             ->whereDate('left_at', now()->toDateString())
             ->with(['congregation', 'scannedBy'])

@@ -5,22 +5,48 @@
     </div>
 
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass"
-            placeholder="Search congregations..." class="w-full min-w-0 sm:max-w-xs" />
-        <select wire:model.live="filterCarParkId"
-            class="block w-full sm:w-auto min-w-0 rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-            <option value="">All Car Parks</option>
-            <option value="unassigned">Not assigned to a car park</option>
-            @foreach($carParks as $park)
-                <option value="{{ $park->id }}">{{ $park->name }}</option>
-            @endforeach
-        </select>
+        <div class="flex flex-wrap items-center gap-2">
+            <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass"
+                placeholder="Search congregations..." class="w-full min-w-0 sm:max-w-xs" />
+            <select wire:model.live="filterCarParkId"
+                class="block w-full sm:w-auto min-w-0 rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                <option value="">All Car Parks</option>
+                <option value="unassigned">Not assigned to a car park</option>
+                @foreach($carParks as $park)
+                    <option value="{{ $park->id }}">{{ $park->name }}</option>
+                @endforeach
+            </select>
+            <select wire:model.live="perPage"
+                class="block w-full sm:w-auto min-w-0 rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                <option value="25">25 per page</option>
+                <option value="50">50 per page</option>
+                <option value="100">100 per page</option>
+            </select>
+        </div>
     </div>
+
+    @if(count($selectedIds) > 0)
+        <div class="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20">
+            <span class="text-sm font-medium text-amber-800 dark:text-amber-200 basis-full sm:basis-auto">{{ count($selectedIds) }} selected</span>
+            <flux:button variant="primary" size="sm" wire:click="openBulkAssignModal" icon="building-office-2">
+                Assign to car park
+            </flux:button>
+            <button type="button" wire:click="$set('selectedIds', [])"
+                class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600">
+                Clear selection
+            </button>
+        </div>
+    @endif
 
     <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700 -mx-4 sm:mx-0">
         <table class="w-full min-w-[640px] text-left text-sm text-zinc-500 dark:text-zinc-400">
             <thead class="bg-zinc-50 text-xs uppercase text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                 <tr>
+                    <th class="w-10 px-4 py-3">
+                        <input type="checkbox" wire:click="toggleSelectAll"
+                            {{ count($congregations->items()) > 0 && count(array_intersect($selectedIds, $congregations->pluck('id')->all())) === count($congregations->items()) ? 'checked' : '' }}
+                            class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                    </th>
                     <th class="px-6 py-3">Name</th>
                     <th class="px-6 py-3">Code</th>
                     <th class="px-6 py-3">Assigned Car Park</th>
@@ -30,7 +56,11 @@
             </thead>
             <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700 bg-white dark:bg-zinc-800">
                 @forelse ($congregations as $congregation)
-                    <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
+                    <tr wire:key="congregation-row-{{ $congregation->id }}" class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
+                        <td class="w-10 px-4 py-4">
+                            <input type="checkbox" wire:model.live="selectedIds" value="{{ $congregation->id }}"
+                                class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                        </td>
                         <td class="px-6 py-4 font-medium text-zinc-900 dark:text-white">{{ $congregation->name }}</td>
                         <td class="px-6 py-4">
                             <code class="text-xs font-mono text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-700 px-2 py-1 rounded" title="{{ $congregation->uuid }}">{{ \Illuminate\Support\Str::limit($congregation->uuid, 8) }}</code>
@@ -67,7 +97,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-zinc-500">
+                        <td colspan="6" class="px-6 py-8 text-center text-zinc-500">
                             No congregations found.
                         </td>
                     </tr>
@@ -108,6 +138,30 @@
             <div class="flex justify-end gap-2">
                 <flux:button variant="ghost" wire:click="$set('modalOpen', false)">Cancel</flux:button>
                 <flux:button variant="primary" wire:click="save">Save</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Bulk assign to car park modal --}}
+    <flux:modal wire:model="bulkAssignModalOpen" class="w-[calc(100vw-2rem)] max-w-md">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">Assign to car park</flux:heading>
+                <flux:subheading>Assign {{ count($selectedIds) }} selected congregation(s) to a car park. Leave empty to unassign.</flux:subheading>
+            </div>
+            <div class="space-y-2">
+                <label for="bulkAssignCarParkId" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Car park</label>
+                <select wire:model="bulkAssignCarParkId" id="bulkAssignCarParkId"
+                    class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                    <option value="">Unassign (remove from car park)</option>
+                    @foreach ($carParks as $park)
+                        <option value="{{ $park->id }}">{{ $park->name }} (Cap: {{ $park->capacity }})</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="flex justify-end gap-2">
+                <flux:button variant="ghost" wire:click="$set('bulkAssignModalOpen', false)">Cancel</flux:button>
+                <flux:button variant="primary" wire:click="bulkAssignCarPark">Assign</flux:button>
             </div>
         </div>
     </flux:modal>

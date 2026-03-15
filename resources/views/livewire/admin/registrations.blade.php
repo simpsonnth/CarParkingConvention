@@ -15,11 +15,7 @@
                 {{ __('registrations.recycle_bin') }}
             </a>
             @if(count($selectedIds) > 0)
-                <button type="button" wire:click="bulkDelete" wire:confirm="{{ __('registrations.bulk_delete_confirm') }}"
-                    class="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 shadow-sm hover:bg-red-100 dark:border-red-800 dark:bg-red-900/30 dark:text-red-200 dark:hover:bg-red-900/50">
-                    <flux:icon name="trash" class="size-4" />
-                    {{ __('registrations.delete_selected') }} ({{ count($selectedIds) }})
-                </button>
+                <span class="text-sm font-medium text-amber-700 dark:text-amber-300">{{ count($selectedIds) }} {{ __('registrations.selected') }}</span>
                 <button type="button" wire:click="$set('selectedIds', [])"
                     class="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
                     {{ __('registrations.cancel') }}
@@ -30,22 +26,68 @@
                     {{ __('registrations.delete_selected') }}
                 </button>
             @endif
+            <select wire:model.live="perPage"
+                class="block w-full sm:w-auto min-w-0 rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                <option value="25">25 {{ __('registrations.per_page') }}</option>
+                <option value="50">50 {{ __('registrations.per_page') }}</option>
+                <option value="100">100 {{ __('registrations.per_page') }}</option>
+            </select>
             <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="{{ __('registrations.search') }}" class="w-full min-w-0 sm:min-w-[180px]" />
         </div>
     </div>
 
     @if(count($selectedIds) > 0)
-        <div class="flex flex-wrap items-center gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-800 dark:bg-amber-900/20">
-            <span class="text-sm font-medium text-amber-800 dark:text-amber-200 basis-full sm:basis-auto">{{ count($selectedIds) }} {{ __('registrations.selected') }}</span>
-            <button type="button" wire:click="bulkDelete" wire:confirm="{{ __('registrations.bulk_delete_confirm') }}"
-                class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700">
-                <flux:icon name="trash" class="size-4" />
-                {{ __('registrations.delete_selected') }}
-            </button>
-            <button type="button" wire:click="$set('selectedIds', [])"
-                class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600">
-                {{ __('registrations.cancel') }}
-            </button>
+        <div class="rounded-lg border-2 border-amber-400 bg-amber-50 px-4 py-3 dark:border-amber-600 dark:bg-amber-900/30" role="region" aria-label="Bulk actions">
+            <p class="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-3">{{ count($selectedIds) }} {{ __('registrations.selected') }} — bulk actions</p>
+            <div class="flex flex-wrap items-center gap-3">
+                <span class="text-xs font-medium text-amber-800 dark:text-amber-200 uppercase tracking-wide">Elderly &amp; Infirm:</span>
+                <button type="button" wire:click="bulkSetElderlyInfirm('1')"
+                    class="inline-flex items-center gap-2 rounded-lg bg-amber-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-amber-700">
+                    {{ __('registrations.yes') }}
+                </button>
+                <button type="button" wire:click="bulkSetElderlyInfirm('0')"
+                    class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600">
+                    {{ __('registrations.no') }}
+                </button>
+                <span class="text-zinc-300 dark:text-zinc-600 mx-1">|</span>
+                <span class="text-xs font-medium text-amber-800 dark:text-amber-200 uppercase tracking-wide">{{ __('registrations.bulk_assign_congregation_car_park') }}:</span>
+                <select wire:model="bulkAssignCarParkId"
+                    class="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-200">
+                    <option value="">{{ __('registrations.car_park') }}...</option>
+                    @foreach($carParks ?? [] as $park)
+                        <option value="{{ $park->id }}">{{ $park->name }}</option>
+                    @endforeach
+                </select>
+                <button type="button" wire:click="bulkAssignCongregationToCarPark"
+                    class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
+                    <flux:icon name="building-office-2" class="size-4" />
+                    Assign
+                </button>
+                <span class="text-zinc-300 dark:text-zinc-600 mx-1">|</span>
+                <span class="text-xs font-medium text-amber-800 dark:text-amber-200 uppercase tracking-wide">{{ __('registrations.bulk_assign_individual_car_park') }}:</span>
+                <select wire:model="bulkAssignIndividualCarParkId"
+                    class="rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-200">
+                    <option value="">{{ __('registrations.car_park') }}...</option>
+                    @foreach($carParks ?? [] as $park)
+                        <option value="{{ $park->id }}">{{ $park->name }}</option>
+                    @endforeach
+                </select>
+                <button type="button" wire:click="bulkAssignSelectedToCarPark"
+                    class="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-violet-700">
+                    <flux:icon name="user" class="size-4" />
+                    Assign
+                </button>
+                <span class="text-zinc-300 dark:text-zinc-600 mx-1">|</span>
+                <button type="button" wire:click="bulkDelete" wire:confirm="{{ __('registrations.bulk_delete_confirm') }}"
+                    class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700">
+                    <flux:icon name="trash" class="size-4" />
+                    {{ __('registrations.delete_selected') }}
+                </button>
+                <button type="button" wire:click="$set('selectedIds', [])"
+                    class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600">
+                    {{ __('registrations.cancel') }}
+                </button>
+            </div>
         </div>
     @endif
 
@@ -63,6 +105,7 @@
                     <th class="px-6 py-3">{{ __('registrations.date') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.name') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.congregation') }}</th>
+                    <th class="px-6 py-3">{{ __('registrations.car_park') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.type') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.vehicle_reg') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.contact') }}</th>
@@ -73,10 +116,9 @@
             </thead>
             <tbody class="divide-y divide-zinc-100 dark:divide-zinc-700 bg-white dark:bg-zinc-800">
                 @forelse($registrations as $reg)
-                    <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition">
+                    <tr wire:key="registration-row-{{ $reg->id }}" class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition">
                         <td class="w-10 px-4 py-4">
-                            <input type="checkbox" wire:click.prevent="toggleSelect({{ $reg->id }})"
-                                {{ in_array($reg->id, $selectedIds) ? 'checked' : '' }}
+                            <input type="checkbox" wire:model.live="selectedIds" value="{{ $reg->id }}"
                                 class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
                         </td>
                         <td class="px-6 py-4 text-zinc-500 whitespace-nowrap">
@@ -87,6 +129,13 @@
                         </td>
                         <td class="px-6 py-4 text-zinc-600 dark:text-zinc-300">
                             {{ $reg->congregation }}
+                        </td>
+                        <td class="px-6 py-4 text-zinc-500 dark:text-zinc-400 text-xs">
+                            @if($reg->carPark)
+                                <flux:badge size="sm" color="violet">{{ $reg->carPark->name }}</flux:badge>
+                            @else
+                                <span class="text-zinc-400">—</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4">
                             <flux:badge color="{{ ($reg->vehicle_type ?? 'car') === 'coach' ? 'purple' : 'zinc' }}">
@@ -129,7 +178,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="10" class="px-6 py-12 text-center text-zinc-500">
+                        <td colspan="11" class="px-6 py-12 text-center text-zinc-500">
                             <div class="flex flex-col items-center justify-center">
                                 <flux:icon name="clipboard-document-list" class="size-10 text-zinc-300 mb-2" />
                                 <p>{{ __('registrations.no_registrations') }}</p>
@@ -160,6 +209,18 @@
                     <option value="{{ $name }}">{{ $name }}</option>
                 @endforeach
             </flux:select>
+
+            <div class="space-y-2">
+                <label for="carParkId" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('registrations.car_park') }} ({{ __('registrations.optional_individual') }})</label>
+                <select wire:model="carParkId" id="carParkId"
+                    class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                    <option value="">— {{ __('registrations.no_car_park') }}</option>
+                    @foreach($carParks ?? [] as $park)
+                        <option value="{{ $park->id }}">{{ $park->name }}</option>
+                    @endforeach
+                </select>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('registrations.car_park_individual_hint') }}</p>
+            </div>
 
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('registrations.vehicle_type') }}</label>
@@ -218,6 +279,30 @@
             <div class="flex justify-end gap-2">
                 <flux:button variant="ghost" wire:click="$set('modalOpen', false)">{{ __('registrations.cancel') }}</flux:button>
                 <flux:button variant="primary" wire:click="save">{{ __('registrations.save_changes') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Bulk assign congregation to car park modal --}}
+    <flux:modal wire:model="bulkAssignCarParkModalOpen" class="w-[calc(100vw-2rem)] max-w-md">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ __('registrations.bulk_assign_congregation_car_park') }}</flux:heading>
+                <flux:subheading>Assign the congregation(s) of {{ count($selectedIds) }} selected registration(s) to a car park. Congregations are matched by name.</flux:subheading>
+            </div>
+            <div class="space-y-2">
+                <label for="bulkAssignCarParkId" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('registrations.car_park') }}</label>
+                <select wire:model="bulkAssignCarParkId" id="bulkAssignCarParkId"
+                    class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                    <option value="">Select a car park</option>
+                    @foreach ($carParks ?? [] as $park)
+                        <option value="{{ $park->id }}">{{ $park->name }} (Cap: {{ $park->capacity }})</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="flex justify-end gap-2">
+                <flux:button variant="ghost" wire:click="$set('bulkAssignCarParkModalOpen', false)">{{ __('registrations.cancel') }}</flux:button>
+                <flux:button variant="primary" wire:click="bulkAssignCongregationToCarPark">{{ __('registrations.save_changes') }}</flux:button>
             </div>
         </div>
     </flux:modal>

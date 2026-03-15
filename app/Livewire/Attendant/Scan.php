@@ -2,7 +2,9 @@
 
 namespace App\Livewire\Attendant;
 
+use App\Models\CarPark;
 use App\Models\ParkingPass;
+use App\Models\ParkingRegistration;
 use Flux\Flux;
 use Livewire\Component;
 use Livewire\Attributes\Layout;
@@ -40,7 +42,11 @@ class Scan extends Component
 
     public function render()
     {
-        return view('livewire.attendant.scan');
+        $effectiveCarPark = $this->step === 'confirm' ? $this->resolveEffectiveCarPark() : null;
+
+        return view('livewire.attendant.scan', [
+            'effectiveCarPark' => $effectiveCarPark,
+        ]);
     }
 
     public function scan()
@@ -138,8 +144,10 @@ class Scan extends Component
             return;
         }
 
-        if (!$this->scannedCongregation->carPark) {
-            $this->setResult('error', 'NO CAR PARK', 'This congregation is not assigned to a car park. Assign one in Admin first.');
+        // Resolve car park: individual (registration) overrides congregation default
+        $carPark = $this->resolveEffectiveCarPark();
+        if (!$carPark) {
+            $this->setResult('error', 'NO CAR PARK', 'No car park assigned. Assign the congregation or this individual to a car park in Admin first.');
             return;
         }
 
@@ -167,11 +175,16 @@ class Scan extends Component
             }
         }
 
-        // Check Capacity
-        $carPark = $this->scannedCongregation->carPark;
-        $currentOccupancy = ParkingPass::whereHas('congregation', function ($query) use ($carPark) {
-            $query->where('car_park_id', $carPark->id);
-        })->where('status', 'parked')->count();
+        // Check Capacity (count by pass car_park_id or legacy: congregation car_park_id)
+        $currentOccupancy = ParkingPass::where('status', 'parked')
+            ->where(function ($query) use ($carPark) {
+                $query->where('car_park_id', $carPark->id)
+                    ->orWhere(function ($q) use ($carPark) {
+                        $q->whereNull('car_park_id')
+                            ->whereHas('congregation', fn ($c) => $c->where('car_park_id', $carPark->id));
+                    });
+            })
+            ->count();
 
         if ($currentOccupancy >= $carPark->capacity) {
             \Log::warning('Check-in failed: Car park ' . $carPark->name . ' is full.');
@@ -185,9 +198,9 @@ class Scan extends Component
 
         try {
             \Log::info('Attempting to create ParkingPass...');
-            // Create a new Parking Pass entry
             $pass = ParkingPass::create([
                 'congregation_id' => $this->scannedCongregation->id,
+                'car_park_id' => $carPark->id,
                 'status' => 'parked',
                 'vehicle_reg' => $formattedReg,
                 'contact_number' => $this->contactNumber,
@@ -202,8 +215,7 @@ class Scan extends Component
 
             \Log::info('ParkingPass created successfully.');
 
-            // Sync with Registrations Table
-            \App\Models\ParkingRegistration::updateOrCreate(
+            ParkingRegistration::updateOrCreate(
                 ['vehicle_registration' => $formattedReg],
                 [
                     'congregation' => $this->scannedCongregation->name,
@@ -214,9 +226,9 @@ class Scan extends Component
                 ]
             );
             \Log::info('ParkingRegistration synced successfully.');
-            $this->setResult('success', 'ACCESS GRANTED', $this->scannedCongregation->name . ' -> ' . $this->scannedCongregation->carPark->name);
+            $this->setResult('success', 'ACCESS GRANTED', $this->scannedCongregation->name . ' -> ' . $carPark->name);
 
-            $pass->load('congregation.carPark');
+            $pass->load('congregation', 'carPark');
             $this->lastScanPass = $pass;
 
             $this->reset('uuid', 'step', 'scannedCongregation', 'vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass');
@@ -258,6 +270,18 @@ class Scan extends Component
     public function cancel()
     {
         $this->reset('uuid', 'step', 'scannedCongregation', 'vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass');
+    }
+
+    /** Resolve which car park to use: registration's individual assignment or congregation default. */
+    protected function resolveEffectiveCarPark(): ?CarPark
+    {
+        if ($this->foundRegistration?->car_park_id) {
+            $park = CarPark::find($this->foundRegistration->car_park_id);
+            if ($park) {
+                return $park;
+            }
+        }
+        return $this->scannedCongregation->carPark;
     }
 
     protected function setResult($type, $title, $message)

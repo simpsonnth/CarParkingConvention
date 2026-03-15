@@ -2,11 +2,12 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\Congregation;
+use App\Models\ParkingRegistration;
+use Flux\Flux;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\ParkingRegistration;
-use Flux\Flux;
 
 #[Layout('components.layouts.app')]
 class Registrations extends Component
@@ -17,12 +18,23 @@ class Registrations extends Component
 
     public array $selectedIds = [];
 
+    /** @var int Per-page options: 25, 50, 100 */
+    public int $perPage = 25;
+
     public bool $modalOpen = false;
+    public bool $bulkAssignCarParkModalOpen = false;
     public ?ParkingRegistration $editingRegistration = null;
+
+    /** For bulk assign congregation to car park */
+    public $bulkAssignCarParkId = '';
+
+    /** For bulk assign selected registrations (individuals) to car park */
+    public $bulkAssignIndividualCarParkId = '';
 
     // Form Fields
     public $name = '';
     public $congregation = '';
+    public $carParkId = '';
     public $vehicleType = 'car';
     public $vehicleReg = '';
     public $contactNumber = '';
@@ -30,7 +42,12 @@ class Registrations extends Component
     public $elderlyInfirmParking = '0';
     public $days = [];
 
-    public function updatedSearch()
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedPerPage(): void
     {
         $this->resetPage();
     }
@@ -41,6 +58,7 @@ class Registrations extends Component
 
         $this->name = $this->editingRegistration->name;
         $this->congregation = $this->editingRegistration->congregation;
+        $this->carParkId = $this->editingRegistration->car_park_id ? (string) $this->editingRegistration->car_park_id : '';
         $this->vehicleType = $this->editingRegistration->vehicle_type ?? 'car';
         $this->vehicleReg = $this->editingRegistration->vehicle_registration;
         $this->contactNumber = $this->editingRegistration->contact_number;
@@ -70,12 +88,79 @@ class Registrations extends Component
 
     public function toggleSelectAll(): void
     {
-        $ids = $this->getRegistrationsQuery()->paginate(15)->pluck('id')->all();
+        $ids = $this->getRegistrationsQuery()->paginate($this->perPage)->pluck('id')->all();
         if (count(array_intersect($this->selectedIds, $ids)) === count($ids)) {
             $this->selectedIds = array_values(array_diff($this->selectedIds, $ids));
         } else {
             $this->selectedIds = array_values(array_unique(array_merge($this->selectedIds, $ids)));
         }
+    }
+
+    public function bulkSetElderlyInfirm(string $value): void
+    {
+        if (empty($this->selectedIds)) {
+            Flux::toast(__('registrations.select_items'), variant: 'warning');
+            return;
+        }
+        $value = $value === '1' ? true : false;
+        $count = ParkingRegistration::whereIn('id', $this->selectedIds)->update(['elderly_infirm_parking' => $value]);
+        $this->selectedIds = [];
+        Flux::toast(__('registrations.bulk_elderly_infirm_updated', ['count' => $count, 'value' => $value ? __('registrations.yes') : __('registrations.no')]));
+    }
+
+    public function openBulkAssignCarParkModal(): void
+    {
+        if (empty($this->selectedIds)) {
+            Flux::toast(__('registrations.select_items'), variant: 'warning');
+            return;
+        }
+        $this->bulkAssignCarParkId = '';
+        $this->bulkAssignCarParkModalOpen = true;
+    }
+
+    public function bulkAssignCongregationToCarPark(): void
+    {
+        if (empty($this->selectedIds)) {
+            Flux::toast(__('registrations.select_items'), variant: 'warning');
+            $this->bulkAssignCarParkModalOpen = false;
+            return;
+        }
+        $this->validate(['bulkAssignCarParkId' => 'required|exists:car_parks,id']);
+        $registrations = ParkingRegistration::whereIn('id', $this->selectedIds)->get();
+        $congregationNames = $registrations->pluck('congregation')->unique()->filter()->values();
+        $updated = 0;
+        $notFound = [];
+        foreach ($congregationNames as $name) {
+            $congregation = Congregation::where('name', $name)->first();
+            if ($congregation) {
+                $congregation->update(['car_park_id' => $this->bulkAssignCarParkId]);
+                $updated++;
+            } else {
+                $notFound[] = $name;
+            }
+        }
+        $this->selectedIds = [];
+        $this->bulkAssignCarParkModalOpen = false;
+        $this->bulkAssignCarParkId = '';
+        $msg = __('registrations.bulk_congregation_car_park_assigned', ['count' => $updated]);
+        if (count($notFound) > 0) {
+            $msg .= ' ' . __('registrations.bulk_congregation_not_found', ['names' => implode(', ', array_slice($notFound, 0, 5)) . (count($notFound) > 5 ? '…' : '')]);
+        }
+        Flux::toast($msg, variant: count($notFound) > 0 ? 'warning' : 'success');
+    }
+
+    /** Assign selected registrations (individuals) to a car park — e.g. for elderly/infirm. */
+    public function bulkAssignSelectedToCarPark(): void
+    {
+        if (empty($this->selectedIds)) {
+            Flux::toast(__('registrations.select_items'), variant: 'warning');
+            return;
+        }
+        $this->validate(['bulkAssignIndividualCarParkId' => 'required|exists:car_parks,id']);
+        $count = ParkingRegistration::whereIn('id', $this->selectedIds)->update(['car_park_id' => $this->bulkAssignIndividualCarParkId]);
+        $this->selectedIds = [];
+        $this->bulkAssignIndividualCarParkId = '';
+        Flux::toast(__('registrations.bulk_individual_car_park_assigned', ['count' => $count]));
     }
 
     public function bulkDelete(): void
@@ -92,6 +177,7 @@ class Registrations extends Component
     protected function getRegistrationsQuery()
     {
         return ParkingRegistration::query()
+            ->with('carPark')
             ->when($this->search, function ($query) {
                 $query->where('name', 'like', '%' . $this->search . '%')
                     ->orWhere('vehicle_registration', 'like', '%' . $this->search . '%')
@@ -106,6 +192,7 @@ class Registrations extends Component
         $rules = [
             'name' => 'required|string|max:255',
             'congregation' => 'required|string|max:255',
+            'carParkId' => 'nullable|exists:car_parks,id',
             'vehicleType' => 'required|in:car,coach',
             'contactNumber' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
@@ -119,10 +206,13 @@ class Registrations extends Component
             ? strtoupper(str_replace(' ', '', trim($this->vehicleReg)))
             : null;
 
+        $carParkId = $this->carParkId ? (int) $this->carParkId : null;
+
         if ($this->editingRegistration) {
             $this->editingRegistration->update([
                 'name' => $this->name,
                 'congregation' => $this->congregation,
+                'car_park_id' => $carParkId,
                 'vehicle_type' => $this->vehicleType,
                 'vehicle_registration' => $this->vehicleReg ?? null,
                 'contact_number' => $this->contactNumber,
@@ -135,7 +225,7 @@ class Registrations extends Component
         }
 
         $this->modalOpen = false;
-        $this->reset('editingRegistration', 'name', 'congregation', 'vehicleType', 'vehicleReg', 'contactNumber', 'email', 'elderlyInfirmParking', 'days');
+        $this->reset('editingRegistration', 'name', 'congregation', 'carParkId', 'vehicleType', 'vehicleReg', 'contactNumber', 'email', 'elderlyInfirmParking', 'days');
     }
 
     public function toggleDay($day)
@@ -149,11 +239,12 @@ class Registrations extends Component
 
     public function render()
     {
-        $registrations = $this->getRegistrationsQuery()->paginate(15);
+        $registrations = $this->getRegistrationsQuery()->paginate($this->perPage);
 
         return view('livewire.admin.registrations', [
             'registrations' => $registrations,
-            'congregations' => \App\Models\Congregation::orderBy('name')->pluck('name'),
+            'congregations' => Congregation::orderBy('name')->pluck('name'),
+            'carParks' => \App\Models\CarPark::orderBy('name')->get(),
         ]);
     }
 }

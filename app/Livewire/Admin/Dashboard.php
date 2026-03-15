@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\CarPark;
 use App\Models\ParkingPass;
+use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
 class Dashboard extends Component
@@ -37,10 +38,7 @@ class Dashboard extends Component
     public function render()
     {
         $carParks = CarPark::addSelect([
-            'current_occupancy' => ParkingPass::selectRaw('count(*)')
-                ->join('congregations', 'congregations.id', '=', 'parking_passes.congregation_id')
-                ->whereColumn('congregations.car_park_id', 'car_parks.id')
-                ->where('parking_passes.status', 'parked')
+            'current_occupancy' => DB::raw("(select count(*) from parking_passes left join congregations on congregations.id = parking_passes.congregation_id where parking_passes.status = 'parked' and (parking_passes.car_park_id = car_parks.id or (parking_passes.car_park_id is null and congregations.car_park_id = car_parks.id)))"),
         ])->get();
 
         $totalCapacity = $carParks->sum('capacity');
@@ -64,12 +62,8 @@ class Dashboard extends Component
 
         $parkedCars = null;
         if ($this->viewParkId) {
-            // Fetch all parked cars for this car park
-            $parkedCars = ParkingPass::where('status', 'parked')
-                ->whereHas('congregation', function ($q) {
-                    $q->where('car_park_id', $this->viewParkId);
-                })
-                ->with('congregation')
+            $parkedCars = ParkingPass::parkedAtCarPark($this->viewParkId)
+                ->with('congregation', 'carPark')
                 ->latest('scanned_at')
                 ->paginate(10);
         }

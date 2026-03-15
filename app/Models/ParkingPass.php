@@ -10,6 +10,7 @@ class ParkingPass extends Model
 {
     protected $fillable = [
         'congregation_id',
+        'car_park_id',
         'status',
         'vehicle_reg',
         'contact_number',
@@ -35,8 +36,26 @@ class ParkingPass extends Model
         return $this->belongsTo(Congregation::class);
     }
 
+    public function carPark(): BelongsTo
+    {
+        return $this->belongsTo(CarPark::class);
+    }
+
     public function scannedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'scanned_by_user_id');
+    }
+
+    /** Scope: passes counted as parked at this car park (own car_park_id or legacy congregation assignment). */
+    public function scopeParkedAtCarPark($query, int $carParkId)
+    {
+        return $query->where('status', 'parked')
+            ->where(function ($q) use ($carParkId) {
+                $q->where('car_park_id', $carParkId)
+                    ->orWhere(function ($q2) use ($carParkId) {
+                        $q2->whereNull('car_park_id')
+                            ->whereHas('congregation', fn ($c) => $c->where('car_park_id', $carParkId));
+                    });
+            });
     }
 }

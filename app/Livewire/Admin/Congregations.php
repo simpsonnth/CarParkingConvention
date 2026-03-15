@@ -27,9 +27,19 @@ class Congregations extends Component
 
     public bool $modalOpen = false;
     public bool $qrModalOpen = false;
+    public bool $bulkAssignModalOpen = false;
 
     public $search = '';
     public $filterCarParkId = '';
+
+    /** @var int Per-page options: 25, 50, 100 */
+    public int $perPage = 25;
+
+    /** @var array<int> */
+    public array $selectedIds = [];
+
+    /** For bulk assign: selected car park id (empty = unassign) */
+    public $bulkAssignCarParkId = '';
 
     public function updatedSearch()
     {
@@ -41,19 +51,73 @@ class Congregations extends Component
         $this->resetPage();
     }
 
-    public function render()
+    public function updatedPerPage(): void
+    {
+        $this->resetPage();
+    }
+
+    public function toggleSelect(int $id): void
+    {
+        $key = array_search($id, $this->selectedIds);
+        if ($key !== false) {
+            array_splice($this->selectedIds, $key, 1);
+            $this->selectedIds = array_values($this->selectedIds);
+        } else {
+            $this->selectedIds = array_values(array_merge($this->selectedIds, [$id]));
+        }
+    }
+
+    public function toggleSelectAll(): void
+    {
+        $ids = $this->getCongregationsQuery()->paginate($this->perPage)->pluck('id')->all();
+        if (count(array_intersect($this->selectedIds, $ids)) === count($ids)) {
+            $this->selectedIds = array_values(array_diff($this->selectedIds, $ids));
+        } else {
+            $this->selectedIds = array_values(array_unique(array_merge($this->selectedIds, $ids)));
+        }
+    }
+
+    public function openBulkAssignModal(): void
+    {
+        if (empty($this->selectedIds)) {
+            Flux::toast('Please select at least one congregation.', variant: 'warning');
+            return;
+        }
+        $this->bulkAssignCarParkId = '';
+        $this->bulkAssignModalOpen = true;
+    }
+
+    public function bulkAssignCarPark(): void
+    {
+        if (empty($this->selectedIds)) {
+            Flux::toast('Please select at least one congregation.', variant: 'warning');
+            $this->bulkAssignModalOpen = false;
+            return;
+        }
+        $carParkId = $this->bulkAssignCarParkId ?: null;
+        if ($carParkId !== null) {
+            $this->validate(['bulkAssignCarParkId' => 'required|exists:car_parks,id']);
+        }
+        $count = Congregation::whereIn('id', $this->selectedIds)->update(['car_park_id' => $carParkId]);
+        $this->selectedIds = [];
+        $this->bulkAssignModalOpen = false;
+        $this->bulkAssignCarParkId = '';
+        Flux::toast($carParkId
+            ? "{$count} congregation(s) assigned to car park."
+            : "{$count} congregation(s) unassigned from car park.");
+    }
+
+    protected function getCongregationsQuery()
     {
         $query = Congregation::with('carPark')
             ->withCount([
-                'parkingPasses as parked_count' => function ($query) {
-                    $query->where('status', 'parked');
+                'parkingPasses as parked_count' => function ($q) {
+                    $q->where('status', 'parked');
                 }
             ]);
-
         if ($this->search) {
             $query->where('name', 'like', '%' . $this->search . '%');
         }
-
         if ($this->filterCarParkId !== '') {
             if ($this->filterCarParkId === 'unassigned') {
                 $query->whereNull('car_park_id');
@@ -61,9 +125,15 @@ class Congregations extends Component
                 $query->where('car_park_id', $this->filterCarParkId);
             }
         }
+        return $query;
+    }
+
+    public function render()
+    {
+        $congregations = $this->getCongregationsQuery()->paginate($this->perPage);
 
         return view('livewire.admin.congregations', [
-            'congregations' => $query->paginate(10),
+            'congregations' => $congregations,
             'carParks' => CarPark::all(),
         ]);
     }

@@ -12,6 +12,7 @@ class ParkingRegistrationsExport implements FromQuery, WithHeadings, WithMapping
     public function query()
     {
         return ParkingRegistration::query()
+            ->with('carPark')
             ->orderBy('created_at', 'desc');
     }
 
@@ -21,6 +22,7 @@ class ParkingRegistrationsExport implements FromQuery, WithHeadings, WithMapping
             __('registrations.export.date'),
             __('registrations.export.name'),
             __('registrations.export.congregation'),
+            __('registrations.export.car_park'),
             __('registrations.export.type'),
             __('registrations.export.vehicle_reg'),
             __('registrations.export.contact'),
@@ -36,6 +38,7 @@ class ParkingRegistrationsExport implements FromQuery, WithHeadings, WithMapping
             $row->created_at?->format('Y-m-d H:i'),
             $row->name,
             $row->congregation,
+            $row->carPark?->name ?? '',
             ucfirst($row->vehicle_type ?? 'car'),
             $row->vehicle_registration ?? '',
             $row->contact_number,
