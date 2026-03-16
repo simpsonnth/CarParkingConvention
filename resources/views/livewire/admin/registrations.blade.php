@@ -107,6 +107,7 @@
                     <th class="px-6 py-3">{{ __('registrations.congregation') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.car_park') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.type') }}</th>
+                    <th class="px-6 py-3">{{ __('registrations.sharing') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.vehicle_reg') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.contact') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.elderly_infirm') }}</th>
@@ -141,6 +142,20 @@
                             <flux:badge color="{{ ($reg->vehicle_type ?? 'car') === 'coach' ? 'purple' : 'zinc' }}">
                                 {{ ($reg->vehicle_type ?? 'car') === 'coach' ? __('registrations.coach') : __('registrations.car') }}
                             </flux:badge>
+                        </td>
+                        <td class="px-6 py-4 text-zinc-600 dark:text-zinc-400 text-xs max-w-[140px]">
+                            @if(($reg->vehicle_type ?? 'car') === 'coach')
+                                @if($reg->sharing_with_other_congregations ?? false)
+                                    <span class="font-medium text-indigo-600 dark:text-indigo-400">{{ __('registrations.yes') }}</span>
+                                    @if(!empty($reg->sharing_congregations_notes))
+                                        <div class="mt-0.5 text-zinc-500 dark:text-zinc-500 truncate" title="{{ $reg->sharing_congregations_notes }}">{{ \Illuminate\Support\Str::limit($reg->sharing_congregations_notes, 40) }}</div>
+                                    @endif
+                                @else
+                                    <span class="text-zinc-400">{{ __('registrations.no') }}</span>
+                                @endif
+                            @else
+                                <span class="text-zinc-400">—</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4 font-mono text-zinc-600 dark:text-zinc-300">
                             <span class="bg-zinc-100 px-2 py-1 rounded text-xs dark:bg-zinc-700 font-bold tracking-wider">{{ $reg->vehicle_registration ?? '—' }}</span>
@@ -178,7 +193,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="11" class="px-6 py-12 text-center text-zinc-500">
+                        <td colspan="12" class="px-6 py-12 text-center text-zinc-500">
                             <div class="flex flex-col items-center justify-center">
                                 <flux:icon name="clipboard-document-list" class="size-10 text-zinc-300 mb-2" />
                                 <p>{{ __('registrations.no_registrations') }}</p>
@@ -225,7 +240,7 @@
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('registrations.vehicle_type') }}</label>
                 <div class="flex gap-2">
-                    <button type="button" wire:click="$set('vehicleType', 'car')" @class([
+                    <button type="button" wire:click="$set('vehicleType', 'car'); $set('sharingWithOtherCongregations', '0'); $set('sharingCongregationsNotes', '')" @class([
                         'flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition',
                         'bg-indigo-500 text-white border-indigo-600' => $vehicleType === 'car',
                         'bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700' => $vehicleType !== 'car',
@@ -260,6 +275,33 @@
                     ])>{{ __('registrations.no') }}</button>
                 </div>
             </div>
+
+            @if($vehicleType === 'coach')
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('registrations.sharing_with_other_congregations') }}</label>
+                <div class="flex gap-2">
+                    <button type="button" wire:click="$set('sharingWithOtherCongregations', '1')" @class([
+                        'flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition',
+                        'bg-indigo-500 text-white border-indigo-600' => $sharingWithOtherCongregations === '1',
+                        'bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700' => $sharingWithOtherCongregations !== '1',
+                    ])>{{ __('registrations.yes') }}</button>
+                    <button type="button" wire:click="$set('sharingWithOtherCongregations', '0'); $set('sharingCongregationsNotes', '')" @class([
+                        'flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition',
+                        'bg-indigo-500 text-white border-indigo-600' => $sharingWithOtherCongregations === '0',
+                        'bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700' => $sharingWithOtherCongregations !== '0',
+                    ])>{{ __('registrations.no') }}</button>
+                </div>
+            </div>
+            @if($sharingWithOtherCongregations === '1')
+            <div class="space-y-2">
+                <label for="sharingCongregationsNotes" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('registrations.specify_all_congregations') }}</label>
+                <textarea wire:model="sharingCongregationsNotes" id="sharingCongregationsNotes" rows="3"
+                    class="block w-full rounded-lg border-zinc-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 focus:border-indigo-500 focus:ring-indigo-500 text-sm"
+                    placeholder="{{ __('registrations.specify_all_congregations_placeholder') }}"></textarea>
+                @error('sharingCongregationsNotes') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+            </div>
+            @endif
+            @endif
 
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('registrations.days_attending') }}</label>

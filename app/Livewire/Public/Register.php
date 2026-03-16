@@ -13,6 +13,12 @@ class Register extends Component
 {
     public $vehicleType = 'car'; // 'car' or 'coach'
 
+    /** Coach only: Are you sharing with other congregations? '0' or '1' */
+    public $sharingWithOtherCongregations = '0';
+
+    /** Coach only: When sharing = Yes, list of congregations */
+    public $sharingCongregationsNotes = '';
+
     public $congregationCode = '';
 
     public $name = '';
@@ -75,6 +81,12 @@ class Register extends Component
         } else {
             $rules['vehicleReg'] = 'nullable|string|max:20|uppercase';
             $rules['elderlyInfirmParking'] = 'nullable|in:0,1';
+            $rules['sharingWithOtherCongregations'] = 'required|in:0,1';
+            if ($this->sharingWithOtherCongregations === '1') {
+                $rules['sharingCongregationsNotes'] = 'required|string|max:1000';
+            } else {
+                $rules['sharingCongregationsNotes'] = 'nullable|string|max:1000';
+            }
         }
 
         $this->validate($rules);
@@ -96,6 +108,12 @@ class Register extends Component
             'days' => $this->days,
             'email' => $this->email,
             'vehicle_type' => $this->vehicleType,
+            'sharing_with_other_congregations' => $this->vehicleType === 'coach'
+                ? filter_var($this->sharingWithOtherCongregations, FILTER_VALIDATE_BOOLEAN)
+                : false,
+            'sharing_congregations_notes' => $this->vehicleType === 'coach' && $this->sharingWithOtherCongregations === '1'
+                ? trim($this->sharingCongregationsNotes)
+                : null,
             'elderly_infirm_parking' => $this->vehicleType === 'car'
                 ? filter_var($this->elderlyInfirmParking, FILTER_VALIDATE_BOOLEAN)
                 : false,

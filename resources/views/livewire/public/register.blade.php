@@ -39,7 +39,7 @@
                 <div>
                     <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('register.car_or_coach') }}</label>
                     <div class="flex gap-4">
-                        <button type="button" wire:click="$set('vehicleType', 'car')"
+                        <button type="button" wire:click="$set('vehicleType', 'car'); $set('sharingWithOtherCongregations', '0'); $set('sharingCongregationsNotes', '')"
                             class="flex-1 flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition font-semibold
                             {{ $vehicleType === 'car' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : 'border-zinc-200 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 text-zinc-700 dark:text-zinc-300' }}">
                             {{ __('register.car') }}
@@ -51,6 +51,33 @@
                         </button>
                     </div>
                 </div>
+
+                @if($vehicleType === 'coach')
+                <div>
+                    <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('register.sharing_with_other_congregations') }}</label>
+                    <div class="flex gap-4">
+                        <button type="button" wire:click="$set('sharingWithOtherCongregations', '1'); $set('sharingCongregationsNotes', '')"
+                            class="flex-1 flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition font-medium
+                            {{ ($sharingWithOtherCongregations === '1') ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : 'border-zinc-200 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 text-zinc-700 dark:text-zinc-300' }}">
+                            {{ __('register.yes') }}
+                        </button>
+                        <button type="button" wire:click="$set('sharingWithOtherCongregations', '0'); $set('sharingCongregationsNotes', '')"
+                            class="flex-1 flex items-center justify-center p-3 rounded-xl border-2 cursor-pointer transition font-medium
+                            {{ ($sharingWithOtherCongregations === '0') ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : 'border-zinc-200 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 text-zinc-700 dark:text-zinc-300' }}">
+                            {{ __('register.no') }}
+                        </button>
+                    </div>
+                </div>
+                @if($sharingWithOtherCongregations === '1')
+                <div>
+                    <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('register.specify_all_congregations') }} <span class="text-red-500">*</span></label>
+                    <textarea wire:model="sharingCongregationsNotes" rows="3"
+                        class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4 resize-y"
+                        placeholder="{{ __('register.specify_all_congregations_placeholder') }}"></textarea>
+                    @error('sharingCongregationsNotes') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                </div>
+                @endif
+                @endif
 
                 <div>
                     <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('register.congregation_code') }}</label>

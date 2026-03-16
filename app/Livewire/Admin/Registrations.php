@@ -40,6 +40,8 @@ class Registrations extends Component
     public $contactNumber = '';
     public $email = '';
     public $elderlyInfirmParking = '0';
+    public $sharingWithOtherCongregations = '0';
+    public $sharingCongregationsNotes = '';
     public $days = [];
 
     public function updatedSearch(): void
@@ -64,6 +66,8 @@ class Registrations extends Component
         $this->contactNumber = $this->editingRegistration->contact_number;
         $this->email = $this->editingRegistration->email ?? '';
         $this->elderlyInfirmParking = $this->editingRegistration->elderly_infirm_parking ? '1' : '0';
+        $this->sharingWithOtherCongregations = $this->editingRegistration->sharing_with_other_congregations ? '1' : '0';
+        $this->sharingCongregationsNotes = $this->editingRegistration->sharing_congregations_notes ?? '';
         $this->days = $this->editingRegistration->days ?? [];
 
         $this->modalOpen = true;
@@ -200,6 +204,10 @@ class Registrations extends Component
             'days' => 'nullable|array',
         ];
         $rules['vehicleReg'] = $this->vehicleType === 'car' ? 'required|string|min:2|max:20' : 'nullable|string|max:20';
+        if ($this->vehicleType === 'coach') {
+            $rules['sharingWithOtherCongregations'] = 'required|in:0,1';
+            $rules['sharingCongregationsNotes'] = $this->sharingWithOtherCongregations === '1' ? 'required|string|max:1000' : 'nullable|string|max:1000';
+        }
         $this->validate($rules);
 
         $this->vehicleReg = $this->vehicleType === 'car' && trim($this->vehicleReg ?? '') !== ''
@@ -207,6 +215,8 @@ class Registrations extends Component
             : null;
 
         $carParkId = $this->carParkId ? (int) $this->carParkId : null;
+        $sharingWithOther = $this->vehicleType === 'coach' && $this->sharingWithOtherCongregations === '1';
+        $sharingNotes = $sharingWithOther ? trim($this->sharingCongregationsNotes) : null;
 
         if ($this->editingRegistration) {
             $this->editingRegistration->update([
@@ -218,6 +228,8 @@ class Registrations extends Component
                 'contact_number' => $this->contactNumber,
                 'email' => $this->email,
                 'elderly_infirm_parking' => filter_var($this->elderlyInfirmParking, FILTER_VALIDATE_BOOLEAN),
+                'sharing_with_other_congregations' => $this->vehicleType === 'coach' ? filter_var($this->sharingWithOtherCongregations, FILTER_VALIDATE_BOOLEAN) : false,
+                'sharing_congregations_notes' => $sharingNotes,
                 'days' => $this->days,
             ]);
 
@@ -225,7 +237,7 @@ class Registrations extends Component
         }
 
         $this->modalOpen = false;
-        $this->reset('editingRegistration', 'name', 'congregation', 'carParkId', 'vehicleType', 'vehicleReg', 'contactNumber', 'email', 'elderlyInfirmParking', 'days');
+        $this->reset('editingRegistration', 'name', 'congregation', 'carParkId', 'vehicleType', 'vehicleReg', 'contactNumber', 'email', 'elderlyInfirmParking', 'sharingWithOtherCongregations', 'sharingCongregationsNotes', 'days');
     }
 
     public function toggleDay($day)

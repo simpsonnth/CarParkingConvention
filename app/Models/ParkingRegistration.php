@@ -19,12 +19,15 @@ class ParkingRegistration extends Model
         'days',
         'email',
         'vehicle_type',
+        'sharing_with_other_congregations',
+        'sharing_congregations_notes',
         'elderly_infirm_parking',
     ];
 
     protected $casts = [
         'days' => 'array',
         'elderly_infirm_parking' => 'boolean',
+        'sharing_with_other_congregations' => 'boolean',
     ];
 
     public function carPark(): BelongsTo
