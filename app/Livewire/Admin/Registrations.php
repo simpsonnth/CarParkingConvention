@@ -21,6 +21,27 @@ class Registrations extends Component
     /** @var int Per-page options: 25, 50, 100 */
     public int $perPage = 25;
 
+    /** Sort: column key and direction */
+    public string $sortBy = 'created_at';
+    public string $sortDir = 'desc';
+
+    /** Filter panel visibility */
+    public bool $filterOpen = false;
+
+    /** Applied filters (used in query) */
+    public array $filterCongregations = [];
+    public array $filterCarParks = [];
+    public array $filterVehicleType = [];
+    /** @var bool|null true = yes, false = no, null = any */
+    public $filterElderlyInfirm = null;
+
+    /** Draft filter values (in fly-out before Apply) */
+    public array $filterDraftCongregations = [];
+    public array $filterDraftCarParks = [];
+    public array $filterDraftVehicleType = [];
+    /** @var string|null 'any' | '1' | '0' for draft panel */
+    public $filterDraftElderlyInfirm = 'any';
+
     public bool $modalOpen = false;
     public bool $bulkAssignCarParkModalOpen = false;
     public ?ParkingRegistration $editingRegistration = null;
@@ -52,6 +73,73 @@ class Registrations extends Component
     public function updatedPerPage(): void
     {
         $this->resetPage();
+    }
+
+    public function setSort(string $column): void
+    {
+        if ($this->sortBy === $column) {
+            $this->sortDir = $this->sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortBy = $column;
+            $this->sortDir = 'asc';
+        }
+        $this->resetPage();
+    }
+
+    public function openFilterPanel(): void
+    {
+        $this->filterDraftCongregations = $this->filterCongregations;
+        $this->filterDraftCarParks = $this->filterCarParks;
+        $this->filterDraftVehicleType = $this->filterVehicleType;
+        $this->filterDraftElderlyInfirm = $this->filterElderlyInfirm === null ? 'any' : ($this->filterElderlyInfirm ? '1' : '0');
+        $this->filterOpen = true;
+    }
+
+    public function applyFilters(): void
+    {
+        $this->filterCongregations = $this->filterDraftCongregations;
+        $this->filterCarParks = array_map('intval', $this->filterDraftCarParks);
+        $this->filterVehicleType = $this->filterDraftVehicleType;
+        $draft = $this->filterDraftElderlyInfirm;
+        $this->filterElderlyInfirm = ($draft === 'any' || $draft === '' || $draft === null) ? null : (bool) (int) $draft;
+        $this->filterOpen = false;
+        $this->resetPage();
+    }
+
+    public function cancelFilters(): void
+    {
+        $this->filterOpen = false;
+    }
+
+    public function clearFilters(): void
+    {
+        $this->filterCongregations = [];
+        $this->filterCarParks = [];
+        $this->filterVehicleType = [];
+        $this->filterElderlyInfirm = null;
+        $this->filterDraftCongregations = [];
+        $this->filterDraftCarParks = [];
+        $this->filterDraftVehicleType = [];
+        $this->filterDraftElderlyInfirm = 'any';
+        $this->resetPage();
+    }
+
+    public function getAppliedFiltersCount(): int
+    {
+        $n = 0;
+        if (! empty($this->filterCongregations)) {
+            $n += count($this->filterCongregations);
+        }
+        if (! empty($this->filterCarParks)) {
+            $n += count($this->filterCarParks);
+        }
+        if (! empty($this->filterVehicleType)) {
+            $n += count($this->filterVehicleType);
+        }
+        if ($this->filterElderlyInfirm !== null) {
+            $n += 1;
+        }
+        return $n;
     }
 
     public function edit($id)
@@ -178,17 +266,62 @@ class Registrations extends Component
         Flux::toast(__('registrations.bulk_deleted', ['count' => $count]));
     }
 
+    /** Download a ZIP of master pass PDFs for the selected registrations (redirects to download URL). */
+    public function downloadMasterPassesZip()
+    {
+        if (empty($this->selectedIds)) {
+            Flux::toast(__('registrations.select_items'), variant: 'warning');
+            return;
+        }
+
+        $token = \Illuminate\Support\Str::random(32);
+        $ids = array_values(array_map('intval', $this->selectedIds));
+        cache()->put('master-passes-zip:' . $token, $ids, now()->addMinutes(2));
+
+        try {
+            return $this->redirect(route('admin.registrations.download-passes-zip', ['token' => $token]), navigate: false);
+        } catch (\Throwable $e) {
+            cache()->forget('master-passes-zip:' . $token);
+            Flux::toast($e->getMessage(), variant: 'danger');
+            return null;
+        }
+    }
+
     protected function getRegistrationsQuery()
     {
-        return ParkingRegistration::query()
+        $query = ParkingRegistration::query()
             ->with('carPark')
-            ->when($this->search, function ($query) {
-                $query->where('name', 'like', '%' . $this->search . '%')
-                    ->orWhere('vehicle_registration', 'like', '%' . $this->search . '%')
-                    ->orWhere('congregation', 'like', '%' . $this->search . '%')
-                    ->orWhere('email', 'like', '%' . $this->search . '%');
+            ->when($this->search, function ($q) {
+                $q->where(function ($q2) {
+                    $q2->where('name', 'like', '%' . $this->search . '%')
+                        ->orWhere('vehicle_registration', 'like', '%' . $this->search . '%')
+                        ->orWhere('congregation', 'like', '%' . $this->search . '%')
+                        ->orWhere('email', 'like', '%' . $this->search . '%');
+                });
             })
-            ->latest();
+            ->when(! empty($this->filterCongregations), function ($q) {
+                $q->whereIn('congregation', $this->filterCongregations);
+            })
+            ->when(! empty($this->filterCarParks), function ($q) {
+                $q->whereIn('car_park_id', $this->filterCarParks);
+            })
+            ->when(! empty($this->filterVehicleType), function ($q) {
+                $q->whereIn('vehicle_type', $this->filterVehicleType);
+            })
+            ->when($this->filterElderlyInfirm !== null, function ($q) {
+                $q->where('elderly_infirm_parking', $this->filterElderlyInfirm);
+            });
+
+        $sortColumn = match ($this->sortBy) {
+            'name' => 'name',
+            'congregation' => 'congregation',
+            'created_at' => 'created_at',
+            'vehicle_registration' => 'vehicle_registration',
+            default => 'created_at',
+        };
+        $query->orderBy($sortColumn, $this->sortDir === 'desc' ? 'desc' : 'asc');
+
+        return $query;
     }
 
     public function save()

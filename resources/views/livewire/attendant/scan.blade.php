@@ -19,7 +19,7 @@
             <div class="bg-white dark:bg-zinc-800 p-1 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-xl overflow-hidden">
                 <form wire:submit.prevent="scan" class="flex flex-col">
                     {{-- Camera View --}}
-                    <div id="reader" class="w-full bg-black rounded-t-xl overflow-hidden" style="min-height: 300px; display: none;"></div>
+                    <div id="reader" wire:ignore class="w-full bg-black rounded-t-xl overflow-hidden" style="min-height: 300px; display: none;"></div>
 
                     <div class="p-6 space-y-4">
                         <div class="flex flex-col gap-2">
@@ -52,15 +52,18 @@
             </div>
 
             {{-- Scripts --}}
-            <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+            <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/dist/html5-qrcode.min.js" type="text/javascript"></script>
             <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    const toggleBtn = document.getElementById('toggle-camera');
-                    const readerDiv = document.getElementById('reader');
-                    let html5QrCode = null;
-                    let isScanning = false;
+                (function() {
+                    var html5QrCode = null;
+                    var isScanning = false;
+                    function init() {
+                        document.body.addEventListener('click', function(e) {
+                            if (!e.target.closest('#toggle-camera')) return;
+                            var toggleBtn = document.getElementById('toggle-camera');
+                            var readerDiv = document.getElementById('reader');
+                            if (!toggleBtn || !readerDiv) return;
 
-                    toggleBtn.addEventListener('click', () => {
                         if (isScanning) {
                             if(html5QrCode) {
                                 html5QrCode.stop().then(() => {
@@ -70,27 +73,32 @@
                                 }).catch(err => console.error(err));
                             }
                         } else {
-                            // Check browser support
                             if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                                alert('Your browser does not support camera access. Please ensure you are using a modern browser and functioning HTTPS connection.');
+                                alert('Your browser does not support camera access. Use HTTPS and a modern browser (e.g. Chrome or Safari on your phone).');
+                                return;
+                            }
+                            if (typeof Html5Qrcode === 'undefined') {
+                                alert('Scanner not loaded. Refresh the page and try again.');
                                 return;
                             }
 
                             readerDiv.style.display = 'block';
-                            
-                            // Initialize logic
+
                             Html5Qrcode.getCameras().then(devices => {
                                 if (devices && devices.length) {
-                                    if (!html5QrCode) {
-                                        html5QrCode = new Html5Qrcode("reader");
+                                    if (html5QrCode) {
+                                        html5QrCode.stop().catch(function() {}).then(function() {
+                                            html5QrCode = null;
+                                            doStart();
+                                        });
+                                    } else {
+                                        doStart();
                                     }
-                                    
+                                    function doStart() {
+                                    html5QrCode = new Html5Qrcode("reader");
                                     html5QrCode.start(
                                         { facingMode: "environment" }, 
-                                        {
-                                            fps: 10,
-                                            qrbox: 250
-                                        },
+                                        { fps: 10, qrbox: 250 },
                                         (decodedText, decodedResult) => {
                                             console.log(`Scan matched: ${decodedText}`, decodedResult);
                                             @this.set('uuid', decodedText);
@@ -129,6 +137,7 @@
                                         readerDiv.style.display = 'none';
                                         isScanning = false;
                                     });
+                                    }
                                 } else {
                                     alert('No cameras found on your device.');
                                     readerDiv.style.display = 'none';
@@ -139,12 +148,14 @@
                                 readerDiv.style.display = 'none';
                             });
                         }
-                    });
-                });
-                
-                document.addEventListener('livewire:navigated', () => {
-                     // Cleanup could be added here if needed
-                });
+                        });
+                    }
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', init);
+                    } else {
+                        init();
+                    }
+                })();
             </script>
 
             {{-- Result Card --}}

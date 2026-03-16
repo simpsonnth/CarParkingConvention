@@ -1,4 +1,9 @@
 <div class="space-y-6">
+    @if(session('error'))
+        <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200" role="alert">
+            {{ session('error') }}
+        </div>
+    @endif
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <flux:heading size="xl">{{ __('registrations.title') }}</flux:heading>
@@ -26,6 +31,14 @@
                     {{ __('registrations.delete_selected') }}
                 </button>
             @endif
+            <button type="button" wire:click="openFilterPanel"
+                class="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
+                <flux:icon name="funnel" class="size-4" />
+                {{ __('registrations.filters') }}
+                @if($this->getAppliedFiltersCount() > 0)
+                    <span class="inline-flex items-center rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-200">{{ $this->getAppliedFiltersCount() }}</span>
+                @endif
+            </button>
             <select wire:model.live="perPage"
                 class="block w-full sm:w-auto min-w-0 rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
                 <option value="25">25 {{ __('registrations.per_page') }}</option>
@@ -35,6 +48,18 @@
             <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass" placeholder="{{ __('registrations.search') }}" class="w-full min-w-0 sm:min-w-[180px]" />
         </div>
     </div>
+
+    @if($this->getAppliedFiltersCount() > 0)
+        <div class="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/50">
+            <button type="button" wire:click="openFilterPanel" class="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400">
+                <flux:icon name="chevron-down" class="size-4 transition-transform" />
+                {{ __('registrations.applied_filters', ['count' => $this->getAppliedFiltersCount()]) }}
+            </button>
+            <button type="button" wire:click="clearFilters" class="text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
+                {{ __('registrations.clear_filters') }}
+            </button>
+        </div>
+    @endif
 
     @if(count($selectedIds) > 0)
         <div class="rounded-lg border-2 border-amber-400 bg-amber-50 px-4 py-3 dark:border-amber-600 dark:bg-amber-900/30" role="region" aria-label="Bulk actions">
@@ -78,6 +103,12 @@
                     Assign
                 </button>
                 <span class="text-zinc-300 dark:text-zinc-600 mx-1">|</span>
+                <button type="button" wire:click="downloadMasterPassesZip"
+                    class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-700">
+                    <flux:icon name="arrow-down-tray" class="size-4" />
+                    {{ __('registrations.download_master_passes_zip') }}
+                </button>
+                <span class="text-zinc-300 dark:text-zinc-600 mx-1">|</span>
                 <button type="button" wire:click="bulkDelete" wire:confirm="{{ __('registrations.bulk_delete_confirm') }}"
                     class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700">
                     <flux:icon name="trash" class="size-4" />
@@ -93,6 +124,90 @@
 
     <flux:separator />
 
+    {{-- Filter fly-out panel (right drawer) --}}
+    @if($filterOpen)
+        <div class="fixed inset-0 z-50" aria-modal="true" role="dialog">
+            <div class="fixed inset-0 bg-zinc-900/50 dark:bg-zinc-950/70 transition-opacity" wire:click="cancelFilters" aria-hidden="true"></div>
+            <div class="fixed inset-y-0 right-0 w-full max-w-sm bg-white dark:bg-zinc-900 shadow-xl flex flex-col border-l border-zinc-200 dark:border-zinc-700 animate-in slide-in-from-right duration-200">
+                <div class="flex items-center justify-between px-4 py-4 border-b border-zinc-200 dark:border-zinc-700">
+                    <div class="flex items-center gap-2">
+                        <flux:icon name="bars-3" class="size-5 text-zinc-500" />
+                        <flux:heading size="lg">{{ __('registrations.apply_filters') }}</flux:heading>
+                    </div>
+                    <button type="button" wire:click="cancelFilters" class="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300">
+                        <flux:icon name="x-mark" class="size-5" />
+                        <span class="sr-only">{{ __('registrations.close') }}</span>
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-2">{{ __('registrations.congregation') }}</p>
+                        <div class="space-y-2 max-h-48 overflow-y-auto">
+                            @foreach($congregations ?? [] as $c)
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" wire:model="filterDraftCongregations" value="{{ $c }}"
+                                        class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ $c }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-2">{{ __('registrations.car_park') }}</p>
+                        <div class="space-y-2 max-h-48 overflow-y-auto">
+                            @foreach($carParks ?? [] as $park)
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" wire:model="filterDraftCarParks" value="{{ $park->id }}"
+                                        class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ $park->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-2">{{ __('registrations.type') }}</p>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" wire:model="filterDraftVehicleType" value="car"
+                                    class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ __('registrations.car') }}</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" wire:model="filterDraftVehicleType" value="coach"
+                                    class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ __('registrations.coach') }}</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-2">{{ __('registrations.elderly_infirm') }}</p>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" wire:model="filterDraftElderlyInfirm" value="any"
+                                    class="border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ __('registrations.filter_any') }}</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" wire:model="filterDraftElderlyInfirm" value="1"
+                                    class="border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ __('registrations.yes') }}</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" wire:model="filterDraftElderlyInfirm" value="0"
+                                    class="border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ __('registrations.no') }}</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-3 px-4 py-4 border-t border-zinc-200 dark:border-zinc-700">
+                    <flux:button variant="ghost" class="flex-1" wire:click="cancelFilters">{{ __('registrations.cancel') }}</flux:button>
+                    <flux:button variant="primary" class="flex-1" wire:click="applyFilters">{{ __('registrations.apply') }}</flux:button>
+                </div>
+            </div>
+        </div>
+    @endif
+
     <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700 -mx-4 sm:mx-0">
         <table class="w-full min-w-[800px] text-left text-sm">
             <thead class="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
@@ -102,9 +217,30 @@
                             {{ count($registrations->items()) > 0 && count(array_intersect($selectedIds, $registrations->pluck('id')->all())) === count($registrations->items()) ? 'checked' : '' }}
                             class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
                     </th>
-                    <th class="px-6 py-3">{{ __('registrations.date') }}</th>
-                    <th class="px-6 py-3">{{ __('registrations.name') }}</th>
-                    <th class="px-6 py-3">{{ __('registrations.congregation') }}</th>
+                    <th class="px-6 py-3">
+                        <button type="button" wire:click="setSort('created_at')" class="inline-flex items-center gap-1 font-medium hover:text-zinc-700 dark:hover:text-zinc-300">
+                            {{ __('registrations.date') }}
+                            @if($sortBy === 'created_at')
+                                <flux:icon name="{{ $sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
+                            @endif
+                        </button>
+                    </th>
+                    <th class="px-6 py-3">
+                        <button type="button" wire:click="setSort('name')" class="inline-flex items-center gap-1 font-medium hover:text-zinc-700 dark:hover:text-zinc-300">
+                            {{ __('registrations.name') }}
+                            @if($sortBy === 'name')
+                                <flux:icon name="{{ $sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
+                            @endif
+                        </button>
+                    </th>
+                    <th class="px-6 py-3">
+                        <button type="button" wire:click="setSort('congregation')" class="inline-flex items-center gap-1 font-medium hover:text-zinc-700 dark:hover:text-zinc-300">
+                            {{ __('registrations.congregation') }}
+                            @if($sortBy === 'congregation')
+                                <flux:icon name="{{ $sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
+                            @endif
+                        </button>
+                    </th>
                     <th class="px-6 py-3">{{ __('registrations.car_park') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.type') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.sharing') }}</th>

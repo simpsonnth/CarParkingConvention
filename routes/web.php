@@ -60,6 +60,25 @@ Route::middleware(['auth'])->group(function () {
             return view('admin.print-pass', ['congregation' => $congregation, 'registration' => $registration]);
         })->name('registrations.print');
         Route::get('/registrations/trash', App\Livewire\Admin\RegistrationsTrash::class)->name('registrations.trash');
+        Route::get('/registrations/download-master-passes-zip/{token}', function (string $token) {
+            $cacheKey = 'master-passes-zip:' . $token;
+            $registrationIds = cache()->get($cacheKey);
+            if (! is_array($registrationIds) || empty($registrationIds)) {
+                return redirect()->route('admin.registrations')
+                    ->with('error', __('registrations.download_link_expired'));
+            }
+            cache()->forget($cacheKey);
+            try {
+                $service = app(\App\Services\MasterPassZipService::class);
+                [$zipPath, $downloadName] = $service->buildZip($registrationIds);
+                return response()->download($zipPath, $downloadName, [
+                    'Content-Type' => 'application/zip',
+                ])->deleteFileAfterSend(true);
+            } catch (\Throwable $e) {
+                return redirect()->route('admin.registrations')
+                    ->with('error', $e->getMessage());
+            }
+        })->name('registrations.download-passes-zip');
         Route::get('/registrations/export', function () {
             $filename = 'parking-registrations-' . now()->format('Y-m-d-His') . '.xlsx';
             return \Maatwebsite\Excel\Facades\Excel::download(
