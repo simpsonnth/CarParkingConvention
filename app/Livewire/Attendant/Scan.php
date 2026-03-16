@@ -104,7 +104,13 @@ class Scan extends Component
         // ... (rest of function)
 
         if (strlen($this->vehicleReg) > 2) {
-            $reg = \App\Models\ParkingRegistration::where('vehicle_registration', $this->vehicleReg)->first();
+            $query = ParkingRegistration::where('vehicle_registration', $this->vehicleReg);
+            if ($this->scannedCongregation) {
+                $reg = (clone $query)->where('congregation', $this->scannedCongregation->name)->first()
+                    ?? $query->first();
+            } else {
+                $reg = $query->first();
+            }
 
             if ($reg) {
                 $this->foundRegistration = $reg;
@@ -272,13 +278,19 @@ class Scan extends Component
         $this->reset('uuid', 'step', 'scannedCongregation', 'vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass');
     }
 
-    /** Resolve which car park to use: registration's individual assignment or congregation default. */
+    /**
+     * Resolve which car park to use: individual (registration) overrides congregation.
+     * e.g. Person in congregation West (assigned West) but individually assigned East → use East.
+     */
     protected function resolveEffectiveCarPark(): ?CarPark
     {
-        if ($this->foundRegistration?->car_park_id) {
-            $park = CarPark::find($this->foundRegistration->car_park_id);
-            if ($park) {
-                return $park;
+        if ($this->foundRegistration) {
+            $reg = ParkingRegistration::find($this->foundRegistration->id);
+            if ($reg?->car_park_id) {
+                $park = CarPark::find($reg->car_park_id);
+                if ($park) {
+                    return $park;
+                }
             }
         }
         return $this->scannedCongregation->carPark;

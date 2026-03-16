@@ -184,6 +184,7 @@
 
                                 <flux:menu>
                                     <flux:menu.item wire:click="edit({{ $reg->id }})" icon="pencil">{{ __('registrations.edit') }}</flux:menu.item>
+                                    <flux:menu.item href="{{ route('admin.registrations.print', $reg->id) }}" target="_blank" icon="qr-code">{{ __('registrations.view_master_pass') }}</flux:menu.item>
                                     <flux:menu.item wire:click="delete({{ $reg->id }})"
                                         wire:confirm="{{ __('registrations.delete_confirm') }}" icon="trash"
                                         variant="danger">{{ __('registrations.delete') }}</flux:menu.item>

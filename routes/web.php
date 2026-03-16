@@ -51,6 +51,14 @@ Route::middleware(['auth'])->group(function () {
         })->name('congregations.print');
         Route::get('/users', App\Livewire\Admin\Users::class)->name('users');
         Route::get('/registrations', App\Livewire\Admin\Registrations::class)->name('registrations');
+        Route::get('/registrations/{registration}/print', function (App\Models\ParkingRegistration $registration) {
+            $registration->load('carPark');
+            $congregation = \App\Models\Congregation::where('name', $registration->congregation)->first();
+            if (!$congregation) {
+                abort(404, 'Congregation not found for this registration.');
+            }
+            return view('admin.print-pass', ['congregation' => $congregation, 'registration' => $registration]);
+        })->name('registrations.print');
         Route::get('/registrations/trash', App\Livewire\Admin\RegistrationsTrash::class)->name('registrations.trash');
         Route::get('/registrations/export', function () {
             $filename = 'parking-registrations-' . now()->format('Y-m-d-His') . '.xlsx';

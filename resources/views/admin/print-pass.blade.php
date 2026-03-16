@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Print Pass - {{ $congregation->name }}</title>
+    <title>Print Pass - {{ $congregation->name }}{{ isset($registration) && $registration->car_park_id ? ' (Coach / Elderly & Infirm)' : '' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         @media screen {
@@ -108,14 +108,26 @@
                 <div class="convention-text text-zinc-900 uppercase tracking-tight">{{ $convLoc }} {{ $convYear }}</div>
             </div>
 
-            <div class="w-full py-6 border-y-2 border-dashed border-zinc-900 mb-8"
+            <div class="w-full py-6 border-y-2 border-dashed border-zinc-900 mb-6"
                 style="border-color: {{ $congregation->carPark?->color ?? '#18181b' }}">
-                <div class="text-zinc-400 uppercase font-bold tracking-[0.3em] text-[10px] mb-2">CONGREGATION</div>
+                <div class="text-zinc-400 uppercase font-bold tracking-[0.3em] text-[10px] mb-2">{{ __('print_pass.congregation') }}</div>
                 <h1 class="cong-name uppercase tracking-tighter"
                     style="color: {{ $congregation->carPark?->color ?? '#4338ca' }}">
                     {{ $congregation->name }}
                 </h1>
             </div>
+
+            @if(isset($registration) && $registration->car_park_id && $registration->carPark)
+            <div class="w-full py-4 px-4 mb-6 rounded-2xl border-2 border-amber-500 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-600">
+                @if(($registration->vehicle_type ?? 'car') === 'coach')
+                <div class="text-amber-800 dark:text-amber-200 font-bold text-sm uppercase tracking-wide mb-1">{{ __('print_pass.ticket_for_coach_space') }}</div>
+                @endif
+                @if($registration->elderly_infirm_parking ?? false)
+                <div class="text-amber-800 dark:text-amber-200 font-bold text-sm uppercase tracking-wide mb-1">{{ __('print_pass.ticket_for_elderly_infirm_space') }}</div>
+                @endif
+                <div class="text-xl font-black text-amber-900 dark:text-amber-100 mt-2" style="color: {{ $registration->carPark->color ?? '#b45309' }}">{{ $registration->carPark->name }}</div>
+            </div>
+            @endif
 
             <div class="mb-6 p-4 bg-white border border-zinc-100 rounded-2xl inline-block mx-auto">
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data={{ route('attendant.scan', ['code' => $congregation->uuid]) }}"
@@ -123,12 +135,12 @@
             </div>
 
             <div class="text-[9px] text-zinc-400 font-mono mb-6 uppercase tracking-widest">
-                ID: {{ $congregation->uuid }}
+                {{ __('print_pass.pass_id') }}: {{ $congregation->uuid }}
             </div>
 
             <div
                 class="inline-block text-xl font-black text-white bg-zinc-900 px-8 py-4 rounded-xl uppercase tracking-tighter shadow-sm">
-                DISPLAY ON DASHBOARD
+                {{ __('print_pass.display_on_dashboard') }}
             </div>
         </div>
     </div>

@@ -17,6 +17,7 @@ return [
     'days' => 'Dias',
     'actions' => 'Ações',
     'edit' => 'Editar',
+    'view_master_pass' => 'Ver passagem principal',
     'delete' => 'Eliminar',
     'yes' => 'Sim',
     'no' => 'Não',

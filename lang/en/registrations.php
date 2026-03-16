@@ -17,6 +17,7 @@ return [
     'days' => 'Days',
     'actions' => 'Actions',
     'edit' => 'Edit',
+    'view_master_pass' => 'View Master Pass',
     'delete' => 'Delete',
     'yes' => 'Yes',
     'no' => 'No',
