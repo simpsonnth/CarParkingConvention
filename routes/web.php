@@ -14,10 +14,12 @@ Route::view('dashboard', 'dashboard')
 
 Route::get('/scan/{code?}', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan');
 Route::get('/register', App\Livewire\Public\Register::class)->name('parking.register');
+Route::get('/register-simple', App\Livewire\Public\CongregationNumbers::class)->name('parking.register-simple');
 Route::get('/locale/{locale}', function (string $locale) {
     if (in_array($locale, ['en', 'pt', 'es'], true)) {
         session(['locale' => $locale]);
     }
+
     return redirect()->back();
 })->name('locale.set');
 
@@ -51,17 +53,38 @@ Route::middleware(['auth'])->group(function () {
         })->name('congregations.print');
         Route::get('/users', App\Livewire\Admin\Users::class)->name('users');
         Route::get('/registrations', App\Livewire\Admin\Registrations::class)->name('registrations');
+        Route::get('/congregation-numbers', App\Livewire\Admin\CongregationNumbers::class)->name('congregation-numbers');
+        Route::get('/congregation-numbers/export-missing', function () {
+            $filename = 'register-simple-not-submitted-'.now()->format('Y-m-d-His').'.xlsx';
+
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\CongregationsMissingNumbersExport,
+                $filename,
+                \Maatwebsite\Excel\Excel::XLSX
+            );
+        })->name('congregation-numbers.export-missing');
+        Route::get('/congregation-numbers/export', function () {
+            $filename = 'register-simple-all-responses-'.now()->format('Y-m-d-His').'.xlsx';
+
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\CongregationNumbersResponsesExport,
+                $filename,
+                \Maatwebsite\Excel\Excel::XLSX
+            );
+        })->name('congregation-numbers.export');
+        Route::get('/congregation-numbers/trash', App\Livewire\Admin\CongregationNumbersTrash::class)->name('congregation-numbers.trash');
         Route::get('/registrations/{registration}/print', function (App\Models\ParkingRegistration $registration) {
             $registration->load('carPark');
             $congregation = \App\Models\Congregation::where('name', $registration->congregation)->first();
-            if (!$congregation) {
+            if (! $congregation) {
                 abort(404, 'Congregation not found for this registration.');
             }
+
             return view('admin.print-pass', ['congregation' => $congregation, 'registration' => $registration]);
         })->name('registrations.print');
         Route::get('/registrations/trash', App\Livewire\Admin\RegistrationsTrash::class)->name('registrations.trash');
         Route::get('/registrations/download-master-passes-zip/{token}', function (string $token) {
-            $cacheKey = 'master-passes-zip:' . $token;
+            $cacheKey = 'master-passes-zip:'.$token;
             $registrationIds = cache()->get($cacheKey);
             if (! is_array($registrationIds) || empty($registrationIds)) {
                 return redirect()->route('admin.registrations')
@@ -71,6 +94,7 @@ Route::middleware(['auth'])->group(function () {
             try {
                 $service = app(\App\Services\MasterPassZipService::class);
                 [$zipPath, $downloadName] = $service->buildZip($registrationIds);
+
                 return response()->download($zipPath, $downloadName, [
                     'Content-Type' => 'application/zip',
                 ])->deleteFileAfterSend(true);
@@ -80,7 +104,8 @@ Route::middleware(['auth'])->group(function () {
             }
         })->name('registrations.download-passes-zip');
         Route::get('/registrations/export', function () {
-            $filename = 'parking-registrations-' . now()->format('Y-m-d-His') . '.xlsx';
+            $filename = 'parking-registrations-'.now()->format('Y-m-d-His').'.xlsx';
+
             return \Maatwebsite\Excel\Facades\Excel::download(
                 new \App\Exports\ParkingRegistrationsExport,
                 $filename,
