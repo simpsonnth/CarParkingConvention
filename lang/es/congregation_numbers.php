@@ -1,14 +1,17 @@
 <?php
 
 return [
-    'title' => 'Números de la congregación',
+    'title' => 'Encuesta de aparcamiento Twickenham RC',
     'subtitle' => 'Ayúdenos a planificar aparcamiento, autocares y plazas accesibles. Una respuesta por congregación; puede enviar de nuevo para actualizar.',
     'complete_title' => 'Enviado',
     'thank_you' => 'Gracias. Los números de su congregación se han guardado.',
     'submit_another' => 'Enviar para otra congregación',
 
-    'congregation_code' => 'Número de congregación (código)',
-    'congregation_code_placeholder' => 'Introduzca el UUID de la congregación',
+    'congregation_code' => 'Su congregación',
+    'congregation_code_placeholder' => 'Busque y seleccione su congregación abajo',
+    'congregation_pick_search_label' => 'Buscar su congregación',
+    'congregation_pick_select' => 'Seleccionar',
+    'congregation_change' => 'Cambiar congregación',
     'congregation_label' => 'Congregación',
     'no_congregation_found' => 'No se encontró ninguna congregación con este código.',
     'invalid_congregation_code' => 'Introduzca un código de congregación válido.',

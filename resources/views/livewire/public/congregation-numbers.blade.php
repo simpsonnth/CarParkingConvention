@@ -35,19 +35,43 @@
             <form wire:submit="submit" class="space-y-6">
                 <div>
                     <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('congregation_numbers.congregation_code') }}</label>
-                    <input type="text" wire:model.live.debounce.300ms="congregationCode"
-                        class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4 font-mono"
-                        placeholder="{{ __('congregation_numbers.congregation_code_placeholder') }}">
+                    @if($this->resolvedCongregation)
+                        <p class="text-sm font-medium text-green-600 dark:text-green-400 mb-3">
+                            {{ __('congregation_numbers.congregation_label') }}: <strong>{{ $this->resolvedCongregation->name }}</strong>
+                        </p>
+                        <button type="button" wire:click="clearCongregationSelection"
+                            class="text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300">
+                            {{ __('congregation_numbers.congregation_change') }}
+                        </button>
+                    @else
+                        <p class="text-xs text-zinc-500 dark:text-zinc-400 mb-3">{{ __('congregation_numbers.congregation_code_placeholder') }}</p>
+                        <label class="mb-1 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">{{ __('congregation_numbers.congregation_pick_search_label') }}</label>
+                        <input type="search" wire:model.live.debounce.300ms="congregationSearch" autocomplete="off"
+                            class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4"
+                            placeholder="{{ __('congregation_numbers.shared_with_search_placeholder') }}">
+                        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('congregation_numbers.shared_with_search_min') }}</p>
+
+                        <div class="mt-3 max-h-48 overflow-y-auto rounded-xl border border-zinc-200 dark:border-zinc-600 divide-y divide-zinc-100 dark:divide-zinc-700">
+                            @if($this->congregationPickReady && $this->congregationPickMatches->isEmpty())
+                                <p class="p-4 text-center text-sm text-zinc-500 dark:text-zinc-400">{{ __('congregation_numbers.shared_with_no_matches') }}</p>
+                            @elseif($this->congregationPickReady)
+                                @foreach($this->congregationPickMatches as $c)
+                                    <div class="flex items-center justify-between gap-3 px-3 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-700/40">
+                                        <span class="min-w-0 flex-1 text-sm font-medium text-zinc-800 dark:text-zinc-200">{{ $c->name }}</span>
+                                        <button type="button" wire:click="selectCongregationById({{ $c->id }})"
+                                            class="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700">
+                                            {{ __('congregation_numbers.congregation_pick_select') }}
+                                        </button>
+                                    </div>
+                                @endforeach
+                            @else
+                                <p class="p-4 text-center text-sm text-zinc-500 dark:text-zinc-400">{{ __('congregation_numbers.shared_with_type_to_search') }}</p>
+                            @endif
+                        </div>
+                    @endif
                     @error('congregationCode')
                         <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
                     @enderror
-                    @if($this->resolvedCongregation)
-                        <p class="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
-                            {{ __('congregation_numbers.congregation_label') }}: <strong>{{ $this->resolvedCongregation->name }}</strong>
-                        </p>
-                    @elseif(trim($congregationCode) !== '')
-                        <p class="mt-2 text-sm text-amber-600 dark:text-amber-400">{{ __('congregation_numbers.no_congregation_found') }}</p>
-                    @endif
                 </div>
 
                 <div>

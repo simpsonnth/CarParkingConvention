@@ -1,14 +1,17 @@
 <?php
 
 return [
-    'title' => 'Congregation numbers',
+    'title' => 'Twickenham RC Parking Survey',
     'subtitle' => 'Help us plan car parking, coaches, and accessible spaces. One submission per congregation; you can submit again to update.',
     'complete_title' => 'Submitted',
     'thank_you' => 'Thank you. Your congregation’s numbers have been saved.',
     'submit_another' => 'Submit for another congregation',
 
-    'congregation_code' => 'Congregation number (code)',
-    'congregation_code_placeholder' => 'Enter your congregation UUID',
+    'congregation_code' => 'Your congregation',
+    'congregation_code_placeholder' => 'Search and select your congregation below',
+    'congregation_pick_search_label' => 'Find your congregation',
+    'congregation_pick_select' => 'Select',
+    'congregation_change' => 'Change congregation',
     'congregation_label' => 'Congregation',
     'no_congregation_found' => 'No congregation found for this code.',
     'invalid_congregation_code' => 'Please enter a valid congregation code.',

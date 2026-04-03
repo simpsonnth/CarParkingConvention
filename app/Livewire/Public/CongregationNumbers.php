@@ -14,6 +14,9 @@ class CongregationNumbers extends Component
 {
     public string $congregationCode = '';
 
+    /** Search text to find the submitting congregation by name */
+    public string $congregationSearch = '';
+
     public $carParkTicketsCount = 0;
 
     /** @var '0'|'1' */
@@ -47,6 +50,47 @@ class CongregationNumbers extends Component
         }
 
         return Congregation::where('uuid', $code)->first();
+    }
+
+    #[Computed]
+    public function congregationPickReady(): bool
+    {
+        return mb_strlen(trim($this->congregationSearch)) >= 2;
+    }
+
+    /** Name matches for primary congregation selection (max 30). */
+    #[Computed]
+    public function congregationPickMatches(): Collection
+    {
+        $term = trim($this->congregationSearch);
+        if (mb_strlen($term) < 2) {
+            return collect();
+        }
+
+        return Congregation::query()
+            ->orderBy('name')
+            ->where('name', 'like', '%'.addcslashes($term, '%_\\').'%')
+            ->limit(30)
+            ->get(['id', 'name', 'uuid']);
+    }
+
+    public function selectCongregationById(int $id): void
+    {
+        $congregation = Congregation::query()->whereKey($id)->first(['id', 'uuid']);
+        if ($congregation === null || $congregation->uuid === null) {
+            return;
+        }
+
+        $this->congregationCode = (string) $congregation->uuid;
+        $this->congregationSearch = '';
+        $this->resetErrorBag('congregationCode');
+    }
+
+    public function clearCongregationSelection(): void
+    {
+        $this->congregationCode = '';
+        $this->congregationSearch = '';
+        $this->resetErrorBag('congregationCode');
     }
 
     /** Congregations already chosen for shared coach (for chip labels). */
@@ -128,6 +172,7 @@ class CongregationNumbers extends Component
     {
         $this->reset([
             'congregationCode',
+            'congregationSearch',
             'carParkTicketsCount',
             'organizesCoach',
             'sharingCoachWithOthers',

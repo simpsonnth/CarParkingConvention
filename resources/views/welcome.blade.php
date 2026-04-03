@@ -55,11 +55,6 @@
                         class="block w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold text-center hover:opacity-90 transition shadow-lg">
                         Log In
                     </a>
-
-                    <div class="text-center text-sm text-zinc-500 pt-4">
-                        <p>Staff Login: <strong>staff@twickenham.com</strong></p>
-                        <p>Password: <strong>remote</strong></p>
-                    </div>
                 </div>
             @endauth
         </div>
