@@ -84,9 +84,10 @@
                                 <flux:menu>
                                     <flux:menu.item wire:click="edit({{ $congregation->id }})" icon="pencil">Edit
                                     </flux:menu.item>
-                                    <flux:menu.item :href="route('admin.congregations.show', $congregation)" icon="truck">
-                                        View
-                                        Vehicles</flux:menu.item>
+                                    <flux:menu.item :href="route('admin.congregations.show', $congregation)" icon="truck"
+                                        wire:navigate>
+                                        Parking & survey
+                                    </flux:menu.item>
                                     <flux:menu.item wire:click="openQrModal({{ $congregation->id }})" icon="qr-code">View
                                         Master Pass</flux:menu.item>
                                     <flux:menu.item wire:click="delete({{ $congregation->id }})" icon="trash"
