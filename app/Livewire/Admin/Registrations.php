@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\Congregation;
 use App\Models\ParkingRegistration;
 use App\Services\CongregationNumbersReportMetrics;
+use App\Services\ParkingRegistrationAttendanceByDayMetrics;
 use Flux\Flux;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -469,6 +470,8 @@ class Registrations extends Component
             ? min(100.0, round(100 * $registrationTotal / $expectedTotal, 1))
             : ($registrationTotal > 0 ? 100.0 : 0.0);
 
+        $attendanceByDay = app(ParkingRegistrationAttendanceByDayMetrics::class)->compute();
+
         return view('livewire.admin.registrations', [
             'registrations' => $registrations,
             'congregations' => Congregation::orderBy('name')->pluck('name'),
@@ -479,6 +482,7 @@ class Registrations extends Component
                 'difference' => $difference,
                 'completion_percent' => $completionPercent,
             ],
+            'attendanceByDay' => $attendanceByDay,
         ]);
     }
 }

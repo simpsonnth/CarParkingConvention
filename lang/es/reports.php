@@ -4,6 +4,7 @@ return [
     'nav_group' => 'Informes',
     'nav_reports' => 'Informe encuesta aparcamiento',
     'nav_survey_vs_registrations' => 'Encuesta vs inscripciones',
+    'nav_registration_attendance_by_day' => 'Asistencia por día del programa',
     'nav_circuit_overseer' => 'Aparcamiento superintendente de circuito',
 
     'page_title' => 'Informe encuesta aparcamiento',

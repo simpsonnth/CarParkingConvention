@@ -30,7 +30,7 @@
                     :current="request()->routeIs('admin.users')" wire:navigate>{{ __('Users') }}
                 </flux:navlist.item>
                 <flux:navlist.item icon="clipboard-document-list" :href="route('admin.registrations')"
-                    :current="request()->routeIs('admin.registrations')" wire:navigate>{{ __('Registrations') }}
+                    :current="request()->routeIs(['admin.registrations', 'admin.registrations.attendance-by-day'])" wire:navigate>{{ __('Registrations') }}
                 </flux:navlist.item>
                 <flux:navlist.item icon="table-cells" :href="route('admin.congregation-numbers')"
                     :current="request()->routeIs('admin.congregation-numbers*')" wire:navigate>{{ __('congregation_numbers.nav') }}
@@ -48,6 +48,9 @@
             <flux:navlist.group :heading="__('reports.nav_group')" class="grid">
                 <flux:navlist.item icon="scale" :href="route('admin.survey-vs-registrations')"
                     :current="request()->routeIs('admin.survey-vs-registrations')" wire:navigate>{{ __('reports.nav_survey_vs_registrations') }}
+                </flux:navlist.item>
+                <flux:navlist.item icon="calendar-days" :href="route('admin.registrations.attendance-by-day')"
+                    :current="request()->routeIs('admin.registrations.attendance-by-day')" wire:navigate>{{ __('reports.nav_registration_attendance_by_day') }}
                 </flux:navlist.item>
                 <flux:navlist.item icon="chart-bar" :href="route('admin.reports')"
                     :current="request()->routeIs('admin.reports')" wire:navigate>{{ __('reports.nav_reports') }}

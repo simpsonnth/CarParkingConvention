@@ -54,6 +54,7 @@ Route::middleware(['auth'])->group(function () {
         })->name('congregations.print');
         Route::get('/users', App\Livewire\Admin\Users::class)->name('users');
         Route::get('/registrations', App\Livewire\Admin\Registrations::class)->name('registrations');
+        Route::get('/registrations/attendance-by-day', App\Livewire\Admin\RegistrationAttendanceByDayReport::class)->name('registrations.attendance-by-day');
         Route::get('/congregation-numbers', App\Livewire\Admin\CongregationNumbers::class)->name('congregation-numbers');
         Route::get('/congregation-numbers/export-missing', function () {
             $filename = 'register-simple-not-submitted-'.now()->format('Y-m-d-His').'.xlsx';

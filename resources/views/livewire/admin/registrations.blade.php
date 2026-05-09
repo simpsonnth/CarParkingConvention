@@ -87,6 +87,41 @@
         </p>
     </div>
 
+    @php $abd = $attendanceByDay; @endphp
+    <div class="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-300">
+        <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ __('registrations.attendance_by_day_embed_title') }}</p>
+        <p class="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{{ __('registrations.attendance_by_day_embed_source_note') }}</p>
+        <p class="mt-2 text-xs font-medium text-zinc-700 dark:text-zinc-300">{{ __('registrations.attendance_by_day_sum_rule') }}</p>
+        <ul class="mt-3 list-none space-y-2 p-0">
+            @foreach ($abd['ordered_days'] as $day)
+                @php
+                    $dayLabel = __('registrations.attendance_day_'.$day);
+                    $total = (int) ($abd['counts_by_day'][$day] ?? 0);
+                    $cars = (int) ($abd['cars_by_day'][$day] ?? 0);
+                    $coaches = (int) ($abd['coaches_by_day'][$day] ?? 0);
+                    $co = (int) ($abd['circuit_overseers_by_day'][$day] ?? 0);
+                    $ei = (int) ($abd['disabled_by_day'][$day] ?? 0);
+                @endphp
+                <li class="text-zinc-800 dark:text-zinc-200">
+                    <span class="font-medium text-zinc-900 dark:text-zinc-100">{{ $dayLabel }}</span>
+                    <span class="mx-1 text-zinc-400">—</span>
+                    <span class="tabular-nums">{{ __('registrations.attendance_by_day_embed_vehicle_line', ['total' => number_format($total), 'cars' => number_format($cars), 'coaches' => number_format($coaches)]) }}</span>
+                    <span class="text-zinc-400">·</span>
+                    <span class="tabular-nums">{{ __('registrations.attendance_by_day_embed_overlap_line', ['co' => number_format($co), 'ei' => number_format($ei)]) }}</span>
+                </li>
+            @endforeach
+        </ul>
+        @if ($abd['missing_days_count'] > 0)
+            <p class="mt-2 text-xs font-medium text-amber-800 dark:text-amber-300">
+                {{ __('registrations.attendance_by_day_missing_days', ['count' => number_format($abd['missing_days_count'])]) }}
+            </p>
+        @endif
+        <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">{{ __('registrations.attendance_by_day_overlap_note') }}</p>
+        <p class="mt-3">
+            <flux:link :href="route('admin.registrations.attendance-by-day')" wire:navigate class="text-sm font-semibold">{{ __('registrations.attendance_by_day_full_report_link') }}</flux:link>
+        </p>
+    </div>
+
     @if($this->getAppliedFiltersCount() > 0)
         <div class="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/50">
             <button type="button" wire:click="openFilterPanel" class="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400">

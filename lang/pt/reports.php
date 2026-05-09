@@ -4,6 +4,7 @@ return [
     'nav_group' => 'Relatórios',
     'nav_reports' => 'Relatório inquérito estacionamento',
     'nav_survey_vs_registrations' => 'Inquérito vs inscrições',
+    'nav_registration_attendance_by_day' => 'Presença por dia da assembleia',
     'nav_circuit_overseer' => 'Estacionamento superintendente de circuito',
 
     'page_title' => 'Relatório inquérito estacionamento',
