@@ -3,20 +3,29 @@
 return [
     'title' => 'Parking Registration',
     'subtitle' => 'Please fill in your details to register your vehicle.',
+    'co_title' => 'Circuit Overseer Parking Registration',
+    'co_subtitle' => 'Please fill in your details. Congregation is not required.',
     'registration_complete' => 'Registration Complete!',
+    'co_registration_complete' => 'Circuit Overseer registration complete!',
     'thank_you' => 'Thank you for registering. You can now close this page.',
     'register_another' => 'Register another vehicle',
     'car_or_coach' => 'Is this for a Car or a Coach?',
     'car' => 'Car',
     'coach' => 'Coach',
-    'sharing_with_other_congregations' => 'Are you sharing with other congregations?',
-    'specify_all_congregations' => 'Please specify all congregations',
-    'specify_all_congregations_placeholder' => 'List all congregations sharing this coach...',
+
+    // Coach captain explainer (shown when Coach is selected)
+    'coach_captain_intro_title' => 'Coach Captain Details',
+    'coach_captain_intro_body' => 'The coach details (size, sharing arrangements, and any congregations sharing this coach) you provided in the parking survey are already on file. Please give us the coach captain\'s contact details below so we can reach you about the parking arrangements.',
+    'coach_captain_name' => 'Coach Captain Name',
+    'coach_captain_contact_number' => 'Coach Captain Contact Number',
+    'coach_captain_email_address' => 'Coach Captain Email Address',
+
     'congregation_code' => 'Please enter your congregation code',
     'congregation_code_placeholder' => 'e.g. 9d4e2a1b-...',
     'congregation_label' => 'Congregation',
     'no_congregation_found' => 'No congregation found for this code.',
     'invalid_congregation_code' => 'Please enter a valid congregation code.',
+
     'full_name' => 'Full Name',
     'full_name_placeholder' => 'e.g. John Doe',
     'contact_number' => 'Contact Number',
@@ -34,6 +43,15 @@ return [
     'saturday' => 'Saturday',
     'sunday' => 'Sunday',
     'submit' => 'Submit Registration',
+    'co_submit' => 'Submit Circuit Overseer Registration',
     'processing' => 'Processing...',
     'footer' => 'Convention Parking System',
+
+    // Server-side quota errors (raised at submit time only — no proactive UI)
+    'quota_no_survey' => 'Your congregation has not submitted the parking survey yet, so no allocation has been set. Please ask your congregation coordinator to complete the parking survey first, then return here to register.',
+    'quota_car_full' => 'All :limit car parking tickets allocated to :congregation have already been registered.',
+    'quota_disabled_full' => 'All :limit disabled parking spaces allocated to :congregation have already been registered.',
+    'quota_disabled_not_requested' => ':congregation did not request disabled parking in the parking survey, so it cannot be selected here.',
+    'quota_coach_not_organised' => 'Your congregation has not registered a coach in the parking survey, so coach registrations are not available.',
+    'quota_coach_taken' => 'A coach has already been registered for your congregation.',
 ];

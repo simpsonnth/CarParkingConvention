@@ -3,20 +3,29 @@
 return [
     'title' => 'Inscrição de Estacionamento',
     'subtitle' => 'Por favor, preencha os seus dados para inscrever o seu veículo.',
+    'co_title' => 'Inscrição de Estacionamento do Superintendente de Circuito',
+    'co_subtitle' => 'Por favor, preencha os seus dados. Congregação não é obrigatória.',
     'registration_complete' => 'Inscrição concluída!',
+    'co_registration_complete' => 'Inscrição do superintendente de circuito concluída!',
     'thank_you' => 'Obrigado por se inscrever. Pode fechar esta página.',
     'register_another' => 'Inscrever outro veículo',
     'car_or_coach' => 'Isto é para um Carro ou um Autocarro?',
     'car' => 'Carro',
     'coach' => 'Autocarro',
-    'sharing_with_other_congregations' => 'Está a partilhar com outras congregações?',
-    'specify_all_congregations' => 'Por favor, indique todas as congregações',
-    'specify_all_congregations_placeholder' => 'Liste todas as congregações que partilham este autocarro...',
+
+    // Explicação ao capitão do autocarro (mostrada quando "Autocarro" é selecionado)
+    'coach_captain_intro_title' => 'Dados do Capitão do Autocarro',
+    'coach_captain_intro_body' => 'Os detalhes do autocarro (tamanho, partilha e congregações que partilham o autocarro) que indicou no inquérito de estacionamento já estão registados. Por favor, indique abaixo os contactos do capitão do autocarro para podermos comunicar consigo sobre o estacionamento.',
+    'coach_captain_name' => 'Nome do Capitão do Autocarro',
+    'coach_captain_contact_number' => 'Contacto do Capitão do Autocarro',
+    'coach_captain_email_address' => 'E-mail do Capitão do Autocarro',
+
     'congregation_code' => 'Por favor, introduza o código da sua congregação',
     'congregation_code_placeholder' => 'ex: 9d4e2a1b-...',
     'congregation_label' => 'Congregação',
     'no_congregation_found' => 'Nenhuma congregação encontrada para este código.',
     'invalid_congregation_code' => 'Por favor, introduza um código de congregação válido.',
+
     'full_name' => 'Nome completo',
     'full_name_placeholder' => 'ex: João Silva',
     'contact_number' => 'Número de contacto',
@@ -34,6 +43,15 @@ return [
     'saturday' => 'Sábado',
     'sunday' => 'Domingo',
     'submit' => 'Submeter inscrição',
+    'co_submit' => 'Submeter inscrição do superintendente de circuito',
     'processing' => 'A processar...',
     'footer' => 'Sistema de Estacionamento da Convenção',
+
+    // Erros de quota do servidor (apenas no momento da submissão — sem UI proativa)
+    'quota_no_survey' => 'A sua congregação ainda não submeteu o inquérito de estacionamento, por isso não foi definida nenhuma alocação. Peça ao coordenador da sua congregação para preencher o inquérito primeiro e depois volte aqui para se inscrever.',
+    'quota_car_full' => 'Todos os :limit lugares de estacionamento atribuídos a :congregation já foram inscritos.',
+    'quota_disabled_full' => 'Todos os :limit lugares para deficientes atribuídos a :congregation já foram inscritos.',
+    'quota_disabled_not_requested' => 'A congregação :congregation não solicitou estacionamento para deficientes no inquérito, por isso não pode ser selecionado aqui.',
+    'quota_coach_not_organised' => 'A sua congregação não registou um autocarro no inquérito, por isso não é possível inscrever autocarros.',
+    'quota_coach_taken' => 'Já foi registado um autocarro para a sua congregação.',
 ];

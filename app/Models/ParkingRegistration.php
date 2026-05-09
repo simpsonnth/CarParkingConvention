@@ -13,6 +13,7 @@ class ParkingRegistration extends Model
     protected $fillable = [
         'name',
         'congregation',
+        'is_circuit_overseer',
         'car_park_id',
         'contact_number',
         'vehicle_registration',
@@ -26,6 +27,7 @@ class ParkingRegistration extends Model
 
     protected $casts = [
         'days' => 'array',
+        'is_circuit_overseer' => 'boolean',
         'elderly_infirm_parking' => 'boolean',
         'sharing_with_other_congregations' => 'boolean',
     ];

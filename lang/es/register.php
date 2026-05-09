@@ -3,20 +3,29 @@
 return [
     'title' => 'Inscripción de Aparcamiento',
     'subtitle' => 'Por favor, rellene sus datos para inscribir su vehículo.',
+    'co_title' => 'Inscripción de Aparcamiento del Superintendente de Circuito',
+    'co_subtitle' => 'Por favor, rellene sus datos. No se requiere congregación.',
     'registration_complete' => '¡Inscripción completada!',
+    'co_registration_complete' => '¡Inscripción del superintendente de circuito completada!',
     'thank_you' => 'Gracias por inscribirse. Ya puede cerrar esta página.',
     'register_another' => 'Inscribir otro vehículo',
     'car_or_coach' => '¿Es para un Coche o un Autobús?',
     'car' => 'Coche',
     'coach' => 'Autobús',
-    'sharing_with_other_congregations' => '¿Comparte con otras congregaciones?',
-    'specify_all_congregations' => 'Por favor, especifique todas las congregaciones',
-    'specify_all_congregations_placeholder' => 'Liste todas las congregaciones que comparten este autobús...',
+
+    // Explicación al capitán del autobús (se muestra cuando se selecciona "Autobús")
+    'coach_captain_intro_title' => 'Datos del Capitán del Autobús',
+    'coach_captain_intro_body' => 'Los detalles del autobús (tamaño, organización y congregaciones que comparten el autobús) que indicó en la encuesta de aparcamiento ya están registrados. Por favor, indique abajo los datos de contacto del capitán del autobús para que podamos comunicarnos con usted sobre el aparcamiento.',
+    'coach_captain_name' => 'Nombre del Capitán del Autobús',
+    'coach_captain_contact_number' => 'Contacto del Capitán del Autobús',
+    'coach_captain_email_address' => 'Correo del Capitán del Autobús',
+
     'congregation_code' => 'Por favor, introduzca el código de su congregación',
     'congregation_code_placeholder' => 'ej: 9d4e2a1b-...',
     'congregation_label' => 'Congregación',
     'no_congregation_found' => 'No se encontró ninguna congregación para este código.',
     'invalid_congregation_code' => 'Por favor, introduzca un código de congregación válido.',
+
     'full_name' => 'Nombre completo',
     'full_name_placeholder' => 'ej: Juan García',
     'contact_number' => 'Número de contacto',
@@ -34,6 +43,15 @@ return [
     'saturday' => 'Sábado',
     'sunday' => 'Domingo',
     'submit' => 'Enviar inscripción',
+    'co_submit' => 'Enviar inscripción del superintendente de circuito',
     'processing' => 'Procesando...',
     'footer' => 'Sistema de Aparcamiento de la Convención',
+
+    // Errores de cuota del servidor (sólo al enviar — sin UI proactiva)
+    'quota_no_survey' => 'Su congregación todavía no ha enviado la encuesta de aparcamiento, por lo que no se ha definido ninguna asignación. Pida al coordinador de su congregación que complete la encuesta primero y luego vuelva aquí para inscribirse.',
+    'quota_car_full' => 'Las :limit plazas de aparcamiento asignadas a :congregation ya están inscritas.',
+    'quota_disabled_full' => 'Las :limit plazas para discapacitados asignadas a :congregation ya están inscritas.',
+    'quota_disabled_not_requested' => 'La congregación :congregation no solicitó plazas para discapacitados en la encuesta, así que no se pueden seleccionar aquí.',
+    'quota_coach_not_organised' => 'Su congregación no registró un autobús en la encuesta, por lo que no se pueden inscribir autobuses.',
+    'quota_coach_taken' => 'Ya se ha registrado un autobús para su congregación.',
 ];

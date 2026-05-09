@@ -2,7 +2,6 @@
     <div
         class="w-full max-w-lg bg-white dark:bg-zinc-800 rounded-3xl shadow-xl p-4 sm:p-8 border border-zinc-100 dark:border-zinc-700">
 
-        {{-- Language (only on this page) --}}
         <div class="flex flex-wrap justify-end gap-2 mb-6">
             <a href="{{ route('locale.set', 'en') }}" class="text-sm font-medium px-3 py-1.5 rounded-lg {{ app()->getLocale() === 'en' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">English</a>
             <a href="{{ route('locale.set', 'pt') }}" class="text-sm font-medium px-3 py-1.5 rounded-lg {{ app()->getLocale() === 'pt' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">Português</a>
@@ -10,8 +9,8 @@
         </div>
 
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-black text-zinc-900 dark:text-white tracking-tight mb-2">{{ __('register.title') }}</h1>
-            <p class="text-zinc-500 dark:text-zinc-400">{{ __('register.subtitle') }}</p>
+            <h1 class="text-3xl font-black text-zinc-900 dark:text-white tracking-tight mb-2">{{ __('register.co_title') }}</h1>
+            <p class="text-zinc-500 dark:text-zinc-400">{{ __('register.co_subtitle') }}</p>
         </div>
 
         @if($registered)
@@ -25,9 +24,8 @@
                         </svg>
                     </div>
                 </div>
-                <h3 class="text-xl font-bold text-green-800 dark:text-green-200 mb-2">{{ __('register.registration_complete') }}</h3>
-                <p class="text-green-700 dark:text-green-300 mb-6">{{ __('register.thank_you') }}
-                </p>
+                <h3 class="text-xl font-bold text-green-800 dark:text-green-200 mb-2">{{ __('register.co_registration_complete') }}</h3>
+                <p class="text-green-700 dark:text-green-300 mb-6">{{ __('register.thank_you') }}</p>
                 <button wire:click="$set('registered', false)"
                     class="text-sm font-semibold text-green-800 dark:text-green-200 hover:underline">
                     {{ __('register.register_another') }}
@@ -35,61 +33,9 @@
             </div>
         @else
             <form wire:submit="register" class="space-y-6">
-                {{-- Car or Coach --}}
-                <div>
-                    <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('register.car_or_coach') }}</label>
-                    <div class="flex gap-4">
-                        <button type="button" wire:click="$set('vehicleType', 'car')"
-                            class="flex-1 flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition font-semibold
-                            {{ $vehicleType === 'car' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : 'border-zinc-200 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 text-zinc-700 dark:text-zinc-300' }}">
-                            {{ __('register.car') }}
-                        </button>
-                        <button type="button" wire:click="$set('vehicleType', 'coach')"
-                            class="flex-1 flex items-center justify-center p-4 rounded-xl border-2 cursor-pointer transition font-semibold
-                            {{ $vehicleType === 'coach' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300' : 'border-zinc-200 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 text-zinc-700 dark:text-zinc-300' }}">
-                            {{ __('register.coach') }}
-                        </button>
-                    </div>
-                    @error('vehicleType') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                </div>
-
-                @if($vehicleType === 'coach')
-                    {{-- Coach captain explainer: the parking survey already captured coach size, sharing arrangements, and shared congregations. --}}
-                    <div class="rounded-2xl border border-indigo-200 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-900/20">
-                        <div class="flex items-start gap-3">
-                            <div class="shrink-0 rounded-full bg-indigo-100 p-2 dark:bg-indigo-900/60">
-                                <svg class="h-5 w-5 text-indigo-600 dark:text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20 10 10 0 000-20z"/>
-                                </svg>
-                            </div>
-                            <div class="min-w-0">
-                                <p class="font-semibold text-indigo-900 dark:text-indigo-100">{{ __('register.coach_captain_intro_title') }}</p>
-                                <p class="mt-1 text-sm text-indigo-800 dark:text-indigo-200">{{ __('register.coach_captain_intro_body') }}</p>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-
-                <div>
-                    <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('register.congregation_code') }}</label>
-                    <input type="text" wire:model.live.debounce.300ms="congregationCode"
-                        class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4 font-mono"
-                        placeholder="{{ __('register.congregation_code_placeholder') }}">
-                    @error('congregationCode')
-                        <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
-                    @enderror
-                    @if($this->resolvedCongregation)
-                        <p class="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
-                            {{ __('register.congregation_label') }}: <strong>{{ $this->resolvedCongregation->name }}</strong>
-                        </p>
-                    @elseif(trim($congregationCode) !== '')
-                        <p class="mt-2 text-sm text-amber-600 dark:text-amber-400">{{ __('register.no_congregation_found') }}</p>
-                    @endif
-                </div>
-
                 <div>
                     <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">
-                        {{ $vehicleType === 'coach' ? __('register.coach_captain_name') : __('register.full_name') }}
+                        {{ __('register.full_name') }}
                     </label>
                     <input type="text" wire:model="name"
                         class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4"
@@ -100,7 +46,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">
-                            {{ $vehicleType === 'coach' ? __('register.coach_captain_contact_number') : __('register.contact_number') }}
+                            {{ __('register.contact_number') }}
                         </label>
                         <input type="tel" wire:model="contactNumber"
                             class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4"
@@ -110,7 +56,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">
-                            {{ $vehicleType === 'coach' ? __('register.coach_captain_email_address') : __('register.email_address') }}
+                            {{ __('register.email_address') }}
                         </label>
                         <input type="email" wire:model="email"
                             class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4"
@@ -119,7 +65,6 @@
                     </div>
                 </div>
 
-                @if($vehicleType === 'car')
                 <div>
                     <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('register.vehicle_registration') }} <span class="text-red-500">*</span></label>
                     <input type="text" wire:model="vehicleReg"
@@ -144,7 +89,6 @@
                     </div>
                     @error('elderlyInfirmParking') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                 </div>
-                @endif
 
                 <div>
                     <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-3">{{ __('register.attending_days') }}</label>
@@ -170,7 +114,7 @@
                 <div class="pt-4">
                     <button type="submit"
                         class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-xl transition transform active:scale-[0.98] shadow-lg shadow-indigo-500/20">
-                        {{ __('register.submit') }}
+                        {{ __('register.co_submit') }}
                     </button>
                     <div wire:loading wire:target="register" class="text-center mt-2 text-zinc-400 text-sm">
                         {{ __('register.processing') }}

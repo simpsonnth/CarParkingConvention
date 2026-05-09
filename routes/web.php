@@ -15,6 +15,7 @@ Route::view('dashboard', 'dashboard')
 Route::get('/scan/{code?}', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan');
 Route::get('/register', App\Livewire\Public\Register::class)->name('parking.register');
 Route::get('/register-simple', App\Livewire\Public\CongregationNumbers::class)->name('parking.register-simple');
+Route::get('/register-circuit-overseer', App\Livewire\Public\CircuitOverseerRegister::class)->name('parking.register-circuit-overseer');
 Route::get('/locale/{locale}', function (string $locale) {
     if (in_array($locale, ['en', 'pt', 'es'], true)) {
         session(['locale' => $locale]);
@@ -75,12 +76,30 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/congregation-numbers/trash', App\Livewire\Admin\CongregationNumbersTrash::class)->name('congregation-numbers.trash');
         Route::get('/registrations/{registration}/print', function (App\Models\ParkingRegistration $registration) {
             $registration->load('carPark');
-            $congregation = \App\Models\Congregation::where('name', $registration->congregation)->first();
+            if ($registration->is_circuit_overseer) {
+                $effectiveCarPark = $registration->carPark;
+
+                return view('admin.print-pass', [
+                    'congregation' => null,
+                    'registration' => $registration,
+                    'effectiveCarPark' => $effectiveCarPark,
+                ]);
+            }
+
+            $congregation = \App\Models\Congregation::with('carPark')
+                ->where('name', $registration->congregation)
+                ->first();
             if (! $congregation) {
                 abort(404, 'Congregation not found for this registration.');
             }
 
-            return view('admin.print-pass', ['congregation' => $congregation, 'registration' => $registration]);
+            $effectiveCarPark = $registration->carPark ?? $congregation->carPark;
+
+            return view('admin.print-pass', [
+                'congregation' => $congregation,
+                'registration' => $registration,
+                'effectiveCarPark' => $effectiveCarPark,
+            ]);
         })->name('registrations.print');
         Route::get('/registrations/trash', App\Livewire\Admin\RegistrationsTrash::class)->name('registrations.trash');
         Route::get('/registrations/download-master-passes-zip/{token}', function (string $token) {

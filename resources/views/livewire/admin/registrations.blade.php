@@ -86,7 +86,7 @@
                 <button type="button" wire:click="bulkAssignCongregationToCarPark"
                     class="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-indigo-700">
                     <flux:icon name="building-office-2" class="size-4" />
-                    Assign
+                    Assign Default
                 </button>
                 <span class="text-zinc-300 dark:text-zinc-600 mx-1">|</span>
                 <span class="text-xs font-medium text-amber-800 dark:text-amber-200 uppercase tracking-wide">{{ __('registrations.bulk_assign_individual_car_park') }}:</span>
@@ -100,7 +100,7 @@
                 <button type="button" wire:click="bulkAssignSelectedToCarPark"
                     class="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-violet-700">
                     <flux:icon name="user" class="size-4" />
-                    Assign
+                    Assign Selected
                 </button>
                 <span class="text-zinc-300 dark:text-zinc-600 mx-1">|</span>
                 <button type="button" wire:click="downloadMasterPassesZip"
@@ -263,9 +263,14 @@
                         </td>
                         <td class="px-6 py-4 font-medium text-zinc-900 dark:text-white">
                             {{ $reg->name }}
+                            @if($reg->is_circuit_overseer ?? false)
+                                <div class="mt-1">
+                                    <flux:badge size="sm" color="sky">{{ __('registrations.circuit_overseer') }}</flux:badge>
+                                </div>
+                            @endif
                         </td>
                         <td class="px-6 py-4 text-zinc-600 dark:text-zinc-300">
-                            {{ $reg->congregation }}
+                            {{ $reg->congregation ?: '—' }}
                         </td>
                         <td class="px-6 py-4 text-zinc-500 dark:text-zinc-400 text-xs">
                             @if($reg->carPark)
@@ -356,11 +361,15 @@
 
             <flux:input wire:model="name" label="{{ __('registrations.name') }}" placeholder="{{ __('registrations.full_name') }}" />
 
-            <flux:select wire:model="congregation" label="{{ __('registrations.congregation') }}" placeholder="{{ __('registrations.select_congregation') }}">
-                @foreach($congregations as $name)
-                    <option value="{{ $name }}">{{ $name }}</option>
-                @endforeach
-            </flux:select>
+            @if($editingRegistration && ($editingRegistration->is_circuit_overseer ?? false))
+                <flux:input wire:model="congregation" label="{{ __('registrations.congregation') }}" placeholder="{{ __('registrations.circuit_overseer') }}" />
+            @else
+                <flux:select wire:model="congregation" label="{{ __('registrations.congregation') }}" placeholder="{{ __('registrations.select_congregation') }}">
+                    @foreach($congregations as $name)
+                        <option value="{{ $name }}">{{ $name }}</option>
+                    @endforeach
+                </flux:select>
+            @endif
 
             <div class="space-y-2">
                 <label for="carParkId" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('registrations.car_park') }} ({{ __('registrations.optional_individual') }})</label>

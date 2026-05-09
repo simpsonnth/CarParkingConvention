@@ -212,20 +212,46 @@ class Registrations extends Component
 
     public function bulkAssignCongregationToCarPark(): void
     {
-        if (empty($this->selectedIds)) {
+        $selectedIds = array_values(array_unique(array_map('intval', $this->selectedIds)));
+        if ($selectedIds === []) {
             Flux::toast(__('registrations.select_items'), variant: 'warning');
             $this->bulkAssignCarParkModalOpen = false;
             return;
         }
+        if ($this->bulkAssignCarParkId === '' || $this->bulkAssignCarParkId === null) {
+            Flux::toast(__('registrations.select_car_park_first'), variant: 'warning');
+            return;
+        }
+
         $this->validate(['bulkAssignCarParkId' => 'required|exists:car_parks,id']);
-        $registrations = ParkingRegistration::whereIn('id', $this->selectedIds)->get();
-        $congregationNames = $registrations->pluck('congregation')->unique()->filter()->values();
+        $carParkId = (int) $this->bulkAssignCarParkId;
+        $registrations = ParkingRegistration::whereIn('id', $selectedIds)->get();
+
+        // Circuit Overseer rows do not have a congregation default, so assign
+        // those selected rows directly.
+        $coIds = $registrations
+            ->where('is_circuit_overseer', true)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->values()
+            ->all();
+        $coUpdated = 0;
+        if ($coIds !== []) {
+            $coUpdated = ParkingRegistration::whereIn('id', $coIds)->update(['car_park_id' => $carParkId]);
+        }
+
+        $congregationNames = $registrations
+            ->where('is_circuit_overseer', false)
+            ->pluck('congregation')
+            ->unique()
+            ->filter()
+            ->values();
         $updated = 0;
         $notFound = [];
         foreach ($congregationNames as $name) {
             $congregation = Congregation::where('name', $name)->first();
             if ($congregation) {
-                $congregation->update(['car_park_id' => $this->bulkAssignCarParkId]);
+                $congregation->update(['car_park_id' => $carParkId]);
                 $updated++;
             } else {
                 $notFound[] = $name;
@@ -234,22 +260,34 @@ class Registrations extends Component
         $this->selectedIds = [];
         $this->bulkAssignCarParkModalOpen = false;
         $this->bulkAssignCarParkId = '';
-        $msg = __('registrations.bulk_congregation_car_park_assigned', ['count' => $updated]);
+        $totalUpdated = $updated + $coUpdated;
+        $msg = __('registrations.bulk_congregation_car_park_assigned', ['count' => $totalUpdated]);
         if (count($notFound) > 0) {
             $msg .= ' ' . __('registrations.bulk_congregation_not_found', ['names' => implode(', ', array_slice($notFound, 0, 5)) . (count($notFound) > 5 ? '…' : '')]);
         }
-        Flux::toast($msg, variant: count($notFound) > 0 ? 'warning' : 'success');
+        Flux::toast($msg, variant: count($notFound) > 0 || $totalUpdated === 0 ? 'warning' : 'success');
     }
 
     /** Assign selected registrations (individuals) to a car park — e.g. for elderly/infirm. */
     public function bulkAssignSelectedToCarPark(): void
     {
-        if (empty($this->selectedIds)) {
+        $selectedIds = array_values(array_unique(array_map('intval', $this->selectedIds)));
+        if ($selectedIds === []) {
             Flux::toast(__('registrations.select_items'), variant: 'warning');
             return;
         }
+        if ($this->bulkAssignIndividualCarParkId === '' || $this->bulkAssignIndividualCarParkId === null) {
+            Flux::toast(__('registrations.select_car_park_first'), variant: 'warning');
+            return;
+        }
+
         $this->validate(['bulkAssignIndividualCarParkId' => 'required|exists:car_parks,id']);
-        $count = ParkingRegistration::whereIn('id', $this->selectedIds)->update(['car_park_id' => $this->bulkAssignIndividualCarParkId]);
+        $count = ParkingRegistration::whereIn('id', $selectedIds)->update(['car_park_id' => (int) $this->bulkAssignIndividualCarParkId]);
+        if ($count === 0) {
+            Flux::toast(__('registrations.bulk_assign_no_changes'), variant: 'warning');
+            return;
+        }
+
         $this->selectedIds = [];
         $this->bulkAssignIndividualCarParkId = '';
         Flux::toast(__('registrations.bulk_individual_car_park_assigned', ['count' => $count]));
@@ -326,9 +364,10 @@ class Registrations extends Component
 
     public function save()
     {
+        $isCircuitOverseer = (bool) ($this->editingRegistration?->is_circuit_overseer ?? false);
+
         $rules = [
             'name' => 'required|string|max:255',
-            'congregation' => 'required|string|max:255',
             'carParkId' => 'nullable|exists:car_parks,id',
             'vehicleType' => 'required|in:car,coach',
             'contactNumber' => 'required|string|max:20',
@@ -336,6 +375,7 @@ class Registrations extends Component
             'elderlyInfirmParking' => 'in:0,1',
             'days' => 'nullable|array',
         ];
+        $rules['congregation'] = $isCircuitOverseer ? 'nullable|string|max:255' : 'required|string|max:255';
         $rules['vehicleReg'] = $this->vehicleType === 'car' ? 'required|string|min:2|max:20' : 'nullable|string|max:20';
         if ($this->vehicleType === 'coach') {
             $rules['sharingWithOtherCongregations'] = 'required|in:0,1';
@@ -350,11 +390,15 @@ class Registrations extends Component
         $carParkId = $this->carParkId ? (int) $this->carParkId : null;
         $sharingWithOther = $this->vehicleType === 'coach' && $this->sharingWithOtherCongregations === '1';
         $sharingNotes = $sharingWithOther ? trim($this->sharingCongregationsNotes) : null;
+        $congregation = trim((string) $this->congregation);
+        if ($isCircuitOverseer && $congregation === '') {
+            $congregation = 'Circuit Overseer';
+        }
 
         if ($this->editingRegistration) {
             $this->editingRegistration->update([
                 'name' => $this->name,
-                'congregation' => $this->congregation,
+                'congregation' => $congregation,
                 'car_park_id' => $carParkId,
                 'vehicle_type' => $this->vehicleType,
                 'vehicle_registration' => $this->vehicleReg ?? null,
