@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\CarPark;
 use App\Models\ParkingPass;
+use App\Services\SurveyVsRegistrationMetrics;
 use Illuminate\Support\Facades\DB;
 use Livewire\Component;
 
@@ -13,6 +14,7 @@ class Dashboard extends Component
 
     #[\Livewire\Attributes\Url]
     public $viewParkId = null;
+
     public $viewCarsModal = false;
 
     public function mount()
@@ -54,7 +56,7 @@ class Dashboard extends Component
         $congregationStats = \App\Models\Congregation::withCount([
             'parkingPasses as parked_count' => function ($query) {
                 $query->where('status', 'parked');
-            }
+            },
         ])
             ->orderByDesc('parked_count')
             ->take(5)
@@ -68,6 +70,11 @@ class Dashboard extends Component
                 ->paginate(10);
         }
 
+        $surveyVsRegistration = null;
+        if (auth()->user()?->role === 'admin') {
+            $surveyVsRegistration = app(SurveyVsRegistrationMetrics::class)->compute();
+        }
+
         return view('livewire.admin.dashboard', [
             'carParks' => $carParks,
             'totalCapacity' => $totalCapacity,
@@ -78,6 +85,7 @@ class Dashboard extends Component
             'parkedCars' => $parkedCars,
             'selectedPark' => $this->viewParkId ? $carParks->firstWhere('id', $this->viewParkId) : null,
             'registrations' => \App\Models\ParkingRegistration::latest()->take(20)->get(),
+            'surveyVsRegistration' => $surveyVsRegistration,
         ]);
     }
 }

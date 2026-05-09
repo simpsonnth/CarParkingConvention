@@ -49,6 +49,44 @@
         </div>
     </div>
 
+    @php
+        $rr = $registrationReportSummary;
+    @endphp
+    <div class="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-300">
+        <p class="font-medium text-zinc-900 dark:text-zinc-100">{{ __('registrations.vs_expected_title') }}</p>
+        <p class="mt-2 flex flex-wrap items-baseline gap-x-4 gap-y-1">
+            <span><span class="font-semibold tabular-nums text-zinc-900 dark:text-white">{{ number_format($rr['registration_total']) }}</span> {{ __('registrations.vs_expected_completed') }}</span>
+            <span class="text-zinc-400">/</span>
+            <span><span class="tabular-nums font-semibold text-zinc-900 dark:text-white">{{ number_format($rr['expected_total']) }}</span> {{ __('registrations.vs_expected_from_report') }}</span>
+        </p>
+        <p class="mt-2 text-zinc-600 dark:text-zinc-400">
+            {{ __('registrations.vs_expected_difference') }}:
+            <span class="tabular-nums font-semibold {{ $rr['difference'] > 0 ? 'text-amber-800 dark:text-amber-300' : ($rr['difference'] < 0 ? 'text-emerald-800 dark:text-emerald-300' : 'text-zinc-800 dark:text-zinc-200') }}">{{ number_format($rr['difference']) }}</span>
+        </p>
+        <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('registrations.vs_expected_difference_hint') }}</p>
+        @if ($rr['expected_total'] > 0)
+            <div class="mt-3 space-y-2">
+                <div class="flex justify-between text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                    <span>{{ __('registrations.vs_expected_progress') }}</span>
+                    <span class="tabular-nums text-zinc-900 dark:text-zinc-200">{{ number_format($rr['completion_percent'], 1) }}%</span>
+                </div>
+                <div class="h-3 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
+                    <div
+                        class="h-full rounded-full bg-indigo-600 dark:bg-indigo-500"
+                        style="width: {{ min(100, $rr['completion_percent']) }}%"
+                        role="progressbar"
+                        aria-valuenow="{{ (int) round($rr['completion_percent']) }}"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                    ></div>
+                </div>
+            </div>
+        @endif
+        <p class="mt-3">
+            <flux:link :href="route('admin.reports')" wire:navigate class="text-sm font-semibold">{{ __('registrations.vs_expected_view_report') }}</flux:link>
+        </p>
+    </div>
+
     @if($this->getAppliedFiltersCount() > 0)
         <div class="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/50">
             <button type="button" wire:click="openFilterPanel" class="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400">

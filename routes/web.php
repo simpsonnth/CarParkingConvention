@@ -133,6 +133,7 @@ Route::middleware(['auth'])->group(function () {
         })->name('registrations.export');
         Route::get('/settings', App\Livewire\Admin\Settings::class)->name('settings');
         Route::get('/reports', App\Livewire\Admin\Reports::class)->name('reports');
+        Route::get('/survey-vs-registrations', App\Livewire\Admin\SurveyVsRegistrationReport::class)->name('survey-vs-registrations');
         Route::get('/circuit-overseer-parking', App\Livewire\Admin\CircuitOverseerParking::class)->name('circuit-overseer-parking');
     });
 

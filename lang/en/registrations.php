@@ -74,6 +74,14 @@ return [
     'select_congregation' => 'Select Congregation',
     'registration' => 'Registration',
 
+    'vs_expected_title' => 'Completion vs parking survey report',
+    'vs_expected_completed' => 'registrations on file',
+    'vs_expected_from_report' => 'expected tickets (combined survey total)',
+    'vs_expected_difference' => 'Gap (expected − completed)',
+    'vs_expected_difference_hint' => 'Positive means you are below the combined ticket total from the survey report; negative means more registrations than that total.',
+    'vs_expected_progress' => 'Registrations as share of expected tickets',
+    'vs_expected_view_report' => 'View parking survey report',
+
     // Trash / Recycle bin
     'trash_title' => 'Recycle bin',
     'trash_subtitle' => 'Soft-deleted registrations. Restore or permanently delete.',

@@ -3,6 +3,7 @@
 return [
     'nav_group' => 'Relatórios',
     'nav_reports' => 'Relatório inquérito estacionamento',
+    'nav_survey_vs_registrations' => 'Inquérito vs inscrições',
     'nav_circuit_overseer' => 'Estacionamento superintendente de circuito',
 
     'page_title' => 'Relatório inquérito estacionamento',

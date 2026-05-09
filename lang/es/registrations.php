@@ -74,6 +74,14 @@ return [
     'select_congregation' => 'Seleccionar congregación',
     'registration' => 'Inscripción',
 
+    'vs_expected_title' => 'Avance vs informe de encuesta de aparcamiento',
+    'vs_expected_completed' => 'inscripciones registradas',
+    'vs_expected_from_report' => 'entradas esperadas (total combinado del informe)',
+    'vs_expected_difference' => 'Brecha (esperado − completadas)',
+    'vs_expected_difference_hint' => 'Positivo: por debajo del total combinado del informe; negativo: más inscripciones que ese total.',
+    'vs_expected_progress' => 'Inscripciones respecto a las entradas esperadas',
+    'vs_expected_view_report' => 'Ver informe de encuesta de aparcamiento',
+
     // Trash / Recycle bin
     'trash_title' => 'Papelera',
     'trash_subtitle' => 'Inscripciones eliminadas. Restaurar o eliminar permanentemente.',

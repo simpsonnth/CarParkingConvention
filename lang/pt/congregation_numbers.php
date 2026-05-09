@@ -74,6 +74,13 @@ return [
     'delete_confirm' => 'Mover esta resposta para o lixo? A congregação pode voltar a enviar o formulário.',
     'deleted_toast' => 'Resposta movida para o lixo.',
 
+    'edit_action' => 'Editar',
+    'edit_modal_title' => 'Editar números da congregação',
+    'edit_modal_subtitle' => 'A atualizar resposta de :name.',
+    'edit_cancel' => 'Cancelar',
+    'edit_save' => 'Guardar alterações',
+    'admin_saved_toast' => 'Resposta guardada.',
+
     'trash_link' => 'Lixo',
     'trash_title' => 'Números das congregações — lixo',
     'trash_subtitle' => 'Respostas eliminadas (soft). Restaurar ou eliminar definitivamente.',

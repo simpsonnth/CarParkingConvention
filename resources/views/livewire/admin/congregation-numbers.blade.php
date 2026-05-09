@@ -138,6 +138,7 @@
                             <flux:dropdown>
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" />
                                 <flux:menu>
+                                    <flux:menu.item wire:click="openEdit({{ $row->id }})" icon="pencil">{{ __('congregation_numbers.edit_action') }}</flux:menu.item>
                                     <flux:menu.item wire:click="softDeleteResponse({{ $row->id }})" wire:confirm="{{ __('congregation_numbers.delete_confirm') }}" icon="trash" variant="danger">{{ __('congregation_numbers.delete_action') }}</flux:menu.item>
                                 </flux:menu>
                             </flux:dropdown>
@@ -157,4 +158,137 @@
     <div class="px-1">
         {{ $rows->links() }}
     </div>
+
+    <flux:modal wire:model="editModalOpen" class="w-[calc(100vw-2rem)] max-w-lg max-h-[90vh] overflow-y-auto">
+        <form wire:submit="saveEdit" class="space-y-4">
+            <div>
+                <flux:heading size="lg">{{ __('congregation_numbers.edit_modal_title') }}</flux:heading>
+                <flux:subheading>{{ __('congregation_numbers.edit_modal_subtitle', ['name' => $this->editingCongregation?->name ?? '—']) }}</flux:subheading>
+            </div>
+
+            <flux:input
+                wire:model="editCarParkTicketsCount"
+                type="number"
+                min="0"
+                step="1"
+                label="{{ __('congregation_numbers.car_park_tickets') }}"
+            />
+
+            <div>
+                <span class="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('congregation_numbers.organizes_coach') }}</span>
+                <div class="flex gap-2">
+                    <button type="button" wire:click="$set('editOrganizesCoach', '1')"
+                        @class([
+                            'flex-1 rounded-lg border-2 px-3 py-2 text-sm font-medium transition',
+                            'border-indigo-500 bg-indigo-50 text-indigo-800 dark:border-indigo-500 dark:bg-indigo-900/30 dark:text-indigo-200' => $editOrganizesCoach === '1',
+                            'border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700/50' => $editOrganizesCoach !== '1',
+                        ])>{{ __('congregation_numbers.yes') }}</button>
+                    <button type="button" wire:click="$set('editOrganizesCoach', '0'); $set('editSharingCoachWithOthers', '0'); $set('editSharedWithCongregationIds', []); $set('editShareSearch', ''); $set('editCoachSize', '')"
+                        @class([
+                            'flex-1 rounded-lg border-2 px-3 py-2 text-sm font-medium transition',
+                            'border-indigo-500 bg-indigo-50 text-indigo-800 dark:border-indigo-500 dark:bg-indigo-900/30 dark:text-indigo-200' => $editOrganizesCoach === '0',
+                            'border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700/50' => $editOrganizesCoach !== '0',
+                        ])>{{ __('congregation_numbers.no') }}</button>
+                </div>
+            </div>
+
+            @if($editOrganizesCoach === '1')
+                <div>
+                    <span class="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('congregation_numbers.sharing_coach') }}</span>
+                    <div class="flex gap-2">
+                        <button type="button" wire:click="$set('editSharingCoachWithOthers', '1')"
+                            @class([
+                                'flex-1 rounded-lg border-2 px-3 py-2 text-sm font-medium transition',
+                                'border-indigo-500 bg-indigo-50 text-indigo-800 dark:border-indigo-500 dark:bg-indigo-900/30 dark:text-indigo-200' => $editSharingCoachWithOthers === '1',
+                                'border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700/50' => $editSharingCoachWithOthers !== '1',
+                            ])>{{ __('congregation_numbers.yes') }}</button>
+                        <button type="button" wire:click="$set('editSharingCoachWithOthers', '0'); $set('editSharedWithCongregationIds', []); $set('editShareSearch', ''); $set('editCoachSize', '')"
+                            @class([
+                                'flex-1 rounded-lg border-2 px-3 py-2 text-sm font-medium transition',
+                                'border-indigo-500 bg-indigo-50 text-indigo-800 dark:border-indigo-500 dark:bg-indigo-900/30 dark:text-indigo-200' => $editSharingCoachWithOthers === '0',
+                                'border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700/50' => $editSharingCoachWithOthers !== '0',
+                            ])>{{ __('congregation_numbers.no') }}</button>
+                    </div>
+                </div>
+
+                @if($editSharingCoachWithOthers === '1')
+                    <div class="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-600 dark:bg-zinc-900/40">
+                        <p class="text-xs font-medium text-zinc-600 dark:text-zinc-400">{{ __('congregation_numbers.shared_with_congregations') }}</p>
+                        <p class="text-xs text-zinc-500 dark:text-zinc-500">{{ __('congregation_numbers.shared_with_hint') }}</p>
+
+                        @if($this->editSelectedSharedCongregations->isNotEmpty())
+                            <div class="flex flex-wrap gap-2">
+                                @foreach($this->editSelectedSharedCongregations as $c)
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-indigo-100 py-1 ps-3 pe-1 text-xs font-medium text-indigo-900 dark:bg-indigo-900/40 dark:text-indigo-100">
+                                        <span class="max-w-[200px] truncate">{{ $c->name }}</span>
+                                        <button type="button" wire:click="removeEditSharedCongregation({{ $c->id }})" class="rounded-full p-1 hover:bg-indigo-200/80 dark:hover:bg-indigo-800/80" aria-label="{{ __('congregation_numbers.shared_with_remove') }}">
+                                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                        </button>
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        <flux:input wire:model.live.debounce.300ms="editShareSearch" label="{{ __('congregation_numbers.shared_with_search_label') }}" placeholder="{{ __('congregation_numbers.shared_with_search_placeholder') }}" />
+
+                        <div class="max-h-40 overflow-y-auto rounded-lg border border-zinc-200 dark:border-zinc-600 divide-y divide-zinc-100 dark:divide-zinc-700">
+                            @if($this->editShareSearchReady && $this->editShareSearchMatches->isEmpty())
+                                <p class="p-3 text-center text-xs text-zinc-500">{{ __('congregation_numbers.shared_with_no_matches') }}</p>
+                            @elseif($this->editShareSearchReady)
+                                @foreach($this->editShareSearchMatches as $c)
+                                    <div class="flex items-center justify-between gap-2 px-3 py-2">
+                                        <span class="min-w-0 flex-1 truncate text-sm text-zinc-800 dark:text-zinc-200">{{ $c->name }}</span>
+                                        <flux:button type="button" size="sm" wire:click="addEditSharedCongregation({{ $c->id }})">{{ __('congregation_numbers.shared_with_add') }}</flux:button>
+                                    </div>
+                                @endforeach
+                            @else
+                                <p class="p-3 text-center text-xs text-zinc-500">{{ __('congregation_numbers.shared_with_type_to_search') }}</p>
+                            @endif
+                        </div>
+                        @error('editSharedWithCongregationIds')<p class="text-xs text-red-600 dark:text-red-400">{{ $message }}</p>@enderror
+                    </div>
+
+                    <flux:select wire:model="editCoachSize" label="{{ __('congregation_numbers.coach_size') }}">
+                        <option value="">{{ __('congregation_numbers.choose_option') }}</option>
+                        <option value="minibus">{{ __('congregation_numbers.coach_size_minibus') }}</option>
+                        <option value="small_coach">{{ __('congregation_numbers.coach_size_small_coach') }}</option>
+                        <option value="large_coach">{{ __('congregation_numbers.coach_size_large_coach') }}</option>
+                    </flux:select>
+                @endif
+            @endif
+
+            <div>
+                <span class="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('congregation_numbers.disabled_parking') }}</span>
+                <div class="flex gap-2">
+                    <button type="button" wire:click="$set('editDisabledParkingRequired', '1')"
+                        @class([
+                            'flex-1 rounded-lg border-2 px-3 py-2 text-sm font-medium transition',
+                            'border-indigo-500 bg-indigo-50 text-indigo-800 dark:border-indigo-500 dark:bg-indigo-900/30 dark:text-indigo-200' => $editDisabledParkingRequired === '1',
+                            'border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700/50' => $editDisabledParkingRequired !== '1',
+                        ])>{{ __('congregation_numbers.yes') }}</button>
+                    <button type="button" wire:click="$set('editDisabledParkingRequired', '0'); $set('editDisabledParkingCount', '')"
+                        @class([
+                            'flex-1 rounded-lg border-2 px-3 py-2 text-sm font-medium transition',
+                            'border-indigo-500 bg-indigo-50 text-indigo-800 dark:border-indigo-500 dark:bg-indigo-900/30 dark:text-indigo-200' => $editDisabledParkingRequired === '0',
+                            'border-zinc-200 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-700/50' => $editDisabledParkingRequired !== '0',
+                        ])>{{ __('congregation_numbers.no') }}</button>
+                </div>
+            </div>
+
+            @if($editDisabledParkingRequired === '1')
+                <flux:input
+                    wire:model="editDisabledParkingCount"
+                    type="number"
+                    min="1"
+                    step="1"
+                    label="{{ __('congregation_numbers.disabled_parking_count') }}"
+                />
+            @endif
+
+            <div class="flex justify-end gap-2 pt-2">
+                <flux:button type="button" variant="ghost" wire:click="closeEditModal">{{ __('congregation_numbers.edit_cancel') }}</flux:button>
+                <flux:button type="submit" variant="primary">{{ __('congregation_numbers.edit_save') }}</flux:button>
+            </div>
+        </form>
+    </flux:modal>
 </div>

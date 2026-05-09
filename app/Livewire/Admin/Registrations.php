@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\Congregation;
 use App\Models\ParkingRegistration;
+use App\Services\CongregationNumbersReportMetrics;
 use Flux\Flux;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -23,6 +24,7 @@ class Registrations extends Component
 
     /** Sort: column key and direction */
     public string $sortBy = 'created_at';
+
     public string $sortDir = 'desc';
 
     /** Filter panel visibility */
@@ -30,20 +32,28 @@ class Registrations extends Component
 
     /** Applied filters (used in query) */
     public array $filterCongregations = [];
+
     public array $filterCarParks = [];
+
     public array $filterVehicleType = [];
+
     /** @var bool|null true = yes, false = no, null = any */
     public $filterElderlyInfirm = null;
 
     /** Draft filter values (in fly-out before Apply) */
     public array $filterDraftCongregations = [];
+
     public array $filterDraftCarParks = [];
+
     public array $filterDraftVehicleType = [];
+
     /** @var string|null 'any' | '1' | '0' for draft panel */
     public $filterDraftElderlyInfirm = 'any';
 
     public bool $modalOpen = false;
+
     public bool $bulkAssignCarParkModalOpen = false;
+
     public ?ParkingRegistration $editingRegistration = null;
 
     /** For bulk assign congregation to car park */
@@ -54,15 +64,25 @@ class Registrations extends Component
 
     // Form Fields
     public $name = '';
+
     public $congregation = '';
+
     public $carParkId = '';
+
     public $vehicleType = 'car';
+
     public $vehicleReg = '';
+
     public $contactNumber = '';
+
     public $email = '';
+
     public $elderlyInfirmParking = '0';
+
     public $sharingWithOtherCongregations = '0';
+
     public $sharingCongregationsNotes = '';
+
     public $days = [];
 
     public function updatedSearch(): void
@@ -139,6 +159,7 @@ class Registrations extends Component
         if ($this->filterElderlyInfirm !== null) {
             $n += 1;
         }
+
         return $n;
     }
 
@@ -192,6 +213,7 @@ class Registrations extends Component
     {
         if (empty($this->selectedIds)) {
             Flux::toast(__('registrations.select_items'), variant: 'warning');
+
             return;
         }
         $value = $value === '1' ? true : false;
@@ -204,6 +226,7 @@ class Registrations extends Component
     {
         if (empty($this->selectedIds)) {
             Flux::toast(__('registrations.select_items'), variant: 'warning');
+
             return;
         }
         $this->bulkAssignCarParkId = '';
@@ -216,10 +239,12 @@ class Registrations extends Component
         if ($selectedIds === []) {
             Flux::toast(__('registrations.select_items'), variant: 'warning');
             $this->bulkAssignCarParkModalOpen = false;
+
             return;
         }
         if ($this->bulkAssignCarParkId === '' || $this->bulkAssignCarParkId === null) {
             Flux::toast(__('registrations.select_car_park_first'), variant: 'warning');
+
             return;
         }
 
@@ -263,7 +288,7 @@ class Registrations extends Component
         $totalUpdated = $updated + $coUpdated;
         $msg = __('registrations.bulk_congregation_car_park_assigned', ['count' => $totalUpdated]);
         if (count($notFound) > 0) {
-            $msg .= ' ' . __('registrations.bulk_congregation_not_found', ['names' => implode(', ', array_slice($notFound, 0, 5)) . (count($notFound) > 5 ? '…' : '')]);
+            $msg .= ' '.__('registrations.bulk_congregation_not_found', ['names' => implode(', ', array_slice($notFound, 0, 5)).(count($notFound) > 5 ? '…' : '')]);
         }
         Flux::toast($msg, variant: count($notFound) > 0 || $totalUpdated === 0 ? 'warning' : 'success');
     }
@@ -274,10 +299,12 @@ class Registrations extends Component
         $selectedIds = array_values(array_unique(array_map('intval', $this->selectedIds)));
         if ($selectedIds === []) {
             Flux::toast(__('registrations.select_items'), variant: 'warning');
+
             return;
         }
         if ($this->bulkAssignIndividualCarParkId === '' || $this->bulkAssignIndividualCarParkId === null) {
             Flux::toast(__('registrations.select_car_park_first'), variant: 'warning');
+
             return;
         }
 
@@ -285,6 +312,7 @@ class Registrations extends Component
         $count = ParkingRegistration::whereIn('id', $selectedIds)->update(['car_park_id' => (int) $this->bulkAssignIndividualCarParkId]);
         if ($count === 0) {
             Flux::toast(__('registrations.bulk_assign_no_changes'), variant: 'warning');
+
             return;
         }
 
@@ -297,6 +325,7 @@ class Registrations extends Component
     {
         if (empty($this->selectedIds)) {
             Flux::toast(__('registrations.select_items'), variant: 'warning');
+
             return;
         }
         $count = ParkingRegistration::whereIn('id', $this->selectedIds)->delete();
@@ -309,18 +338,20 @@ class Registrations extends Component
     {
         if (empty($this->selectedIds)) {
             Flux::toast(__('registrations.select_items'), variant: 'warning');
+
             return;
         }
 
         $token = \Illuminate\Support\Str::random(32);
         $ids = array_values(array_map('intval', $this->selectedIds));
-        cache()->put('master-passes-zip:' . $token, $ids, now()->addMinutes(2));
+        cache()->put('master-passes-zip:'.$token, $ids, now()->addMinutes(2));
 
         try {
             return $this->redirect(route('admin.registrations.download-passes-zip', ['token' => $token]), navigate: false);
         } catch (\Throwable $e) {
-            cache()->forget('master-passes-zip:' . $token);
+            cache()->forget('master-passes-zip:'.$token);
             Flux::toast($e->getMessage(), variant: 'danger');
+
             return null;
         }
     }
@@ -331,10 +362,10 @@ class Registrations extends Component
             ->with('carPark')
             ->when($this->search, function ($q) {
                 $q->where(function ($q2) {
-                    $q2->where('name', 'like', '%' . $this->search . '%')
-                        ->orWhere('vehicle_registration', 'like', '%' . $this->search . '%')
-                        ->orWhere('congregation', 'like', '%' . $this->search . '%')
-                        ->orWhere('email', 'like', '%' . $this->search . '%');
+                    $q2->where('name', 'like', '%'.$this->search.'%')
+                        ->orWhere('vehicle_registration', 'like', '%'.$this->search.'%')
+                        ->orWhere('congregation', 'like', '%'.$this->search.'%')
+                        ->orWhere('email', 'like', '%'.$this->search.'%');
                 });
             })
             ->when(! empty($this->filterCongregations), function ($q) {
@@ -430,10 +461,24 @@ class Registrations extends Component
     {
         $registrations = $this->getRegistrationsQuery()->paginate($this->perPage);
 
+        $reportMetrics = app(CongregationNumbersReportMetrics::class)->compute();
+        $expectedTotal = (int) $reportMetrics['combined_total_car_park_tickets'];
+        $registrationTotal = (int) ParkingRegistration::query()->count();
+        $difference = $expectedTotal - $registrationTotal;
+        $completionPercent = $expectedTotal > 0
+            ? min(100.0, round(100 * $registrationTotal / $expectedTotal, 1))
+            : ($registrationTotal > 0 ? 100.0 : 0.0);
+
         return view('livewire.admin.registrations', [
             'registrations' => $registrations,
             'congregations' => Congregation::orderBy('name')->pluck('name'),
             'carParks' => \App\Models\CarPark::orderBy('name')->get(),
+            'registrationReportSummary' => [
+                'registration_total' => $registrationTotal,
+                'expected_total' => $expectedTotal,
+                'difference' => $difference,
+                'completion_percent' => $completionPercent,
+            ],
         ]);
     }
 }

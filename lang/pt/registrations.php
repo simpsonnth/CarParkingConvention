@@ -74,6 +74,14 @@ return [
     'select_congregation' => 'Selecionar congregação',
     'registration' => 'Inscrição',
 
+    'vs_expected_title' => 'Progresso vs relatório do inquérito de estacionamento',
+    'vs_expected_completed' => 'inscrições registadas',
+    'vs_expected_from_report' => 'bilhetes esperados (total combinado do relatório)',
+    'vs_expected_difference' => 'Diferença (esperado − concluídas)',
+    'vs_expected_difference_hint' => 'Positivo: abaixo do total combinado do relatório; negativo: mais inscrições do que esse total.',
+    'vs_expected_progress' => 'Inscrições em relação aos bilhetes esperados',
+    'vs_expected_view_report' => 'Ver relatório do inquérito de estacionamento',
+
     // Trash / Recycle bin
     'trash_title' => 'Reciclagem',
     'trash_subtitle' => 'Inscrições eliminadas. Restaurar ou eliminar permanentemente.',

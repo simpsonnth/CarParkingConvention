@@ -74,6 +74,13 @@ return [
     'delete_confirm' => '¿Mover esta respuesta a la papelera? La congregación podrá enviar el formulario de nuevo.',
     'deleted_toast' => 'Respuesta movida a la papelera.',
 
+    'edit_action' => 'Editar',
+    'edit_modal_title' => 'Editar números de congregación',
+    'edit_modal_subtitle' => 'Actualizando respuesta de :name.',
+    'edit_cancel' => 'Cancelar',
+    'edit_save' => 'Guardar cambios',
+    'admin_saved_toast' => 'Respuesta guardada.',
+
     'trash_link' => 'Papelera',
     'trash_title' => 'Números de congregaciones — papelera',
     'trash_subtitle' => 'Respuestas eliminadas (soft). Restaurar o borrar permanentemente.',

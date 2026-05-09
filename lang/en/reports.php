@@ -3,6 +3,7 @@
 return [
     'nav_group' => 'Reports',
     'nav_reports' => 'Parking survey report',
+    'nav_survey_vs_registrations' => 'Survey vs registrations',
     'nav_circuit_overseer' => 'Circuit Overseer parking',
 
     'page_title' => 'Parking survey report',

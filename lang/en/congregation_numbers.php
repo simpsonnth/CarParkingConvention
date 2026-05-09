@@ -75,6 +75,13 @@ return [
     'delete_confirm' => 'Move this response to trash? The congregation can submit the form again.',
     'deleted_toast' => 'Response moved to trash.',
 
+    'edit_action' => 'Edit',
+    'edit_modal_title' => 'Edit congregation numbers',
+    'edit_modal_subtitle' => 'Updating response for :name.',
+    'edit_cancel' => 'Cancel',
+    'edit_save' => 'Save changes',
+    'admin_saved_toast' => 'Response saved.',
+
     'trash_link' => 'Trash',
     'trash_title' => 'Congregation numbers — trash',
     'trash_subtitle' => 'Soft-deleted responses. Restore or permanently delete.',

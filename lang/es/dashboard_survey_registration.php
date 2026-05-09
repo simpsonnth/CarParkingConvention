@@ -1,0 +1,29 @@
+<?php
+
+return [
+    'section_title' => 'Encuesta vs preinscripción',
+    'section_subtitle' => 'Compare el número de entradas de la encuesta por congregación (registro simple) con las inscripciones de aparcamiento que coinciden por nombre de congregación.',
+
+    'stat_survey_total' => 'Entradas encuesta (congregaciones)',
+    'stat_registrations_matched' => 'Preinscripciones coincidentes',
+    'stat_co_expected' => 'Entradas SC esperadas (informe)',
+    'stat_co_registered' => 'Inscripciones SC',
+
+    'co_comparison' => ':registered registradas / :expected esperadas según aparcamiento SC',
+
+    'table_col_congregation' => 'Congregación',
+    'table_col_survey' => 'Encuesta',
+    'table_col_registered' => 'Inscritas',
+    'table_col_difference' => 'Diferencia',
+    'table_col_progress' => 'Progreso',
+
+    'difference_hint' => 'Encuesta menos inscripciones (positivo = por debajo de la encuesta).',
+
+    'unmatched_alert' => ':count inscripción(es) usan un nombre de congregación que no coincide con ninguna congregación del listado. Revíselas en la página de inscripciones y corrija ortografía o espacios.',
+    'link_registrations' => 'Abrir inscripciones',
+
+    'progress_label' => 'Preinscripción vs encuesta',
+
+    'open_full_page' => 'Abrir informe a página completa',
+    'back_command_center' => 'Centro de control',
+];

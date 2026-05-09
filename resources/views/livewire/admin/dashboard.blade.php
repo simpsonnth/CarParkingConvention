@@ -50,6 +50,19 @@
         </div>
     </div>
 
+    @if ($surveyVsRegistration)
+        <flux:separator />
+
+        <div class="space-y-3">
+            <div class="flex justify-end">
+                <flux:link :href="route('admin.survey-vs-registrations')" wire:navigate class="text-sm font-medium">
+                    {{ __('dashboard_survey_registration.open_full_page') }}
+                </flux:link>
+            </div>
+            @include('livewire.admin.partials.survey-vs-registration-report-body', ['svr' => $surveyVsRegistration])
+        </div>
+    @endif
+
     <flux:separator />
 
     {{-- Individual Parks --}}

@@ -46,6 +46,9 @@
             <flux:separator class="my-2" />
 
             <flux:navlist.group :heading="__('reports.nav_group')" class="grid">
+                <flux:navlist.item icon="scale" :href="route('admin.survey-vs-registrations')"
+                    :current="request()->routeIs('admin.survey-vs-registrations')" wire:navigate>{{ __('reports.nav_survey_vs_registrations') }}
+                </flux:navlist.item>
                 <flux:navlist.item icon="chart-bar" :href="route('admin.reports')"
                     :current="request()->routeIs('admin.reports')" wire:navigate>{{ __('reports.nav_reports') }}
                 </flux:navlist.item>
