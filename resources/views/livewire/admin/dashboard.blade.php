@@ -59,7 +59,11 @@
                     {{ __('dashboard_survey_registration.open_full_page') }}
                 </flux:link>
             </div>
-            @include('livewire.admin.partials.survey-vs-registration-report-body', ['svr' => $surveyVsRegistration])
+            @include('livewire.admin.partials.survey-vs-registration-report-body', [
+                'svr' => $surveyVsRegistration,
+                'tableRows' => $surveyVsRegistration['rows'],
+                'noMatches' => false,
+            ])
         </div>
     @endif
 

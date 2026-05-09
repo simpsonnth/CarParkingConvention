@@ -26,4 +26,9 @@ return [
 
     'open_full_page' => 'Open full-page report',
     'back_command_center' => 'Command Center',
+
+    'search_placeholder' => 'Search congregations…',
+    'search_results_hint' => 'Showing :shown of :total congregations.',
+    'empty_search' => 'No congregations match your search.',
+    'empty_report' => 'No congregation data to display.',
 ];

@@ -1,13 +1,21 @@
 @php
     /** @var array $svr SurveyVsRegistrationMetrics::compute() */
+    /** @var list<array{name: string, uuid: string|null, survey_tickets: int, registration_count: int, difference: int, progress_percent: float}> $tableRows */
     $co = $svr['circuit_overseer'];
+    $hideHeading = $hideSectionHeading ?? false;
+    $wrapperClass = $tableWrapperClass ?? 'max-h-[min(28rem,70vh)] overflow-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 -mx-4 sm:mx-0';
+    $tableSortEnabled = $tableSortEnabled ?? false;
+    $_sortBy = $sortBy ?? 'congregation';
+    $_sortDir = $sortDir ?? 'asc';
 @endphp
 
 <div class="space-y-4">
-    <div>
-        <flux:heading size="lg">{{ __('dashboard_survey_registration.section_title') }}</flux:heading>
-        <flux:subheading>{{ __('dashboard_survey_registration.section_subtitle') }}</flux:subheading>
-    </div>
+    @unless ($hideHeading)
+        <div>
+            <flux:heading size="lg">{{ __('dashboard_survey_registration.section_title') }}</flux:heading>
+            <flux:subheading>{{ __('dashboard_survey_registration.section_subtitle') }}</flux:subheading>
+        </div>
+    @endunless
 
     <div class="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-300">
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -41,62 +49,133 @@
         </div>
     @endif
 
-    <div class="max-h-[min(28rem,70vh)] overflow-auto rounded-xl border border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800 -mx-4 sm:mx-0">
-        <table class="w-full min-w-[640px] text-left text-sm">
-            <thead class="sticky top-0 z-10 bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
-                <tr>
-                    <th class="px-4 py-3">{{ __('dashboard_survey_registration.table_col_congregation') }}</th>
-                    <th class="px-4 py-3 text-end">{{ __('dashboard_survey_registration.table_col_survey') }}</th>
-                    <th class="px-4 py-3 text-end">{{ __('dashboard_survey_registration.table_col_registered') }}</th>
-                    <th class="px-4 py-3 text-end">{{ __('dashboard_survey_registration.table_col_difference') }}</th>
-                    <th class="min-w-[140px] px-4 py-3">{{ __('dashboard_survey_registration.table_col_progress') }}</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-zinc-100 dark:divide-zinc-700">
-                @foreach ($svr['rows'] as $row)
-                    @php
-                        $congUrl = $row['uuid'] ? route('admin.congregations.show', $row['uuid']) : null;
-                    @endphp
-                    <tr class="bg-white hover:bg-zinc-50 dark:bg-zinc-800/30 dark:hover:bg-zinc-800/80">
-                        <td class="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
-                            @if ($congUrl)
-                                <a href="{{ $congUrl }}" wire:navigate class="font-semibold text-indigo-700 underline-offset-2 hover:text-indigo-900 hover:underline dark:text-indigo-300 dark:hover:text-indigo-200">{{ $row['name'] }}</a>
+    <div class="{{ $wrapperClass }}">
+        @if (($noMatches ?? false))
+            <div class="flex min-h-[12rem] items-center justify-center px-4 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                {{ __('dashboard_survey_registration.empty_search') }}
+            </div>
+        @elseif ($tableRows === [])
+            <div class="flex min-h-[12rem] items-center justify-center px-4 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                {{ __('dashboard_survey_registration.empty_report') }}
+            </div>
+        @else
+            <table class="w-full min-w-[640px] text-left text-sm">
+                <thead class="sticky top-0 z-10 bg-zinc-50 text-xs uppercase text-zinc-500 shadow-sm dark:bg-zinc-900 dark:text-zinc-400">
+                    <tr>
+                        <th class="px-4 py-3">
+                            @if ($tableSortEnabled)
+                                <button type="button" wire:click="setSort('congregation')" class="inline-flex items-center gap-1 font-medium hover:text-zinc-700 dark:hover:text-zinc-300">
+                                    {{ __('dashboard_survey_registration.table_col_congregation') }}
+                                    @if ($_sortBy === 'congregation')
+                                        <flux:icon name="{{ $_sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
+                                    @endif
+                                </button>
                             @else
-                                {{ $row['name'] }}
+                                {{ __('dashboard_survey_registration.table_col_congregation') }}
                             @endif
-                        </td>
-                        <td class="px-4 py-3 text-end tabular-nums text-zinc-700 dark:text-zinc-300">{{ number_format($row['survey_tickets']) }}</td>
-                        <td class="px-4 py-3 text-end tabular-nums text-zinc-700 dark:text-zinc-300">{{ number_format($row['registration_count']) }}</td>
-                        <td class="px-4 py-3 text-end tabular-nums font-medium {{ $row['difference'] > 0 ? 'text-amber-700 dark:text-amber-300' : ($row['difference'] < 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-zinc-600 dark:text-zinc-400') }}">
-                            {{ number_format($row['difference']) }}
-                        </td>
-                        <td class="px-4 py-3">
-                            @if ($row['survey_tickets'] > 0)
-                                <div class="flex flex-col gap-1">
-                                    <div class="flex justify-between text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
-                                        <span>{{ __('dashboard_survey_registration.progress_label') }}</span>
-                                        <span class="tabular-nums">{{ number_format($row['progress_percent'], 1) }}%</span>
-                                    </div>
-                                    <div class="h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
-                                        <div
-                                            class="h-full rounded-full bg-indigo-600 dark:bg-indigo-500"
-                                            style="width: {{ min(100, $row['progress_percent']) }}%"
-                                            role="progressbar"
-                                            aria-valuenow="{{ (int) round($row['progress_percent']) }}"
-                                            aria-valuemin="0"
-                                            aria-valuemax="100"
-                                        ></div>
-                                    </div>
+                        </th>
+                        <th class="px-4 py-3 text-end">
+                            @if ($tableSortEnabled)
+                                <div class="flex justify-end">
+                                    <button type="button" wire:click="setSort('survey_tickets')" class="inline-flex items-center gap-1 font-medium hover:text-zinc-700 dark:hover:text-zinc-300">
+                                        {{ __('dashboard_survey_registration.table_col_survey') }}
+                                        @if ($_sortBy === 'survey_tickets')
+                                            <flux:icon name="{{ $_sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
+                                        @endif
+                                    </button>
                                 </div>
-                            @elseif ($row['registration_count'] > 0)
-                                <span class="text-xs text-zinc-500 dark:text-zinc-400">{{ number_format($row['progress_percent'], 0) }}%</span>
                             @else
-                                <span class="text-xs text-zinc-400">—</span>
+                                {{ __('dashboard_survey_registration.table_col_survey') }}
                             @endif
-                        </td>
+                        </th>
+                        <th class="px-4 py-3 text-end">
+                            @if ($tableSortEnabled)
+                                <div class="flex justify-end">
+                                    <button type="button" wire:click="setSort('registration_count')" class="inline-flex items-center gap-1 font-medium hover:text-zinc-700 dark:hover:text-zinc-300">
+                                        {{ __('dashboard_survey_registration.table_col_registered') }}
+                                        @if ($_sortBy === 'registration_count')
+                                            <flux:icon name="{{ $_sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
+                                        @endif
+                                    </button>
+                                </div>
+                            @else
+                                {{ __('dashboard_survey_registration.table_col_registered') }}
+                            @endif
+                        </th>
+                        <th class="px-4 py-3 text-end">
+                            @if ($tableSortEnabled)
+                                <div class="flex justify-end">
+                                    <button type="button" wire:click="setSort('difference')" class="inline-flex items-center gap-1 font-medium hover:text-zinc-700 dark:hover:text-zinc-300">
+                                        {{ __('dashboard_survey_registration.table_col_difference') }}
+                                        @if ($_sortBy === 'difference')
+                                            <flux:icon name="{{ $_sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
+                                        @endif
+                                    </button>
+                                </div>
+                            @else
+                                {{ __('dashboard_survey_registration.table_col_difference') }}
+                            @endif
+                        </th>
+                        <th class="min-w-[140px] px-4 py-3">
+                            @if ($tableSortEnabled)
+                                <button type="button" wire:click="setSort('progress_percent')" class="inline-flex items-center gap-1 font-medium hover:text-zinc-700 dark:hover:text-zinc-300">
+                                    {{ __('dashboard_survey_registration.table_col_progress') }}
+                                    @if ($_sortBy === 'progress_percent')
+                                        <flux:icon name="{{ $_sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
+                                    @endif
+                                </button>
+                            @else
+                                {{ __('dashboard_survey_registration.table_col_progress') }}
+                            @endif
+                        </th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
+                </thead>
+                <tbody class="divide-y divide-zinc-100 dark:divide-zinc-700">
+                    @foreach ($tableRows as $row)
+                        @php
+                            $congUrl = $row['uuid'] ? route('admin.congregations.show', $row['uuid']) : null;
+                        @endphp
+                        <tr class="bg-white hover:bg-zinc-50 dark:bg-zinc-800/30 dark:hover:bg-zinc-800/80">
+                            <td class="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
+                                @if ($congUrl)
+                                    <a href="{{ $congUrl }}" wire:navigate class="font-semibold text-indigo-700 underline-offset-2 hover:text-indigo-900 hover:underline dark:text-indigo-300 dark:hover:text-indigo-200">{{ $row['name'] }}</a>
+                                @else
+                                    {{ $row['name'] }}
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-end tabular-nums text-zinc-700 dark:text-zinc-300">{{ number_format($row['survey_tickets']) }}</td>
+                            <td class="px-4 py-3 text-end tabular-nums text-zinc-700 dark:text-zinc-300">{{ number_format($row['registration_count']) }}</td>
+                            <td class="px-4 py-3 text-end tabular-nums font-medium {{ $row['difference'] > 0 ? 'text-amber-700 dark:text-amber-300' : ($row['difference'] < 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-zinc-600 dark:text-zinc-400') }}">
+                                {{ number_format($row['difference']) }}
+                            </td>
+                            <td class="px-4 py-3">
+                                @if ($row['survey_tickets'] > 0)
+                                    <div class="flex flex-col gap-1">
+                                        <div class="flex justify-between text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+                                            <span>{{ __('dashboard_survey_registration.progress_label') }}</span>
+                                            <span class="tabular-nums">{{ number_format($row['progress_percent'], 1) }}%</span>
+                                        </div>
+                                        <div class="h-2 w-full overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
+                                            <div
+                                                class="h-full rounded-full bg-indigo-600 dark:bg-indigo-500"
+                                                style="width: {{ min(100, $row['progress_percent']) }}%"
+                                                role="progressbar"
+                                                aria-valuenow="{{ (int) round($row['progress_percent']) }}"
+                                                aria-valuemin="0"
+                                                aria-valuemax="100"
+                                            ></div>
+                                        </div>
+                                    </div>
+                                @elseif ($row['registration_count'] > 0)
+                                    <span class="text-xs text-zinc-500 dark:text-zinc-400">{{ number_format($row['progress_percent'], 0) }}%</span>
+                                @else
+                                    <span class="text-xs text-zinc-400">—</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
     </div>
 </div>
