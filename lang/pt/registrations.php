@@ -35,6 +35,8 @@ return [
     'no_registrations' => 'Nenhuma inscrição encontrada.',
     'select_all' => 'Selecionar tudo',
     'selected' => 'selecionado(s)',
+    'duplicate_email_badge' => 'E-mail duplicado',
+    'duplicate_vehicle_reg_badge' => 'Matrícula duplicada',
     'delete_selected' => 'Eliminar selecionados',
     'delete_confirm' => 'Tem a certeza que deseja eliminar esta inscrição?',
     'bulk_delete_confirm' => 'Mover selecionados para a reciclagem?',

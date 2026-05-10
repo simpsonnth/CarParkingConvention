@@ -54,4 +54,10 @@ return [
     'quota_disabled_not_requested' => 'La congregación :congregation no solicitó plazas para discapacitados en la encuesta, así que no se pueden seleccionar aquí.',
     'quota_coach_not_organised' => 'Su congregación no registró un autobús en la encuesta, por lo que no se pueden inscribir autobuses.',
     'quota_coach_taken' => 'Ya se ha registrado un autobús para su congregación.',
+
+    'duplicate_vehicle_registration' => 'Esta matrícula ya está registrada a nombre de :name (:congregation). Si no es usted, revise el número. En caso contrario no necesita volver a inscribirse.',
+    'duplicate_vehicle_registration_live_title' => 'Esta matrícula ya consta en el sistema',
+    'duplicate_vehicle_registration_live_body' => 'Ya tenemos una inscripción para este vehículo a nombre de :name (:congregation). No puede enviar de nuevo con la misma matrícula.',
+    'duplicate_email_warning_title' => 'Este correo ya consta en el sistema',
+    'duplicate_email_warning_body' => 'Ya tenemos una inscripción con este correo para :name (:congregation). Si inscribe a otra persona que comparte el correo, puede continuar; si no, quizá no necesite inscribirse otra vez.',
 ];

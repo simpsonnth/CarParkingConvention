@@ -35,6 +35,8 @@ return [
     'no_registrations' => 'No registrations found.',
     'select_all' => 'Select all',
     'selected' => 'selected',
+    'duplicate_email_badge' => 'Duplicate email',
+    'duplicate_vehicle_reg_badge' => 'Duplicate reg',
     'delete_selected' => 'Delete selected',
     'delete_confirm' => 'Are you sure you want to delete this registration?',
     'bulk_delete_confirm' => 'Move selected to recycle bin?',

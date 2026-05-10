@@ -112,21 +112,35 @@
                         <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">
                             {{ $vehicleType === 'coach' ? __('register.coach_captain_email_address') : __('register.email_address') }}
                         </label>
-                        <input type="email" wire:model="email"
+                        <input type="email" wire:model.live.debounce.300ms="email"
                             class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4"
                             placeholder="{{ __('register.email_placeholder') }}">
                         @error('email') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                     </div>
                 </div>
 
+                @if($this->duplicateEmailExistingRegistration)
+                    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20" role="status">
+                        <p class="text-sm font-semibold text-amber-900 dark:text-amber-100">{{ __('register.duplicate_email_warning_title') }}</p>
+                        <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">{{ __('register.duplicate_email_warning_body', ['name' => $this->duplicateEmailExistingRegistration->name, 'congregation' => $this->duplicateEmailExistingRegistration->congregation ?: '—']) }}</p>
+                    </div>
+                @endif
+
                 @if($vehicleType === 'car')
                 <div>
                     <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('register.vehicle_registration') }} <span class="text-red-500">*</span></label>
-                    <input type="text" wire:model="vehicleReg"
+                    <input type="text" wire:model.live.debounce.300ms="vehicleReg"
                         class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4 uppercase font-mono tracking-wider"
                         placeholder="{{ __('register.vehicle_reg_placeholder') }}">
                     @error('vehicleReg') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                 </div>
+
+                @if($this->duplicateVehicleRegistrationConflict)
+                    <div class="rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20" role="alert">
+                        <p class="text-sm font-semibold text-red-900 dark:text-red-100">{{ __('register.duplicate_vehicle_registration_live_title') }}</p>
+                        <p class="mt-1 text-sm text-red-800 dark:text-red-200">{{ __('register.duplicate_vehicle_registration_live_body', ['name' => $this->duplicateVehicleRegistrationConflict->name, 'congregation' => $this->duplicateVehicleRegistrationConflict->congregation ?: '—']) }}</p>
+                    </div>
+                @endif
 
                 <div>
                     <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('register.elderly_infirm') }} <span class="text-red-500">*</span></label>

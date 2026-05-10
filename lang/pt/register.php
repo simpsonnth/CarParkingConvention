@@ -54,4 +54,10 @@ return [
     'quota_disabled_not_requested' => 'A congregação :congregation não solicitou estacionamento para deficientes no inquérito, por isso não pode ser selecionado aqui.',
     'quota_coach_not_organised' => 'A sua congregação não registou um autocarro no inquérito, por isso não é possível inscrever autocarros.',
     'quota_coach_taken' => 'Já foi registado um autocarro para a sua congregação.',
+
+    'duplicate_vehicle_registration' => 'Esta matrícula já está registada em nome de :name (:congregation). Se não for o seu, verifique o número. Caso contrário não precisa de se inscrever novamente.',
+    'duplicate_vehicle_registration_live_title' => 'Esta matrícula já está nos nossos registos',
+    'duplicate_vehicle_registration_live_body' => 'Já temos uma inscrição para este veículo em nome de :name (:congregation). Não pode submeter novamente com a mesma matrícula.',
+    'duplicate_email_warning_title' => 'Este e-mail já está nos nossos registos',
+    'duplicate_email_warning_body' => 'Já temos uma inscrição com este e-mail para :name (:congregation). Se estiver a inscrever outra pessoa que partilha o e-mail, pode continuar; caso contrário talvez não precise de se inscrever de novo.',
 ];

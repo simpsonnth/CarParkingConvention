@@ -54,4 +54,10 @@ return [
     'quota_disabled_not_requested' => ':congregation did not request disabled parking in the parking survey, so it cannot be selected here.',
     'quota_coach_not_organised' => 'Your congregation has not registered a coach in the parking survey, so coach registrations are not available.',
     'quota_coach_taken' => 'A coach has already been registered for your congregation.',
+
+    'duplicate_vehicle_registration' => 'This vehicle registration is already registered to :name (:congregation). If that is not you, check the registration number. Otherwise you do not need to register again.',
+    'duplicate_vehicle_registration_live_title' => 'This registration number is already on file',
+    'duplicate_vehicle_registration_live_body' => 'We already have a registration for this vehicle under the name :name (:congregation). You cannot submit again with the same registration number.',
+    'duplicate_email_warning_title' => 'This email is already on file',
+    'duplicate_email_warning_body' => 'We already have a registration using this email for :name (:congregation). If you are registering for someone else who shares this email, you can still continue — otherwise you may not need to register again.',
 ];

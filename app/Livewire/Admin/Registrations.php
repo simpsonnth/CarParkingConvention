@@ -6,6 +6,7 @@ use App\Models\Congregation;
 use App\Models\ParkingRegistration;
 use App\Services\CongregationNumbersReportMetrics;
 use App\Services\ParkingRegistrationAttendanceByDayMetrics;
+use App\Services\ParkingRegistrationDuplicateSignals;
 use Flux\Flux;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -472,6 +473,8 @@ class Registrations extends Component
 
         $attendanceByDay = app(ParkingRegistrationAttendanceByDayMetrics::class)->compute();
 
+        $duplicateSignals = app(ParkingRegistrationDuplicateSignals::class);
+
         return view('livewire.admin.registrations', [
             'registrations' => $registrations,
             'congregations' => Congregation::orderBy('name')->pluck('name'),
@@ -483,6 +486,8 @@ class Registrations extends Component
                 'completion_percent' => $completionPercent,
             ],
             'attendanceByDay' => $attendanceByDay,
+            'duplicateEmailKeys' => $duplicateSignals->duplicateNormalizedEmailKeys(),
+            'duplicateVehicleRegKeys' => $duplicateSignals->duplicateNormalizedVehicleRegKeys(),
         ]);
     }
 }

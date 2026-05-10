@@ -5,6 +5,7 @@ namespace App\Livewire\Public;
 use App\Models\Congregation;
 use App\Models\CongregationNumbersResponse;
 use App\Models\ParkingRegistration;
+use App\Services\ParkingRegistrationDuplicateSignals;
 use Flux\Flux;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -47,6 +48,37 @@ class Register extends Component
         }
 
         return Congregation::where('uuid', $code)->first();
+    }
+
+    #[Computed]
+    public function duplicateVehicleRegistrationConflict(): ?ParkingRegistration
+    {
+        $signals = app(ParkingRegistrationDuplicateSignals::class);
+        $norm = $signals->normalizeVehicleRegistration($this->vehicleReg);
+
+        return $signals->findActiveByNormalizedVehicleReg($norm);
+    }
+
+    #[Computed]
+    public function duplicateEmailExistingRegistration(): ?ParkingRegistration
+    {
+        $email = trim($this->email);
+        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return null;
+        }
+
+        $signals = app(ParkingRegistrationDuplicateSignals::class);
+        $found = $signals->findActiveByNormalizedEmail($email);
+        if ($found === null) {
+            return null;
+        }
+
+        $vehicleConflict = $this->duplicateVehicleRegistrationConflict;
+        if ($vehicleConflict !== null && $vehicleConflict->is($found)) {
+            return null;
+        }
+
+        return $found;
     }
 
     public function toggleAllDays(): void
@@ -168,6 +200,17 @@ class Register extends Component
                 }
                 if ($coachExists) {
                     return ['vehicleType', __('register.quota_coach_taken')];
+                }
+            }
+
+            $duplicateSignals = app(ParkingRegistrationDuplicateSignals::class);
+            if ($formattedReg !== null) {
+                $existingByReg = $duplicateSignals->findActiveByNormalizedVehicleReg($formattedReg);
+                if ($existingByReg !== null) {
+                    return ['vehicleReg', __('register.duplicate_vehicle_registration', [
+                        'name' => $existingByReg->name,
+                        'congregation' => $existingByReg->congregation ?: '—',
+                    ])];
                 }
             }
 

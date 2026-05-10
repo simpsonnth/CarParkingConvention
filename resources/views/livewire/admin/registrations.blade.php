@@ -372,11 +372,24 @@
                             @endif
                         </td>
                         <td class="px-6 py-4 font-mono text-zinc-600 dark:text-zinc-300">
-                            <span class="bg-zinc-100 px-2 py-1 rounded text-xs dark:bg-zinc-700 font-bold tracking-wider">{{ $reg->vehicle_registration ?? '—' }}</span>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="bg-zinc-100 px-2 py-1 rounded text-xs dark:bg-zinc-700 font-bold tracking-wider">{{ $reg->vehicle_registration ?? '—' }}</span>
+                                @if($reg->vehicle_registration && isset($duplicateVehicleRegKeys[$reg->vehicle_registration]))
+                                    <flux:badge size="sm" color="amber">{{ __('registrations.duplicate_vehicle_reg_badge') }}</flux:badge>
+                                @endif
+                            </div>
                         </td>
                         <td class="px-6 py-4 text-zinc-500">
                             {{ $reg->contact_number }}
-                            <div class="text-xs text-zinc-400">{{ $reg->email }}</div>
+                            <div class="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-zinc-400">
+                                <span>{{ $reg->email }}</span>
+                                @php
+                                    $emailNorm = strtolower(trim((string) ($reg->email ?? '')));
+                                @endphp
+                                @if($emailNorm !== '' && isset($duplicateEmailKeys[$emailNorm]))
+                                    <flux:badge size="sm" color="amber">{{ __('registrations.duplicate_email_badge') }}</flux:badge>
+                                @endif
+                            </div>
                         </td>
                         <td class="px-6 py-4">
                             @if($reg->elderly_infirm_parking ?? false)
