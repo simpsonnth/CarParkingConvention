@@ -2,9 +2,9 @@
 
 return [
     'section_title' => 'Inquérito vs pré-inscrição',
-    'section_subtitle' => 'Compare os bilhetes declarados no inquérito por congregação (registo simples) com as inscrições de estacionamento que coincidem pelo nome da congregação.',
+    'section_subtitle' => 'Compare as vagas declaradas no inquérito por congregação (registo simples: bilhetes de carro mais lugares para deficientes quando solicitados) com as inscrições de estacionamento que coincidem pelo nome da congregação.',
 
-    'stat_survey_total' => 'Bilhetes inquérito (congregações)',
+    'stat_survey_total' => 'Atribuição inquérito (congregações)',
     'stat_registrations_matched' => 'Pré-inscrições coincidentes',
     'stat_co_expected' => 'Bilhetes SC esperados (relatório)',
     'stat_co_registered' => 'Inscrições SC',

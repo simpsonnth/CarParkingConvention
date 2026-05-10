@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Congregation;
+use App\Models\CongregationNumbersResponse;
 use App\Models\ParkingRegistration;
 
 final class SurveyVsRegistrationMetrics
@@ -66,7 +67,7 @@ final class SurveyVsRegistrationMetrics
         foreach ($congregations as $congregation) {
             $name = (string) $congregation->name;
             $trimmedName = trim($name);
-            $surveyTickets = (int) ($congregation->numbersResponse?->car_park_tickets_count ?? 0);
+            $surveyTickets = $this->surveyAllocationTotal($congregation->numbersResponse);
             $registrationCount = (int) ($countByTrimmedName[$trimmedName] ?? 0);
             $difference = $surveyTickets - $registrationCount;
             $progressPercent = $surveyTickets > 0
@@ -109,5 +110,23 @@ final class SurveyVsRegistrationMetrics
             ->map(fn ($label): string => trim((string) $label))
             ->countBy()
             ->all();
+    }
+
+    /**
+     * Expected vehicles from register-simple for comparison with registration rows:
+     * standard car tickets plus disabled spaces when the survey requested them (same additive model as public registration).
+     */
+    private function surveyAllocationTotal(?CongregationNumbersResponse $resp): int
+    {
+        if ($resp === null) {
+            return 0;
+        }
+
+        $carTickets = (int) $resp->car_park_tickets_count;
+        if ($resp->disabled_parking_required) {
+            return $carTickets + (int) ($resp->disabled_parking_count ?? 0);
+        }
+
+        return $carTickets;
     }
 }

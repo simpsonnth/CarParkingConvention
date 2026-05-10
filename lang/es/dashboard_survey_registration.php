@@ -2,9 +2,9 @@
 
 return [
     'section_title' => 'Encuesta vs preinscripción',
-    'section_subtitle' => 'Compare el número de entradas de la encuesta por congregación (registro simple) con las inscripciones de aparcamiento que coinciden por nombre de congregación.',
+    'section_subtitle' => 'Compare las plazas declaradas en la encuesta de cada congregación (registro simple: entradas de coche más plazas para discapacitados si las solicitaron) con las inscripciones de aparcamiento que coinciden por nombre de congregación.',
 
-    'stat_survey_total' => 'Entradas encuesta (congregaciones)',
+    'stat_survey_total' => 'Asignación encuesta (congregaciones)',
     'stat_registrations_matched' => 'Preinscripciones coincidentes',
     'stat_co_expected' => 'Entradas SC esperadas (informe)',
     'stat_co_registered' => 'Inscripciones SC',
