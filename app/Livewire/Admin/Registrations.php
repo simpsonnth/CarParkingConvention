@@ -8,6 +8,7 @@ use App\Services\CongregationNumbersReportMetrics;
 use App\Services\ParkingRegistrationAttendanceByDayMetrics;
 use App\Services\ParkingRegistrationDuplicateSignals;
 use Flux\Flux;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -55,6 +56,11 @@ class Registrations extends Component
 
     /** Narrow congregation checkboxes in the filter drawer */
     public string $filterDraftCongregationSearch = '';
+
+    /** Rows whose email or vehicle reg appears on 2+ registrations (same rules as duplicate badges) */
+    public bool $filterDuplicatesOnly = false;
+
+    public bool $filterDraftDuplicatesOnly = false;
 
     public bool $modalOpen = false;
 
@@ -118,6 +124,7 @@ class Registrations extends Component
         $this->filterDraftCarParks = $this->filterCarParks;
         $this->filterDraftVehicleType = $this->filterVehicleType;
         $this->filterDraftElderlyInfirm = $this->filterElderlyInfirm === null ? 'any' : ($this->filterElderlyInfirm ? '1' : '0');
+        $this->filterDraftDuplicatesOnly = $this->filterDuplicatesOnly;
         $this->filterOpen = true;
     }
 
@@ -128,6 +135,7 @@ class Registrations extends Component
         $this->filterVehicleType = $this->filterDraftVehicleType;
         $draft = $this->filterDraftElderlyInfirm;
         $this->filterElderlyInfirm = ($draft === 'any' || $draft === '' || $draft === null) ? null : (bool) (int) $draft;
+        $this->filterDuplicatesOnly = $this->filterDraftDuplicatesOnly;
         $this->filterOpen = false;
         $this->resetPage();
     }
@@ -148,6 +156,8 @@ class Registrations extends Component
         $this->filterDraftVehicleType = [];
         $this->filterDraftElderlyInfirm = 'any';
         $this->filterDraftCongregationSearch = '';
+        $this->filterDuplicatesOnly = false;
+        $this->filterDraftDuplicatesOnly = false;
         $this->resetPage();
     }
 
@@ -164,6 +174,9 @@ class Registrations extends Component
             $n += count($this->filterVehicleType);
         }
         if ($this->filterElderlyInfirm !== null) {
+            $n += 1;
+        }
+        if ($this->filterDuplicatesOnly) {
             $n += 1;
         }
 
@@ -401,6 +414,28 @@ class Registrations extends Component
             })
             ->when($this->filterElderlyInfirm !== null, function ($q) {
                 $q->where('elderly_infirm_parking', $this->filterElderlyInfirm);
+            })
+            ->when($this->filterDuplicatesOnly, function ($q) {
+                $signals = app(ParkingRegistrationDuplicateSignals::class);
+                $dupEmails = array_keys($signals->duplicateNormalizedEmailKeys());
+                $dupRegs = array_keys($signals->duplicateNormalizedVehicleRegKeys());
+
+                if ($dupEmails === [] && $dupRegs === []) {
+                    $q->whereRaw('1 = 0');
+
+                    return;
+                }
+
+                $q->where(function ($q2) use ($dupEmails, $dupRegs) {
+                    if ($dupEmails !== [] && $dupRegs !== []) {
+                        $q2->whereIn(DB::raw('LOWER(TRIM(email))'), $dupEmails)
+                            ->orWhereIn('vehicle_registration', $dupRegs);
+                    } elseif ($dupEmails !== []) {
+                        $q2->whereIn(DB::raw('LOWER(TRIM(email))'), $dupEmails);
+                    } else {
+                        $q2->whereIn('vehicle_registration', $dupRegs);
+                    }
+                });
             });
 
         $sortColumn = match ($this->sortBy) {

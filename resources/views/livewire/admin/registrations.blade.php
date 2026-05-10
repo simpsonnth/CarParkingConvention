@@ -275,6 +275,17 @@
                             </label>
                         </div>
                     </div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-2">{{ __('registrations.filter_duplicates_section') }}</p>
+                        <label class="flex items-start gap-2 cursor-pointer">
+                            <input type="checkbox" wire:model="filterDraftDuplicatesOnly"
+                                class="mt-1 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                            <span>
+                                <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200">{{ __('registrations.filter_duplicates_only') }}</span>
+                                <span class="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{{ __('registrations.filter_duplicates_hint') }}</span>
+                            </span>
+                        </label>
+                    </div>
                 </div>
                 <div class="flex gap-3 px-4 py-4 border-t border-zinc-200 dark:border-zinc-700">
                     <flux:button variant="ghost" class="flex-1" wire:click="cancelFilters">{{ __('registrations.cancel') }}</flux:button>
