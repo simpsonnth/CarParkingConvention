@@ -47,7 +47,9 @@ return [
     'processing' => 'Procesando...',
     'footer' => 'Sistema de Aparcamiento de la Convención',
 
-    // Errores de cuota del servidor (sólo al enviar — sin UI proactiva)
+    'quota_preview_allocation_full' => 'Todas las plazas de aparcamiento de :congregation según la encuesta de la congregación ya están inscritas. No puede inscribir otro vehículo aquí.',
+
+    // Errores de cuota del servidor (validación al enviar)
     'quota_no_survey' => 'Su congregación todavía no ha enviado la encuesta de aparcamiento, por lo que no se ha definido ninguna asignación. Pida al coordinador de su congregación que complete la encuesta primero y luego vuelva aquí para inscribirse.',
     'quota_car_full' => 'Las :limit plazas de aparcamiento asignadas a :congregation ya están inscritas.',
     'quota_disabled_full' => 'Las :limit plazas para discapacitados asignadas a :congregation ya están inscritas.',

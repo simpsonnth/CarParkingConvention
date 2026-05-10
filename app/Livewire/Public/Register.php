@@ -50,6 +50,70 @@ class Register extends Component
         return Congregation::where('uuid', $code)->first();
     }
 
+    /**
+     * When a valid congregation code is entered, determines whether any survey slot
+     * remains (standard car, disabled car, or coach). Used to hide the rest of the form.
+     *
+     * @return array{hide_remaining_fields: bool, no_survey: bool, allocation_full: bool}
+     */
+    #[Computed]
+    public function congregationQuotaGate(): array
+    {
+        $congregation = $this->resolvedCongregation;
+        if ($congregation === null) {
+            return [
+                'hide_remaining_fields' => false,
+                'no_survey' => false,
+                'allocation_full' => false,
+            ];
+        }
+
+        $resp = CongregationNumbersResponse::query()
+            ->where('congregation_id', $congregation->id)
+            ->first();
+
+        if ($resp === null) {
+            return [
+                'hide_remaining_fields' => true,
+                'no_survey' => true,
+                'allocation_full' => false,
+            ];
+        }
+
+        $label = trim((string) $congregation->name);
+        $counts = $this->registrationCountsForCongregationLabel($label);
+
+        $carTicketLimit = (int) $resp->car_park_tickets_count;
+        $totalCarsUsed = $counts['standard_car_used'] + $counts['disabled_used'];
+
+        // When the survey did not request separate disabled spaces, car_park_tickets_count
+        // caps all cars (standard + elderly/infirm rows). Otherwise the two pools are independent.
+        if ($resp->disabled_parking_required) {
+            $standardRoom = $counts['standard_car_used'] < $carTicketLimit;
+            $disabledLimit = (int) ($resp->disabled_parking_count ?? 0);
+            $disabledRoom = $disabledLimit > 0 && $counts['disabled_used'] < $disabledLimit;
+        } else {
+            $standardRoom = $totalCarsUsed < $carTicketLimit;
+            $disabledRoom = false;
+        }
+
+        $coachRoom = $resp->organizes_coach && ! $counts['coach_exists'];
+
+        if ($standardRoom || $disabledRoom || $coachRoom) {
+            return [
+                'hide_remaining_fields' => false,
+                'no_survey' => false,
+                'allocation_full' => false,
+            ];
+        }
+
+        return [
+            'hide_remaining_fields' => true,
+            'no_survey' => false,
+            'allocation_full' => true,
+        ];
+    }
+
     #[Computed]
     public function duplicateVehicleRegistrationConflict(): ?ParkingRegistration
     {
@@ -90,6 +154,35 @@ class Register extends Component
         }
     }
 
+    /**
+     * @return array{standard_car_used: int, disabled_used: int, coach_exists: bool}
+     */
+    private function registrationCountsForCongregationLabel(string $congregationLabel): array
+    {
+        $standardCarUsed = ParkingRegistration::query()
+            ->whereRaw('TRIM(congregation) = ?', [$congregationLabel])
+            ->where('vehicle_type', 'car')
+            ->where('elderly_infirm_parking', false)
+            ->count();
+
+        $disabledUsed = ParkingRegistration::query()
+            ->whereRaw('TRIM(congregation) = ?', [$congregationLabel])
+            ->where('vehicle_type', 'car')
+            ->where('elderly_infirm_parking', true)
+            ->count();
+
+        $coachExists = ParkingRegistration::query()
+            ->whereRaw('TRIM(congregation) = ?', [$congregationLabel])
+            ->where('vehicle_type', 'coach')
+            ->exists();
+
+        return [
+            'standard_car_used' => $standardCarUsed,
+            'disabled_used' => $disabledUsed,
+            'coach_exists' => $coachExists,
+        ];
+    }
+
     public function render()
     {
         return view('livewire.public.register');
@@ -128,6 +221,8 @@ class Register extends Component
             ? strtoupper(str_replace(' ', '', trim($this->vehicleReg)))
             : null;
 
+        $congregationLabel = trim((string) $congregation->name);
+
         // Race-safe quota enforcement: lock the survey response row, then
         // recount registrations inside the same transaction before inserting.
         // Quota violations short-circuit with a [field, message] tuple; the
@@ -135,11 +230,11 @@ class Register extends Component
         // run. Coach sharing details are NOT re-collected here — the parking
         // survey is the single source of truth for those.
         //
-        // Pool model = ADDITIVE: the survey's car_park_tickets_count is the
-        // limit for STANDARD (non-disabled) cars only, and disabled_parking_count
-        // is an independent pool for elderly/infirm cars. A disabled
-        // registration never consumes a standard slot and vice versa.
-        $violation = DB::transaction(function () use ($congregation, $formattedReg): ?array {
+        // Pool model: if disabled_parking_required, car_park_tickets_count caps
+        // standard cars and disabled_parking_count caps elderly/infirm cars separately.
+        // If disabled parking was not requested on the survey, car_park_tickets_count
+        // caps all cars combined (legacy/admin elderly rows still consume ticket slots).
+        $violation = DB::transaction(function () use ($congregation, $formattedReg, $congregationLabel): ?array {
             $resp = CongregationNumbersResponse::query()
                 ->where('congregation_id', $congregation->id)
                 ->lockForUpdate()
@@ -149,22 +244,10 @@ class Register extends Component
                 return ['congregationCode', __('register.quota_no_survey')];
             }
 
-            $standardCarUsed = ParkingRegistration::query()
-                ->where('congregation', $congregation->name)
-                ->where('vehicle_type', 'car')
-                ->where('elderly_infirm_parking', false)
-                ->count();
-
-            $disabledUsed = ParkingRegistration::query()
-                ->where('congregation', $congregation->name)
-                ->where('vehicle_type', 'car')
-                ->where('elderly_infirm_parking', true)
-                ->count();
-
-            $coachExists = ParkingRegistration::query()
-                ->where('congregation', $congregation->name)
-                ->where('vehicle_type', 'coach')
-                ->exists();
+            $counts = $this->registrationCountsForCongregationLabel($congregationLabel);
+            $standardCarUsed = $counts['standard_car_used'];
+            $disabledUsed = $counts['disabled_used'];
+            $coachExists = $counts['coach_exists'];
 
             if ($this->vehicleType === 'car') {
                 if ($this->elderlyInfirmParking === '1') {
@@ -186,8 +269,11 @@ class Register extends Component
                     }
                 } else {
                     $standardLimit = (int) $resp->car_park_tickets_count;
+                    $carsUsedTowardTicketCap = $resp->disabled_parking_required
+                        ? $standardCarUsed
+                        : ($standardCarUsed + $disabledUsed);
 
-                    if ($standardCarUsed >= $standardLimit) {
+                    if ($carsUsedTowardTicketCap >= $standardLimit) {
                         return ['congregationCode', __('register.quota_car_full', [
                             'limit' => $standardLimit,
                             'congregation' => $congregation->name,
@@ -216,7 +302,7 @@ class Register extends Component
 
             ParkingRegistration::create([
                 'name' => $this->name,
-                'congregation' => $congregation->name,
+                'congregation' => $congregationLabel,
                 'contact_number' => $this->contactNumber,
                 'vehicle_registration' => $formattedReg,
                 'days' => $this->days,

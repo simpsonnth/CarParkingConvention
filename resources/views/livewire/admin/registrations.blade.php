@@ -215,14 +215,17 @@
                 <div class="flex-1 overflow-y-auto px-4 py-4 space-y-6">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-2">{{ __('registrations.congregation') }}</p>
+                        <flux:input wire:model.live.debounce.300ms="filterDraftCongregationSearch" icon="magnifying-glass" placeholder="{{ __('registrations.filter_congregation_search') }}" class="w-full mb-2" />
                         <div class="space-y-2 max-h-48 overflow-y-auto">
-                            @foreach($congregations ?? [] as $c)
+                            @forelse($this->congregationsFilterOptions as $c)
                                 <label class="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" wire:model="filterDraftCongregations" value="{{ $c }}"
                                         class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
                                     <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ $c }}</span>
                                 </label>
-                            @endforeach
+                            @empty
+                                <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('registrations.filter_congregation_no_match') }}</p>
+                            @endforelse
                         </div>
                     </div>
                     <div>

@@ -35,6 +35,35 @@
             </div>
         @else
             <form wire:submit="register" class="space-y-6">
+                {{-- Congregation code first: quota gate drives visibility of the rest of the form --}}
+                <div>
+                    <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('register.congregation_code') }}</label>
+                    <input type="text" wire:model.live.debounce.300ms="congregationCode"
+                        class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4 font-mono"
+                        placeholder="{{ __('register.congregation_code_placeholder') }}">
+                    @error('congregationCode')
+                        <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
+                    @enderror
+                    @if($this->resolvedCongregation)
+                        <p class="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
+                            {{ __('register.congregation_label') }}: <strong>{{ $this->resolvedCongregation->name }}</strong>
+                        </p>
+                        @if($this->congregationQuotaGate['hide_remaining_fields'])
+                            <div class="mt-4 rounded-2xl border p-4 {{ $this->congregationQuotaGate['no_survey'] ? 'border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20' : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20' }}"
+                                role="status">
+                                @if($this->congregationQuotaGate['no_survey'])
+                                    <p class="text-sm text-amber-900 dark:text-amber-100">{{ __('register.quota_no_survey') }}</p>
+                                @else
+                                    <p class="text-sm text-red-900 dark:text-red-100">{{ __('register.quota_preview_allocation_full', ['congregation' => $this->resolvedCongregation->name]) }}</p>
+                                @endif
+                            </div>
+                        @endif
+                    @elseif(trim($congregationCode) !== '')
+                        <p class="mt-2 text-sm text-amber-600 dark:text-amber-400">{{ __('register.no_congregation_found') }}</p>
+                    @endif
+                </div>
+
+                @if(!$this->congregationQuotaGate['hide_remaining_fields'])
                 {{-- Car or Coach --}}
                 <div>
                     <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('register.car_or_coach') }}</label>
@@ -69,23 +98,6 @@
                         </div>
                     </div>
                 @endif
-
-                <div>
-                    <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('register.congregation_code') }}</label>
-                    <input type="text" wire:model.live.debounce.300ms="congregationCode"
-                        class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4 font-mono"
-                        placeholder="{{ __('register.congregation_code_placeholder') }}">
-                    @error('congregationCode')
-                        <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
-                    @enderror
-                    @if($this->resolvedCongregation)
-                        <p class="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
-                            {{ __('register.congregation_label') }}: <strong>{{ $this->resolvedCongregation->name }}</strong>
-                        </p>
-                    @elseif(trim($congregationCode) !== '')
-                        <p class="mt-2 text-sm text-amber-600 dark:text-amber-400">{{ __('register.no_congregation_found') }}</p>
-                    @endif
-                </div>
 
                 <div>
                     <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">
@@ -190,6 +202,7 @@
                         {{ __('register.processing') }}
                     </div>
                 </div>
+                @endif
             </form>
         @endif
 

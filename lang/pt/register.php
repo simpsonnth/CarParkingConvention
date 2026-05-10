@@ -47,7 +47,9 @@ return [
     'processing' => 'A processar...',
     'footer' => 'Sistema de Estacionamento da Convenção',
 
-    // Erros de quota do servidor (apenas no momento da submissão — sem UI proativa)
+    'quota_preview_allocation_full' => 'Todas as vagas de estacionamento de :congregation segundo o inquérito da congregação já estão inscritas. Não pode inscrever outro veículo aqui.',
+
+    // Erros de quota do servidor (validação à submissão)
     'quota_no_survey' => 'A sua congregação ainda não submeteu o inquérito de estacionamento, por isso não foi definida nenhuma alocação. Peça ao coordenador da sua congregação para preencher o inquérito primeiro e depois volte aqui para se inscrever.',
     'quota_car_full' => 'Todos os :limit lugares de estacionamento atribuídos a :congregation já foram inscritos.',
     'quota_disabled_full' => 'Todos os :limit lugares para deficientes atribuídos a :congregation já foram inscritos.',

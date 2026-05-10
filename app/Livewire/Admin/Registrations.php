@@ -8,6 +8,7 @@ use App\Services\CongregationNumbersReportMetrics;
 use App\Services\ParkingRegistrationAttendanceByDayMetrics;
 use App\Services\ParkingRegistrationDuplicateSignals;
 use Flux\Flux;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -51,6 +52,9 @@ class Registrations extends Component
 
     /** @var string|null 'any' | '1' | '0' for draft panel */
     public $filterDraftElderlyInfirm = 'any';
+
+    /** Narrow congregation checkboxes in the filter drawer */
+    public string $filterDraftCongregationSearch = '';
 
     public bool $modalOpen = false;
 
@@ -143,6 +147,7 @@ class Registrations extends Component
         $this->filterDraftCarParks = [];
         $this->filterDraftVehicleType = [];
         $this->filterDraftElderlyInfirm = 'any';
+        $this->filterDraftCongregationSearch = '';
         $this->resetPage();
     }
 
@@ -163,6 +168,21 @@ class Registrations extends Component
         }
 
         return $n;
+    }
+
+    /** @return list<string> */
+    #[Computed]
+    public function congregationsFilterOptions(): array
+    {
+        $names = Congregation::query()->orderBy('name')->pluck('name')->all();
+        $term = mb_strtolower(trim($this->filterDraftCongregationSearch));
+        if ($term === '') {
+            return $names;
+        }
+
+        return array_values(array_filter($names, function (string $name) use ($term): bool {
+            return str_contains(mb_strtolower($name, 'UTF-8'), $term);
+        }));
     }
 
     public function edit($id)

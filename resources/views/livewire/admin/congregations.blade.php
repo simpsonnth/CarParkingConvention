@@ -50,6 +50,7 @@
                     <th class="px-6 py-3">Name</th>
                     <th class="px-6 py-3">Code</th>
                     <th class="px-6 py-3">Assigned Car Park</th>
+                    <th class="px-6 py-3">Registered cars</th>
                     <th class="px-6 py-3">Active Vehicles</th>
                     <th class="px-6 py-3">Actions</th>
                 </tr>
@@ -71,6 +72,11 @@
                             @else
                                 <span class="text-zinc-400 text-sm">Not assigned</span>
                             @endif
+                        </td>
+                        <td class="px-6 py-4">
+                            <flux:badge color="{{ ($congregation->registered_cars_count ?? 0) > 0 ? 'indigo' : 'zinc' }}">
+                                {{ (int) ($congregation->registered_cars_count ?? 0) }}
+                            </flux:badge>
                         </td>
                         <td class="px-6 py-4">
                             <flux:badge color="{{ $congregation->parked_count > 0 ? 'green' : 'zinc' }}">
@@ -98,7 +104,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="px-6 py-8 text-center text-zinc-500">
+                        <td colspan="7" class="px-6 py-8 text-center text-zinc-500">
                             No congregations found.
                         </td>
                     </tr>

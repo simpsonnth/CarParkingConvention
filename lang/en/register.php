@@ -47,7 +47,10 @@ return [
     'processing' => 'Processing...',
     'footer' => 'Convention Parking System',
 
-    // Server-side quota errors (raised at submit time only — no proactive UI)
+    // Quota: proactive UI when congregation code is entered; same messages used at submit where relevant
+    'quota_preview_allocation_full' => 'Every parking allocation for :congregation from the congregation survey is already registered. You cannot register another vehicle here.',
+
+    // Server-side quota errors (submit validation)
     'quota_no_survey' => 'Your congregation has not submitted the parking survey yet, so no allocation has been set. Please ask your congregation coordinator to complete the parking survey first, then return here to register.',
     'quota_car_full' => 'All :limit car parking tickets allocated to :congregation have already been registered.',
     'quota_disabled_full' => 'All :limit disabled parking spaces allocated to :congregation have already been registered.',

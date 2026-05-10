@@ -21,6 +21,8 @@ return [
     'download_master_passes_zip' => 'Descargar pases (ZIP)',
     'download_link_expired' => 'Enlace de descarga caducado o no válido. Seleccione las inscripciones e inténtelo de nuevo.',
     'filters' => 'Filtros',
+    'filter_congregation_search' => 'Buscar congregaciones…',
+    'filter_congregation_no_match' => 'Ninguna congregación coincide con la búsqueda.',
     'apply_filters' => 'Aplicar filtros',
     'apply' => 'Aplicar',
     'close' => 'Cerrar',

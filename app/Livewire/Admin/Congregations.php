@@ -4,32 +4,39 @@ namespace App\Livewire\Admin;
 
 use App\Models\CarPark;
 use App\Models\Congregation;
-use App\Models\ParkingPass;
+use Flux\Flux;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Flux\Flux;
-use Illuminate\Support\Str;
 
 class Congregations extends Component
 {
     use WithPagination;
 
     public $name = '';
+
     public $code = '';
+
     public $carParkId = '';
+
     public $congregationId = null;
 
     public $qrCodeUrl = '';
+
     public $qrCodeName = '';
+
     public $qrCodeUuid = '';
+
     public $qrCodeCongregationId = null;
 
     public bool $modalOpen = false;
+
     public bool $qrModalOpen = false;
+
     public bool $bulkAssignModalOpen = false;
 
     public $search = '';
+
     public $filterCarParkId = '';
 
     /** @var int Per-page options: 25, 50, 100 */
@@ -81,6 +88,7 @@ class Congregations extends Component
     {
         if (empty($this->selectedIds)) {
             Flux::toast('Please select at least one congregation.', variant: 'warning');
+
             return;
         }
         $this->bulkAssignCarParkId = '';
@@ -92,6 +100,7 @@ class Congregations extends Component
         if (empty($this->selectedIds)) {
             Flux::toast('Please select at least one congregation.', variant: 'warning');
             $this->bulkAssignModalOpen = false;
+
             return;
         }
         $carParkId = $this->bulkAssignCarParkId ?: null;
@@ -109,14 +118,25 @@ class Congregations extends Component
 
     protected function getCongregationsQuery()
     {
-        $query = Congregation::with('carPark')
+        $query = Congregation::query()
+            ->select('congregations.*')
+            ->with('carPark')
             ->withCount([
                 'parkingPasses as parked_count' => function ($q) {
                     $q->where('status', 'parked');
-                }
+                },
             ]);
+
+        $query->selectRaw('(
+            SELECT COUNT(*) FROM parking_registrations
+            WHERE TRIM(parking_registrations.congregation) = TRIM(congregations.name)
+            AND parking_registrations.vehicle_type = ?
+            AND COALESCE(parking_registrations.is_circuit_overseer, 0) = 0
+            AND parking_registrations.deleted_at IS NULL
+        ) as registered_cars_count', ['car']);
+
         if ($this->search) {
-            $query->where('name', 'like', '%' . $this->search . '%');
+            $query->where('name', 'like', '%'.$this->search.'%');
         }
         if ($this->filterCarParkId !== '') {
             if ($this->filterCarParkId === 'unassigned') {
@@ -125,6 +145,7 @@ class Congregations extends Component
                 $query->where('car_park_id', $this->filterCarParkId);
             }
         }
+
         return $query;
     }
 
@@ -204,6 +225,4 @@ class Congregations extends Component
         $this->qrCodeCongregationId = $congregation->id;
         $this->qrModalOpen = true;
     }
-
-
 }

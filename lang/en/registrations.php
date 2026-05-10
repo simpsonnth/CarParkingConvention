@@ -21,6 +21,8 @@ return [
     'download_master_passes_zip' => 'Download master passes (ZIP)',
     'download_link_expired' => 'Download link expired or invalid. Please select registrations and try again.',
     'filters' => 'Filters',
+    'filter_congregation_search' => 'Search congregations…',
+    'filter_congregation_no_match' => 'No congregations match your search.',
     'apply_filters' => 'Apply Filters',
     'apply' => 'Apply',
     'close' => 'Close',
