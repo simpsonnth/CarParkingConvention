@@ -48,6 +48,14 @@ return [
     'updated' => 'Inscrição atualizada com sucesso.',
     'deleted' => 'Inscrição eliminada com sucesso.',
     'bulk_deleted' => ':count inscrição(ões) movida(s) para a reciclagem.',
+    'bulk_delete_danger_title' => 'Limpeza em massa',
+    'bulk_delete_danger_hint' => 'As inscrições de Superintendente de Circuito e de autocarro nunca são removidas por estas ações. As linhas eliminadas podem ser restauradas na reciclagem.',
+    'bulk_delete_standard_cars_button' => 'Eliminar todos os bilhetes de carro normais',
+    'bulk_delete_standard_cars_confirm' => 'Mover todas as inscrições de carro normais para a reciclagem? Afeta apenas bilhetes de carro (não autocarros, não idosos/deficientes, não Superintendente de Circuito).',
+    'bulk_delete_disabled_button' => 'Eliminar todas as inscrições idosos/deficientes',
+    'bulk_delete_disabled_confirm' => 'Mover todas as inscrições de estacionamento idosos/deficientes para a reciclagem? As inscrições de Superintendente de Circuito não são removidas.',
+    'bulk_deleted_standard_cars' => ':count inscrição(ões) de carro normal movida(s) para a reciclagem.',
+    'bulk_deleted_disabled' => ':count inscrição(ões) idosos/deficientes movida(s) para a reciclagem.',
     'select_items' => 'Selecione pelo menos um item.',
     'per_page' => 'por página',
     'bulk_set_elderly_infirm' => 'Definir idosos/deficientes',
@@ -133,6 +141,8 @@ return [
     'no_trashed' => 'A reciclagem está vazia.',
     'confirm_permanent_delete_one' => 'Eliminar permanentemente esta inscrição? Esta ação não pode ser desfeita.',
     'confirm_permanent_delete_selected' => 'Eliminar permanentemente os itens selecionados? Esta ação não pode ser desfeita.',
+    'empty_trash_permanently' => 'Esvaziar reciclagem permanentemente',
+    'confirm_empty_trash' => 'Eliminar permanentemente TODOS os itens na reciclagem? Esta ação não pode ser desfeita.',
 
     // Export
     'export' => [

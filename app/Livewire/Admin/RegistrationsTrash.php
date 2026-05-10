@@ -26,6 +26,7 @@ class RegistrationsTrash extends Component
     {
         ParkingRegistration::onlyTrashed()->findOrFail($id)->restore();
         $this->selectedIds = array_values(array_diff($this->selectedIds, [$id]));
+        $this->resetPage();
         Flux::toast(__('registrations.restored'));
     }
 
@@ -33,11 +34,13 @@ class RegistrationsTrash extends Component
     {
         if (empty($this->selectedIds)) {
             Flux::toast(__('registrations.select_items'), variant: 'warning');
+
             return;
         }
         ParkingRegistration::onlyTrashed()->whereIn('id', $this->selectedIds)->restore();
         $count = count($this->selectedIds);
         $this->selectedIds = [];
+        $this->resetPage();
         Flux::toast(__('registrations.bulk_restored', ['count' => $count]));
     }
 
@@ -45,6 +48,7 @@ class RegistrationsTrash extends Component
     {
         ParkingRegistration::onlyTrashed()->findOrFail($id)->forceDelete();
         $this->selectedIds = array_values(array_diff($this->selectedIds, [$id]));
+        $this->resetPage();
         Flux::toast(__('registrations.permanently_deleted'));
     }
 
@@ -52,17 +56,41 @@ class RegistrationsTrash extends Component
     {
         if (empty($this->selectedIds)) {
             Flux::toast(__('registrations.select_items'), variant: 'warning');
+
             return;
         }
         ParkingRegistration::onlyTrashed()->whereIn('id', $this->selectedIds)->forceDelete();
         $count = count($this->selectedIds);
         $this->selectedIds = [];
+        $this->resetPage();
         Flux::toast(__('registrations.bulk_permanently_deleted', ['count' => $count]));
+    }
+
+    /** Permanently remove every soft-deleted registration in the recycle bin. */
+    public function emptyTrashPermanently(): void
+    {
+        $total = ParkingRegistration::onlyTrashed()->count();
+        if ($total === 0) {
+            Flux::toast(__('registrations.no_trashed'), variant: 'warning');
+
+            return;
+        }
+
+        while (ParkingRegistration::onlyTrashed()->exists()) {
+            ParkingRegistration::onlyTrashed()->take(500)->get()->each->forceDelete();
+        }
+
+        $this->selectedIds = [];
+        $this->resetPage();
+        Flux::toast(__('registrations.bulk_permanently_deleted', ['count' => $total]));
     }
 
     public function toggleSelectAll(): void
     {
-        $ids = $this->getRegistrationsProperty()->pluck('id')->all();
+        $ids = collect($this->registrations->items())->pluck('id')->all();
+        if ($ids === []) {
+            return;
+        }
         if (count(array_intersect($this->selectedIds, $ids)) === count($ids)) {
             $this->selectedIds = array_values(array_diff($this->selectedIds, $ids));
         } else {

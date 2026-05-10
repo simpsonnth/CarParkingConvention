@@ -13,7 +13,7 @@ Route::view('dashboard', 'dashboard')
     ->name('dashboard');
 
 Route::get('/scan/{code?}', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan');
-Route::get('/register', App\Livewire\Public\Register::class)->name('parking.register');
+Route::get('/parking-registration', App\Livewire\Public\Register::class)->name('parking.register');
 Route::get('/register-simple', App\Livewire\Public\CongregationNumbers::class)->name('parking.register-simple');
 Route::get('/register-circuit-overseer', App\Livewire\Public\CircuitOverseerRegister::class)->name('parking.register-circuit-overseer');
 Route::get('/locale/{locale}', function (string $locale) {
@@ -136,6 +136,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports', App\Livewire\Admin\Reports::class)->name('reports');
         Route::get('/survey-vs-registrations', App\Livewire\Admin\SurveyVsRegistrationReport::class)->name('survey-vs-registrations');
         Route::get('/circuit-overseer-parking', App\Livewire\Admin\CircuitOverseerParking::class)->name('circuit-overseer-parking');
+        Route::get('/routes-list', App\Livewire\Admin\PublicRoutesList::class)->name('routes-list');
     });
 
 });

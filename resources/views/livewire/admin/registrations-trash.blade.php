@@ -4,10 +4,17 @@
             <flux:heading size="xl">{{ __('registrations.trash_title') }}</flux:heading>
             <flux:subheading>{{ __('registrations.trash_subtitle') }}</flux:subheading>
         </div>
-        <a href="{{ route('admin.registrations') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
-            <flux:icon name="arrow-left" class="size-4" />
-            {{ __('registrations.back_to_registrations') }}
-        </a>
+        <div class="flex flex-wrap items-center gap-2">
+            @if($registrations->total() > 0)
+                <flux:button variant="danger" size="sm" wire:click="emptyTrashPermanently" wire:confirm="{{ __('registrations.confirm_empty_trash') }}">
+                    {{ __('registrations.empty_trash_permanently') }}
+                </flux:button>
+            @endif
+            <a href="{{ route('admin.registrations') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
+                <flux:icon name="arrow-left" class="size-4" />
+                {{ __('registrations.back_to_registrations') }}
+            </a>
+        </div>
     </div>
 
     @if(count($selectedIds) > 0)
@@ -31,6 +38,7 @@
                 <tr>
                     <th class="w-10 px-4 py-3">
                         <input type="checkbox" wire:click="toggleSelectAll"
+                            {{ count($registrations->items()) > 0 && count(array_intersect($selectedIds, collect($registrations->items())->pluck('id')->all())) === count($registrations->items()) ? 'checked' : '' }}
                             class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
                     </th>
                     <th class="px-6 py-3">{{ __('registrations.deleted_at') }}</th>
@@ -45,7 +53,7 @@
                 @forelse($registrations as $reg)
                     <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition">
                         <td class="w-10 px-4 py-4">
-                            <input type="checkbox" wire:model="selectedIds" value="{{ $reg->id }}"
+                            <input type="checkbox" wire:model.live="selectedIds" value="{{ $reg->id }}"
                                 class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
                         </td>
                         <td class="px-6 py-4 text-zinc-500 whitespace-nowrap">
@@ -58,13 +66,14 @@
                         </td>
                         <td class="px-6 py-4 font-mono text-zinc-600 dark:text-zinc-300">{{ $reg->vehicle_registration ?? '—' }}</td>
                         <td class="px-6 py-4 text-end">
-                            <flux:dropdown>
-                                <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" />
-                                <flux:menu>
-                                    <flux:menu.item wire:click="restore({{ $reg->id }})" icon="arrow-path">{{ __('registrations.restore') }}</flux:menu.item>
-                                    <flux:menu.item wire:click="forceDelete({{ $reg->id }})" wire:confirm="{{ __('registrations.confirm_permanent_delete_one') }}" icon="trash" variant="danger">{{ __('registrations.permanent_delete') }}</flux:menu.item>
-                                </flux:menu>
-                            </flux:dropdown>
+                            <div class="flex flex-wrap items-center justify-end gap-2">
+                                <flux:button variant="ghost" size="sm" icon="arrow-path" wire:click="restore({{ $reg->id }})">
+                                    {{ __('registrations.restore') }}
+                                </flux:button>
+                                <flux:button variant="danger" size="sm" icon="trash" wire:click="forceDelete({{ $reg->id }})" wire:confirm="{{ __('registrations.confirm_permanent_delete_one') }}">
+                                    {{ __('registrations.permanent_delete') }}
+                                </flux:button>
+                            </div>
                         </td>
                     </tr>
                 @empty

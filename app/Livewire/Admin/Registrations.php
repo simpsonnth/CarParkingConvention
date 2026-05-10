@@ -368,6 +368,29 @@ class Registrations extends Component
         Flux::toast(__('registrations.bulk_deleted', ['count' => $count]));
     }
 
+    /** Soft-delete standard car registrations only (not coaches, not elderly/infirm cars, not Circuit Overseers). */
+    public function bulkDeleteStandardCarRegistrations(): void
+    {
+        $count = ParkingRegistration::query()
+            ->where('vehicle_type', 'car')
+            ->where('elderly_infirm_parking', false)
+            ->where('is_circuit_overseer', false)
+            ->delete();
+
+        Flux::toast(__('registrations.bulk_deleted_standard_cars', ['count' => $count]));
+    }
+
+    /** Soft-delete elderly/infirm car registrations only (not Circuit Overseers). Coaches are unaffected. */
+    public function bulkDeleteDisabledRegistrations(): void
+    {
+        $count = ParkingRegistration::query()
+            ->where('elderly_infirm_parking', true)
+            ->where('is_circuit_overseer', false)
+            ->delete();
+
+        Flux::toast(__('registrations.bulk_deleted_disabled', ['count' => $count]));
+    }
+
     /** Download a ZIP of master pass PDFs for the selected registrations (redirects to download URL). */
     public function downloadMasterPassesZip()
     {

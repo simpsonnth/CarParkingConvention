@@ -122,6 +122,25 @@
         </p>
     </div>
 
+    <div class="rounded-xl border border-red-200 bg-red-50/90 px-4 py-4 dark:border-red-900/60 dark:bg-red-950/40">
+        <p class="font-semibold text-red-900 dark:text-red-100">{{ __('registrations.bulk_delete_danger_title') }}</p>
+        <p class="mt-1 text-sm text-red-800 dark:text-red-200/95">{{ __('registrations.bulk_delete_danger_hint') }}</p>
+        <div class="mt-4 flex flex-wrap gap-3">
+            <button type="button" wire:click="bulkDeleteStandardCarRegistrations"
+                wire:confirm="{{ __('registrations.bulk_delete_standard_cars_confirm') }}"
+                class="inline-flex items-center gap-2 rounded-lg bg-red-700 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-800 dark:bg-red-600 dark:hover:bg-red-500">
+                <flux:icon name="trash" class="size-4" />
+                {{ __('registrations.bulk_delete_standard_cars_button') }}
+            </button>
+            <button type="button" wire:click="bulkDeleteDisabledRegistrations"
+                wire:confirm="{{ __('registrations.bulk_delete_disabled_confirm') }}"
+                class="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-semibold text-red-800 shadow-sm hover:bg-red-100 dark:border-red-800 dark:bg-red-900/50 dark:text-red-100 dark:hover:bg-red-900/70">
+                <flux:icon name="trash" class="size-4" />
+                {{ __('registrations.bulk_delete_disabled_button') }}
+            </button>
+        </div>
+    </div>
+
     @if($this->getAppliedFiltersCount() > 0)
         <div class="flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-800/50">
             <button type="button" wire:click="openFilterPanel" class="inline-flex items-center gap-1.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-indigo-600 dark:hover:text-indigo-400">

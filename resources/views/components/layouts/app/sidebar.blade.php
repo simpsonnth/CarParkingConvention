@@ -59,6 +59,14 @@
                     :current="request()->routeIs('admin.circuit-overseer-parking')" wire:navigate>{{ __('reports.nav_circuit_overseer') }}
                 </flux:navlist.item>
             </flux:navlist.group>
+
+            <flux:separator class="my-2" />
+
+            <flux:navlist.group :heading="__('routes_list.nav_group')" class="grid">
+                <flux:navlist.item icon="link" :href="route('admin.routes-list')"
+                    :current="request()->routeIs('admin.routes-list')" wire:navigate>{{ __('routes_list.nav_link') }}
+                </flux:navlist.item>
+            </flux:navlist.group>
         </flux:navlist>
 
         <flux:spacer />

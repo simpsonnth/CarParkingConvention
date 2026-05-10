@@ -48,6 +48,14 @@ return [
     'updated' => 'Inscripción actualizada correctamente.',
     'deleted' => 'Inscripción eliminada correctamente.',
     'bulk_deleted' => ':count inscripción(es) movida(s) a la papelera.',
+    'bulk_delete_danger_title' => 'Limpieza masiva',
+    'bulk_delete_danger_hint' => 'Las inscripciones de Superintendente de Circuito y de autobús nunca se eliminan con estas acciones. Las filas eliminadas se pueden restaurar desde la papelera.',
+    'bulk_delete_standard_cars_button' => 'Eliminar todos los billetes de coche estándar',
+    'bulk_delete_standard_cars_confirm' => '¿Mover todas las inscripciones de coche estándar a la papelera? Solo afecta a coches normales (no autobuses, no ancianos/enfermos, no Superintendente de Circuito).',
+    'bulk_delete_disabled_button' => 'Eliminar todas las inscripciones ancianos/enfermos',
+    'bulk_delete_disabled_confirm' => '¿Mover todas las inscripciones de aparcamiento ancianos/enfermos a la papelera? No se eliminan las inscripciones de Superintendente de Circuito.',
+    'bulk_deleted_standard_cars' => ':count inscripción(es) de coche estándar movida(s) a la papelera.',
+    'bulk_deleted_disabled' => ':count inscripción(es) ancianos/enfermos movida(s) a la papelera.',
     'select_items' => 'Seleccione al menos un elemento.',
     'per_page' => 'por página',
     'bulk_set_elderly_infirm' => 'Establecer ancianos/enfermos',
@@ -133,6 +141,8 @@ return [
     'no_trashed' => 'La papelera está vacía.',
     'confirm_permanent_delete_one' => '¿Eliminar permanentemente esta inscripción? Esta acción no se puede deshacer.',
     'confirm_permanent_delete_selected' => '¿Eliminar permanentemente los elementos seleccionados? Esta acción no se puede deshacer.',
+    'empty_trash_permanently' => 'Vaciar papelera permanentemente',
+    'confirm_empty_trash' => '¿Eliminar permanentemente TODOS los elementos de la papelera? Esta acción no se puede deshacer.',
 
     // Export
     'export' => [

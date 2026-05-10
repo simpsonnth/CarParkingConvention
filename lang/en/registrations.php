@@ -48,6 +48,14 @@ return [
     'updated' => 'Registration updated successfully.',
     'deleted' => 'Registration deleted successfully.',
     'bulk_deleted' => ':count registration(s) moved to recycle bin.',
+    'bulk_delete_danger_title' => 'Bulk cleanup',
+    'bulk_delete_danger_hint' => 'Circuit Overseer registrations and coach registrations are never removed by these actions. Deleted rows can be restored from the recycle bin.',
+    'bulk_delete_standard_cars_button' => 'Delete all standard car tickets',
+    'bulk_delete_standard_cars_confirm' => 'Move every standard car registration to the recycle bin? This affects car tickets only (not coaches, not elderly/infirm cars, not Circuit Overseers).',
+    'bulk_delete_disabled_button' => 'Delete all elderly/infirm registrations',
+    'bulk_delete_disabled_confirm' => 'Move every elderly/infirm parking registration to the recycle bin? Circuit Overseer registrations are not removed.',
+    'bulk_deleted_standard_cars' => ':count standard car registration(s) moved to recycle bin.',
+    'bulk_deleted_disabled' => ':count elderly/infirm registration(s) moved to recycle bin.',
     'select_items' => 'Please select at least one item.',
     'per_page' => 'per page',
     'bulk_set_elderly_infirm' => 'Set Elderly & Infirm',
@@ -133,6 +141,8 @@ return [
     'no_trashed' => 'Recycle bin is empty.',
     'confirm_permanent_delete_one' => 'Permanently delete this registration? This cannot be undone.',
     'confirm_permanent_delete_selected' => 'Permanently delete selected items? This cannot be undone.',
+    'empty_trash_permanently' => 'Empty recycle bin permanently',
+    'confirm_empty_trash' => 'Permanently delete ALL items in the recycle bin? This cannot be undone.',
 
     // Export
     'export' => [
