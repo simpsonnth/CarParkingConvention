@@ -20,6 +20,14 @@ return [
     'coach_captain_contact_number' => 'Contacto del Capitán del Autobús',
     'coach_captain_email_address' => 'Correo del Capitán del Autobús',
 
+    // Casilla "capitán por designar" y los campos del secretario que aparecen en su lugar.
+    'coach_captain_to_be_assigned' => 'Capitán del autobús por designar',
+    'coach_captain_to_be_assigned_help' => 'Marque esta casilla si la congregación todavía no ha designado un capitán del autobús. Usaremos los datos del secretario de la congregación que figuran abajo como contacto temporal.',
+    'coach_captain_intro_body_tba' => 'Los detalles del autobús (tamaño, organización y congregaciones que comparten el autobús) que indicó en la encuesta de aparcamiento ya están registrados. Mientras se designa al capitán del autobús, por favor indique abajo los datos de contacto del secretario de la congregación para que podamos comunicarnos con la congregación sobre el aparcamiento.',
+    'secretary_name' => 'Nombre del Secretario',
+    'secretary_contact_number' => 'Contacto del Secretario',
+    'secretary_email_address' => 'Correo del Secretario',
+
     'congregation_code' => 'Por favor, introduzca el código de su congregación',
     'congregation_code_placeholder' => 'ej: 9d4e2a1b-...',
     'congregation_label' => 'Congregación',

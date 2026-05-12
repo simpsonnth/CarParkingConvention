@@ -34,6 +34,13 @@ class Register extends Component
     /** Do you need parking for Elderly and Infirm? Bound as a string '0'/'1'. */
     public string $elderlyInfirmParking = '0';
 
+    /**
+     * True when the congregation has not yet appointed a coach captain and
+     * the contact details on this submission belong to the congregation
+     * secretary acting as a temporary point of contact. Coach-only.
+     */
+    public bool $coachCaptainToBeAssigned = false;
+
     public bool $registered = false;
 
     /** @var list<string> */
@@ -145,6 +152,18 @@ class Register extends Component
         return $found;
     }
 
+    /**
+     * Keep the "coach captain to be assigned" flag scoped to coach
+     * submissions only. If a user toggles to car after ticking the box,
+     * the flag must not silently persist into the row.
+     */
+    public function updatedVehicleType(string $value): void
+    {
+        if ($value !== 'coach') {
+            $this->coachCaptainToBeAssigned = false;
+        }
+    }
+
     public function toggleAllDays(): void
     {
         if (count($this->days) === count(self::$allDays)) {
@@ -208,7 +227,12 @@ class Register extends Component
             $rules['elderlyInfirmParking'] = 'nullable|in:0,1';
         }
 
+        $rules['coachCaptainToBeAssigned'] = 'boolean';
+
         $this->validate($rules);
+
+        // Defence in depth: the flag is meaningless outside coach submissions.
+        $coachCaptainTba = $this->vehicleType === 'coach' && $this->coachCaptainToBeAssigned;
 
         $congregation = $this->resolvedCongregation;
         if (! $congregation) {
@@ -234,7 +258,7 @@ class Register extends Component
         // standard cars and disabled_parking_count caps elderly/infirm cars separately.
         // If disabled parking was not requested on the survey, car_park_tickets_count
         // caps all cars combined (legacy/admin elderly rows still consume ticket slots).
-        $violation = DB::transaction(function () use ($congregation, $formattedReg, $congregationLabel): ?array {
+        $violation = DB::transaction(function () use ($congregation, $formattedReg, $congregationLabel, $coachCaptainTba): ?array {
             $resp = CongregationNumbersResponse::query()
                 ->where('congregation_id', $congregation->id)
                 ->lockForUpdate()
@@ -314,6 +338,7 @@ class Register extends Component
                 'elderly_infirm_parking' => $this->vehicleType === 'car'
                     ? filter_var($this->elderlyInfirmParking, FILTER_VALIDATE_BOOLEAN)
                     : false,
+                'coach_captain_to_be_assigned' => $coachCaptainTba,
             ]);
 
             return null;

@@ -24,6 +24,7 @@ class ParkingRegistrationsExport implements FromQuery, WithHeadings, WithMapping
             __('registrations.export.congregation'),
             __('registrations.export.car_park'),
             __('registrations.export.type'),
+            __('registrations.export.coach_captain_tba'),
             __('registrations.export.sharing'),
             __('registrations.export.sharing_notes'),
             __('registrations.export.vehicle_reg'),
@@ -36,15 +37,22 @@ class ParkingRegistrationsExport implements FromQuery, WithHeadings, WithMapping
 
     public function map($row): array
     {
-        $sharing = ($row->vehicle_type ?? 'car') === 'coach' && ($row->sharing_with_other_congregations ?? false)
+        $isCoach = ($row->vehicle_type ?? 'car') === 'coach';
+        $sharing = $isCoach && ($row->sharing_with_other_congregations ?? false)
             ? __('registrations.yes')
-            : (($row->vehicle_type ?? 'car') === 'coach' ? __('registrations.no') : '');
+            : ($isCoach ? __('registrations.no') : '');
+        // The TBA column is only meaningful for coach rows; leave blank for cars.
+        $coachCaptainTba = $isCoach
+            ? (($row->coach_captain_to_be_assigned ?? false) ? __('registrations.yes') : __('registrations.no'))
+            : '';
+
         return [
             $row->created_at?->format('Y-m-d H:i'),
             $row->name,
             $row->congregation,
             $row->carPark?->name ?? '',
             ucfirst($row->vehicle_type ?? 'car'),
+            $coachCaptainTba,
             $sharing,
             $row->sharing_congregations_notes ?? '',
             $row->vehicle_registration ?? '',

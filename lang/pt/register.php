@@ -20,6 +20,14 @@ return [
     'coach_captain_contact_number' => 'Contacto do Capitão do Autocarro',
     'coach_captain_email_address' => 'E-mail do Capitão do Autocarro',
 
+    // Opção "capitão a designar" e os campos do secretário que aparecem em substituição.
+    'coach_captain_to_be_assigned' => 'Capitão do autocarro a designar',
+    'coach_captain_to_be_assigned_help' => 'Marque esta opção se a congregação ainda não designou um capitão do autocarro. Usaremos os dados do secretário da congregação abaixo como contacto temporário.',
+    'coach_captain_intro_body_tba' => 'Os detalhes do autocarro (tamanho, partilha e congregações que partilham o autocarro) que indicou no inquérito de estacionamento já estão registados. Enquanto o capitão do autocarro está a ser designado, por favor indique abaixo os contactos do secretário da congregação para podermos comunicar com a congregação sobre o estacionamento.',
+    'secretary_name' => 'Nome do Secretário',
+    'secretary_contact_number' => 'Contacto do Secretário',
+    'secretary_email_address' => 'E-mail do Secretário',
+
     'congregation_code' => 'Por favor, introduza o código da sua congregação',
     'congregation_code_placeholder' => 'ex: 9d4e2a1b-...',
     'congregation_label' => 'Congregação',

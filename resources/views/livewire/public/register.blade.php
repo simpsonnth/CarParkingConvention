@@ -93,15 +93,42 @@
                             </div>
                             <div class="min-w-0">
                                 <p class="font-semibold text-indigo-900 dark:text-indigo-100">{{ __('register.coach_captain_intro_title') }}</p>
-                                <p class="mt-1 text-sm text-indigo-800 dark:text-indigo-200">{{ __('register.coach_captain_intro_body') }}</p>
+                                <p class="mt-1 text-sm text-indigo-800 dark:text-indigo-200">
+                                    {{ $coachCaptainToBeAssigned ? __('register.coach_captain_intro_body_tba') : __('register.coach_captain_intro_body') }}
+                                </p>
                             </div>
                         </div>
                     </div>
+
+                    {{-- Coach captain TBA toggle: when the congregation has not yet appointed a captain, --}}
+                    {{-- collect the congregation secretary's details as a temporary point of contact. --}}
+                    <label class="flex items-start gap-3 p-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-600 hover:bg-zinc-50 dark:hover:bg-zinc-700/50 cursor-pointer transition has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50 dark:has-[:checked]:bg-indigo-900/20">
+                        <input type="checkbox" wire:model.live="coachCaptainToBeAssigned"
+                            class="mt-0.5 w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-zinc-300 dark:border-zinc-500"
+                            aria-describedby="coach-captain-tba-help">
+                        <span class="min-w-0">
+                            <span class="block text-sm font-bold text-zinc-900 dark:text-white">{{ __('register.coach_captain_to_be_assigned') }}</span>
+                            <span id="coach-captain-tba-help" class="block mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('register.coach_captain_to_be_assigned_help') }}</span>
+                        </span>
+                    </label>
                 @endif
+
+                @php
+                    // Label resolution: secretary > coach captain > generic full-name fields.
+                    $nameLabel = $vehicleType === 'coach'
+                        ? ($coachCaptainToBeAssigned ? __('register.secretary_name') : __('register.coach_captain_name'))
+                        : __('register.full_name');
+                    $contactLabel = $vehicleType === 'coach'
+                        ? ($coachCaptainToBeAssigned ? __('register.secretary_contact_number') : __('register.coach_captain_contact_number'))
+                        : __('register.contact_number');
+                    $emailLabel = $vehicleType === 'coach'
+                        ? ($coachCaptainToBeAssigned ? __('register.secretary_email_address') : __('register.coach_captain_email_address'))
+                        : __('register.email_address');
+                @endphp
 
                 <div>
                     <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">
-                        {{ $vehicleType === 'coach' ? __('register.coach_captain_name') : __('register.full_name') }}
+                        {{ $nameLabel }}
                     </label>
                     <input type="text" wire:model="name"
                         class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4"
@@ -112,7 +139,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">
-                            {{ $vehicleType === 'coach' ? __('register.coach_captain_contact_number') : __('register.contact_number') }}
+                            {{ $contactLabel }}
                         </label>
                         <input type="tel" wire:model="contactNumber"
                             class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4"
@@ -122,7 +149,7 @@
                     </div>
                     <div>
                         <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">
-                            {{ $vehicleType === 'coach' ? __('register.coach_captain_email_address') : __('register.email_address') }}
+                            {{ $emailLabel }}
                         </label>
                         <input type="email" wire:model.live.debounce.300ms="email"
                             class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4"

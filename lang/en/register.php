@@ -20,6 +20,14 @@ return [
     'coach_captain_contact_number' => 'Coach Captain Contact Number',
     'coach_captain_email_address' => 'Coach Captain Email Address',
 
+    // Coach captain "to be assigned" toggle and the secretary-as-stand-in labels it swaps to.
+    'coach_captain_to_be_assigned' => 'Coach captain to be assigned',
+    'coach_captain_to_be_assigned_help' => 'Tick this if the congregation has not yet appointed a coach captain. We will use the congregation secretary\'s details below as a temporary point of contact.',
+    'coach_captain_intro_body_tba' => 'The coach details (size, sharing arrangements, and any congregations sharing this coach) you provided in the parking survey are already on file. While a coach captain is being appointed, please give us the congregation secretary\'s contact details below so we can reach the congregation about the parking arrangements.',
+    'secretary_name' => 'Secretary Name',
+    'secretary_contact_number' => 'Secretary Contact Number',
+    'secretary_email_address' => 'Secretary Email Address',
+
     'congregation_code' => 'Please enter your congregation code',
     'congregation_code_placeholder' => 'e.g. 9d4e2a1b-...',
     'congregation_label' => 'Congregation',
