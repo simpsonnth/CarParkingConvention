@@ -12,6 +12,13 @@
         <div class="text-center mb-8">
             <h1 class="text-3xl font-black text-zinc-900 dark:text-white tracking-tight mb-2">{{ __('register.title') }}</h1>
             <p class="text-zinc-500 dark:text-zinc-400">{{ __('register.subtitle') }}</p>
+            <div class="mt-4">
+                <a href="{{ route('parking.congregation-portal') }}"
+                    class="inline-block w-full sm:w-auto py-2.5 px-5 rounded-xl border-2 border-indigo-600 text-indigo-700 dark:text-indigo-300 font-semibold text-sm hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                    {{ __('register.congregation_portal_link') }}
+                </a>
+                <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">{{ __('register.congregation_portal_hint') }}</p>
+            </div>
         </div>
 
         @if($registered)
@@ -151,19 +158,12 @@
                         <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">
                             {{ $emailLabel }}
                         </label>
-                        <input type="email" wire:model.live.debounce.300ms="email"
+                        <input type="email" wire:model="email"
                             class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 transition py-3 px-4"
                             placeholder="{{ __('register.email_placeholder') }}">
                         @error('email') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                     </div>
                 </div>
-
-                @if($this->duplicateEmailExistingRegistration)
-                    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20" role="status">
-                        <p class="text-sm font-semibold text-amber-900 dark:text-amber-100">{{ __('register.duplicate_email_warning_title') }}</p>
-                        <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">{{ __('register.duplicate_email_warning_body', ['name' => $this->duplicateEmailExistingRegistration->name, 'congregation' => $this->duplicateEmailExistingRegistration->congregation ?: '—']) }}</p>
-                    </div>
-                @endif
 
                 @if($vehicleType === 'car')
                 <div>

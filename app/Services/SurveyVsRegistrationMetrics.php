@@ -114,7 +114,7 @@ final class SurveyVsRegistrationMetrics
 
     /**
      * Expected vehicles from register-simple for comparison with registration rows:
-     * standard car tickets plus disabled spaces when the survey requested them (same additive model as public registration).
+     * car tickets, disabled spaces when requested, plus one coach slot when the survey organises a coach.
      */
     private function surveyAllocationTotal(?CongregationNumbersResponse $resp): int
     {
@@ -122,11 +122,14 @@ final class SurveyVsRegistrationMetrics
             return 0;
         }
 
-        $carTickets = (int) $resp->car_park_tickets_count;
+        $total = (int) $resp->car_park_tickets_count;
         if ($resp->disabled_parking_required) {
-            return $carTickets + (int) ($resp->disabled_parking_count ?? 0);
+            $total += (int) ($resp->disabled_parking_count ?? 0);
+        }
+        if ($resp->organizes_coach) {
+            $total += 1;
         }
 
-        return $carTickets;
+        return $total;
     }
 }

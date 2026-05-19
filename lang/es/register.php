@@ -3,6 +3,8 @@
 return [
     'title' => 'Inscripción de Aparcamiento',
     'subtitle' => 'Por favor, rellene sus datos para inscribir su vehículo.',
+    'congregation_portal_link' => 'Portal de la congregación',
+    'congregation_portal_hint' => '¿Ya se inscribió? Vea o corrija las inscripciones de su congregación.',
     'co_title' => 'Inscripción de Aparcamiento del Superintendente de Circuito',
     'co_subtitle' => 'Por favor, rellene sus datos. No se requiere congregación.',
     'registration_complete' => '¡Inscripción completada!',

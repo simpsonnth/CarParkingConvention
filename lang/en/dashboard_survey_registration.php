@@ -2,7 +2,7 @@
 
 return [
     'section_title' => 'Survey vs pre-registration',
-    'section_subtitle' => 'Compare congregation survey allocations from register-simple (car tickets plus disabled spaces when requested) with matched parking registrations by congregation name.',
+    'section_subtitle' => 'Compare congregation survey allocations from register-simple (car tickets, disabled spaces when requested, and a coach when organised) with matched parking registrations by congregation name.',
 
     'stat_survey_total' => 'Survey allocation (congregations)',
     'stat_registrations_matched' => 'Pre-registrations matched',

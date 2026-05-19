@@ -53,6 +53,37 @@ test('public register rejects duplicate vehicle registration', function () {
     expect(ParkingRegistration::query()->where('email', 'second@example.test')->exists())->toBeFalse();
 });
 
+test('public register allows same vehicle registration when prior row is only in recycle bin', function () {
+    $cong = seedCongregationWithSurvey();
+    $trashed = ParkingRegistration::query()->create([
+        'name' => 'Trashed User',
+        'congregation' => $cong->name,
+        'contact_number' => '111',
+        'vehicle_registration' => 'RR99RRR',
+        'days' => ['Friday'],
+        'email' => 'trashed-plate@example.test',
+        'vehicle_type' => 'car',
+        'elderly_infirm_parking' => false,
+    ]);
+    $trashed->delete();
+
+    Livewire::test(Register::class)
+        ->set('vehicleType', 'car')
+        ->set('congregationCode', $cong->uuid)
+        ->set('name', 'New User')
+        ->set('contactNumber', '222')
+        ->set('vehicleReg', 'RR99 RRR')
+        ->set('email', 'new-after-trash@example.test')
+        ->set('elderlyInfirmParking', '0')
+        ->set('days', ['Friday'])
+        ->call('register')
+        ->assertHasNoErrors()
+        ->assertSet('registered', true);
+
+    expect(ParkingRegistration::query()->where('email', 'new-after-trash@example.test')->exists())->toBeTrue();
+    expect(ParkingRegistration::onlyTrashed()->whereKey($trashed->id)->exists())->toBeTrue();
+});
+
 test('public register allows submit when email exists but vehicle reg is new', function () {
     $cong = seedCongregationWithSurvey();
     ParkingRegistration::query()->create([

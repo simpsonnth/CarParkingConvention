@@ -3,9 +3,9 @@
 namespace App\Livewire\Public;
 
 use App\Models\Congregation;
-use App\Models\CongregationNumbersResponse;
 use App\Models\ParkingRegistration;
 use App\Services\ParkingRegistrationDuplicateSignals;
+use App\Services\ParkingRegistrationQuotaValidator;
 use Flux\Flux;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
@@ -75,50 +75,7 @@ class Register extends Component
             ];
         }
 
-        $resp = CongregationNumbersResponse::query()
-            ->where('congregation_id', $congregation->id)
-            ->first();
-
-        if ($resp === null) {
-            return [
-                'hide_remaining_fields' => true,
-                'no_survey' => true,
-                'allocation_full' => false,
-            ];
-        }
-
-        $label = trim((string) $congregation->name);
-        $counts = $this->registrationCountsForCongregationLabel($label);
-
-        $carTicketLimit = (int) $resp->car_park_tickets_count;
-        $totalCarsUsed = $counts['standard_car_used'] + $counts['disabled_used'];
-
-        // When the survey did not request separate disabled spaces, car_park_tickets_count
-        // caps all cars (standard + elderly/infirm rows). Otherwise the two pools are independent.
-        if ($resp->disabled_parking_required) {
-            $standardRoom = $counts['standard_car_used'] < $carTicketLimit;
-            $disabledLimit = (int) ($resp->disabled_parking_count ?? 0);
-            $disabledRoom = $disabledLimit > 0 && $counts['disabled_used'] < $disabledLimit;
-        } else {
-            $standardRoom = $totalCarsUsed < $carTicketLimit;
-            $disabledRoom = false;
-        }
-
-        $coachRoom = $resp->organizes_coach && ! $counts['coach_exists'];
-
-        if ($standardRoom || $disabledRoom || $coachRoom) {
-            return [
-                'hide_remaining_fields' => false,
-                'no_survey' => false,
-                'allocation_full' => false,
-            ];
-        }
-
-        return [
-            'hide_remaining_fields' => true,
-            'no_survey' => false,
-            'allocation_full' => true,
-        ];
+        return app(ParkingRegistrationQuotaValidator::class)->congregationQuotaGate($congregation);
     }
 
     #[Computed]
@@ -128,28 +85,6 @@ class Register extends Component
         $norm = $signals->normalizeVehicleRegistration($this->vehicleReg);
 
         return $signals->findActiveByNormalizedVehicleReg($norm);
-    }
-
-    #[Computed]
-    public function duplicateEmailExistingRegistration(): ?ParkingRegistration
-    {
-        $email = trim($this->email);
-        if ($email === '' || ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return null;
-        }
-
-        $signals = app(ParkingRegistrationDuplicateSignals::class);
-        $found = $signals->findActiveByNormalizedEmail($email);
-        if ($found === null) {
-            return null;
-        }
-
-        $vehicleConflict = $this->duplicateVehicleRegistrationConflict;
-        if ($vehicleConflict !== null && $vehicleConflict->is($found)) {
-            return null;
-        }
-
-        return $found;
     }
 
     /**
@@ -171,35 +106,6 @@ class Register extends Component
         } else {
             $this->days = self::$allDays;
         }
-    }
-
-    /**
-     * @return array{standard_car_used: int, disabled_used: int, coach_exists: bool}
-     */
-    private function registrationCountsForCongregationLabel(string $congregationLabel): array
-    {
-        $standardCarUsed = ParkingRegistration::query()
-            ->whereRaw('TRIM(congregation) = ?', [$congregationLabel])
-            ->where('vehicle_type', 'car')
-            ->where('elderly_infirm_parking', false)
-            ->count();
-
-        $disabledUsed = ParkingRegistration::query()
-            ->whereRaw('TRIM(congregation) = ?', [$congregationLabel])
-            ->where('vehicle_type', 'car')
-            ->where('elderly_infirm_parking', true)
-            ->count();
-
-        $coachExists = ParkingRegistration::query()
-            ->whereRaw('TRIM(congregation) = ?', [$congregationLabel])
-            ->where('vehicle_type', 'coach')
-            ->exists();
-
-        return [
-            'standard_car_used' => $standardCarUsed,
-            'disabled_used' => $disabledUsed,
-            'coach_exists' => $coachExists,
-        ];
     }
 
     public function render()
@@ -246,82 +152,40 @@ class Register extends Component
             : null;
 
         $congregationLabel = trim((string) $congregation->name);
+        $elderlyInfirm = $this->vehicleType === 'car'
+            && filter_var($this->elderlyInfirmParking, FILTER_VALIDATE_BOOLEAN);
 
-        // Race-safe quota enforcement: lock the survey response row, then
-        // recount registrations inside the same transaction before inserting.
-        // Quota violations short-circuit with a [field, message] tuple; the
-        // transaction commits with zero changes (idempotent), no INSERT having
-        // run. Coach sharing details are NOT re-collected here — the parking
-        // survey is the single source of truth for those.
-        //
-        // Pool model: if disabled_parking_required, car_park_tickets_count caps
-        // standard cars and disabled_parking_count caps elderly/infirm cars separately.
-        // If disabled parking was not requested on the survey, car_park_tickets_count
-        // caps all cars combined (legacy/admin elderly rows still consume ticket slots).
-        $violation = DB::transaction(function () use ($congregation, $formattedReg, $congregationLabel, $coachCaptainTba): ?array {
-            $resp = CongregationNumbersResponse::query()
-                ->where('congregation_id', $congregation->id)
-                ->lockForUpdate()
-                ->first();
+        $duplicateSignals = app(ParkingRegistrationDuplicateSignals::class);
+        if ($formattedReg !== null) {
+            $existingByReg = $duplicateSignals->findActiveByNormalizedVehicleReg($formattedReg);
+            if ($existingByReg !== null) {
+                $this->addError('vehicleReg', __('register.duplicate_vehicle_registration', [
+                    'name' => $existingByReg->name,
+                    'congregation' => $existingByReg->congregation ?: '—',
+                ]));
 
-            if ($resp === null) {
-                return ['congregationCode', __('register.quota_no_survey')];
+                return;
             }
+        }
 
-            $counts = $this->registrationCountsForCongregationLabel($congregationLabel);
-            $standardCarUsed = $counts['standard_car_used'];
-            $disabledUsed = $counts['disabled_used'];
-            $coachExists = $counts['coach_exists'];
+        $validator = app(ParkingRegistrationQuotaValidator::class);
+        $violation = DB::transaction(function () use (
+            $congregation,
+            $formattedReg,
+            $congregationLabel,
+            $coachCaptainTba,
+            $elderlyInfirm,
+            $validator,
+        ): ?array {
+            $quotaViolation = $validator->validateRegistration(
+                $congregation,
+                $this->vehicleType,
+                $elderlyInfirm,
+                $formattedReg,
+            );
 
-            if ($this->vehicleType === 'car') {
-                if ($this->elderlyInfirmParking === '1') {
-                    $disabledLimit = $resp->disabled_parking_required
-                        ? (int) ($resp->disabled_parking_count ?? 0)
-                        : 0;
-
-                    if ($disabledLimit <= 0) {
-                        return ['elderlyInfirmParking', __('register.quota_disabled_not_requested', [
-                            'congregation' => $congregation->name,
-                        ])];
-                    }
-
-                    if ($disabledUsed >= $disabledLimit) {
-                        return ['elderlyInfirmParking', __('register.quota_disabled_full', [
-                            'limit' => $disabledLimit,
-                            'congregation' => $congregation->name,
-                        ])];
-                    }
-                } else {
-                    $standardLimit = (int) $resp->car_park_tickets_count;
-                    $carsUsedTowardTicketCap = $resp->disabled_parking_required
-                        ? $standardCarUsed
-                        : ($standardCarUsed + $disabledUsed);
-
-                    if ($carsUsedTowardTicketCap >= $standardLimit) {
-                        return ['congregationCode', __('register.quota_car_full', [
-                            'limit' => $standardLimit,
-                            'congregation' => $congregation->name,
-                        ])];
-                    }
-                }
-            } else { // coach
-                if (! $resp->organizes_coach) {
-                    return ['vehicleType', __('register.quota_coach_not_organised')];
-                }
-                if ($coachExists) {
-                    return ['vehicleType', __('register.quota_coach_taken')];
-                }
-            }
-
-            $duplicateSignals = app(ParkingRegistrationDuplicateSignals::class);
-            if ($formattedReg !== null) {
-                $existingByReg = $duplicateSignals->findActiveByNormalizedVehicleReg($formattedReg);
-                if ($existingByReg !== null) {
-                    return ['vehicleReg', __('register.duplicate_vehicle_registration', [
-                        'name' => $existingByReg->name,
-                        'congregation' => $existingByReg->congregation ?: '—',
-                    ])];
-                }
+            if ($quotaViolation !== null) {
+                return $quotaViolation;
             }
 
             ParkingRegistration::create([
@@ -332,12 +196,9 @@ class Register extends Component
                 'days' => $this->days,
                 'email' => $this->email,
                 'vehicle_type' => $this->vehicleType,
-                // Survey is the source of truth for coach sharing — do not duplicate.
                 'sharing_with_other_congregations' => false,
                 'sharing_congregations_notes' => null,
-                'elderly_infirm_parking' => $this->vehicleType === 'car'
-                    ? filter_var($this->elderlyInfirmParking, FILTER_VALIDATE_BOOLEAN)
-                    : false,
+                'elderly_infirm_parking' => $elderlyInfirm,
                 'coach_captain_to_be_assigned' => $coachCaptainTba,
             ]);
 

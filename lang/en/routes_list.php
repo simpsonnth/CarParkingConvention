@@ -21,6 +21,7 @@ return [
     'row_parking' => 'Parking registration',
     'row_register_simple' => 'Congregation numbers (register-simple)',
     'row_co' => 'Circuit Overseer registration',
+    'row_congregation_portal' => 'Congregation portal (view / edit registrations)',
     'row_locale' => 'Set language (example: English)',
     'row_login' => 'Staff login',
     'row_forgot_password' => 'Forgot password',

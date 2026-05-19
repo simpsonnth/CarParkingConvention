@@ -167,6 +167,10 @@
 
     {{ $slot }}
 
+    @auth
+        <livewire:session-keepalive />
+    @endauth
+
     @fluxScripts
 </body>
 

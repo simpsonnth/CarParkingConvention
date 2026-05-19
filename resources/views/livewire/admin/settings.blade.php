@@ -15,6 +15,14 @@
                 <flux:input wire:model="conventionLocation" label="Location" placeholder="e.g. Twickenham" />
             </div>
 
+            <div class="space-y-3 border-t border-zinc-200 dark:border-zinc-700 pt-6">
+                <flux:heading size="sm">{{ __('congregation_portal.settings_portal_password') }}</flux:heading>
+                <flux:input wire:model="congregationPortalPassword" type="password"
+                    :label="__('congregation_portal.settings_portal_password')"
+                    :placeholder="__('congregation_portal.settings_portal_password_placeholder')" />
+                <p class="text-xs text-zinc-500">{{ __('congregation_portal.settings_portal_password_help') }}</p>
+            </div>
+
             <div class="space-y-3">
                 <flux:heading size="sm">Ticket Logo / Image</flux:heading>
 

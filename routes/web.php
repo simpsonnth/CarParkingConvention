@@ -16,6 +16,7 @@ Route::get('/scan/{code?}', App\Livewire\Attendant\Scan::class)->middleware('aut
 Route::get('/parking-registration', App\Livewire\Public\Register::class)->name('parking.register');
 Route::get('/register-simple', App\Livewire\Public\CongregationNumbers::class)->name('parking.register-simple');
 Route::get('/register-circuit-overseer', App\Livewire\Public\CircuitOverseerRegister::class)->name('parking.register-circuit-overseer');
+Route::get('/congregation-portal', App\Livewire\Public\CongregationPortal::class)->name('parking.congregation-portal');
 Route::get('/locale/{locale}', function (string $locale) {
     if (in_array($locale, ['en', 'pt', 'es'], true)) {
         session(['locale' => $locale]);

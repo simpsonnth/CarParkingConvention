@@ -3,6 +3,8 @@
 return [
     'title' => 'Parking Registration',
     'subtitle' => 'Please fill in your details to register your vehicle.',
+    'congregation_portal_link' => 'Congregation portal',
+    'congregation_portal_hint' => 'Already registered? View or correct your congregation\'s entries.',
     'co_title' => 'Circuit Overseer Parking Registration',
     'co_subtitle' => 'Please fill in your details. Congregation is not required.',
     'registration_complete' => 'Registration Complete!',

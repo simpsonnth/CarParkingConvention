@@ -51,6 +51,10 @@
                 </div>
             @else
                 <div class="space-y-4">
+                    <a href="{{ route('parking.congregation-portal') }}"
+                        class="block w-full py-3 px-4 rounded-lg border-2 border-indigo-600 text-indigo-700 dark:text-indigo-300 font-semibold text-center hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition">
+                        {{ __('congregation_portal.title') }}
+                    </a>
                     <a href="{{ route('login') }}"
                         class="block w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold text-center hover:opacity-90 transition shadow-lg">
                         Log In

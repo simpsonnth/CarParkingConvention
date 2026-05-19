@@ -19,6 +19,7 @@ class PublicRoutesList extends Component
             ['route' => 'parking.register', 'params' => [], 'label_key' => 'routes_list.row_parking'],
             ['route' => 'parking.register-simple', 'params' => [], 'label_key' => 'routes_list.row_register_simple'],
             ['route' => 'parking.register-circuit-overseer', 'params' => [], 'label_key' => 'routes_list.row_co'],
+            ['route' => 'parking.congregation-portal', 'params' => [], 'label_key' => 'routes_list.row_congregation_portal'],
             ['route' => 'locale.set', 'params' => ['locale' => 'en'], 'label_key' => 'routes_list.row_locale'],
             ['route' => 'login', 'params' => [], 'label_key' => 'routes_list.row_login'],
             ['route' => 'password.request', 'params' => [], 'label_key' => 'routes_list.row_forgot_password'],
