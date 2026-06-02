@@ -547,6 +547,14 @@
             </div>
 
             @if($vehicleType === 'coach')
+            <label class="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" wire:model.live="coachCaptainToBeAssigned"
+                    class="mt-1 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                <span class="text-sm text-zinc-700 dark:text-zinc-300">
+                    <span class="font-medium">{{ __('register.coach_captain_to_be_assigned') }}</span>
+                    <span class="block text-xs text-zinc-500 mt-0.5">{{ __('register.coach_captain_to_be_assigned_help') }}</span>
+                </span>
+            </label>
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('registrations.sharing_with_other_congregations') }}</label>
                 <div class="flex gap-2">

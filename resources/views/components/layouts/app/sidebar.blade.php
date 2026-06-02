@@ -32,6 +32,9 @@
                 <flux:navlist.item icon="clipboard-document-list" :href="route('admin.registrations')"
                     :current="request()->routeIs(['admin.registrations', 'admin.registrations.attendance-by-day'])" wire:navigate>{{ __('Registrations') }}
                 </flux:navlist.item>
+                <flux:navlist.item icon="truck" :href="route('admin.coaches')"
+                    :current="request()->routeIs('admin.coaches*')" wire:navigate>{{ __('coaches.nav') }}
+                </flux:navlist.item>
                 <flux:navlist.item icon="table-cells" :href="route('admin.congregation-numbers')"
                     :current="request()->routeIs('admin.congregation-numbers*')" wire:navigate>{{ __('congregation_numbers.nav') }}
                 </flux:navlist.item>

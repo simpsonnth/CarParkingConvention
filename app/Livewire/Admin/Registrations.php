@@ -95,6 +95,8 @@ class Registrations extends Component
 
     public $sharingCongregationsNotes = '';
 
+    public bool $coachCaptainToBeAssigned = false;
+
     public $days = [];
 
     public function updatedSearch(): void
@@ -212,6 +214,7 @@ class Registrations extends Component
         $this->elderlyInfirmParking = $this->editingRegistration->elderly_infirm_parking ? '1' : '0';
         $this->sharingWithOtherCongregations = $this->editingRegistration->sharing_with_other_congregations ? '1' : '0';
         $this->sharingCongregationsNotes = $this->editingRegistration->sharing_congregations_notes ?? '';
+        $this->coachCaptainToBeAssigned = (bool) ($this->editingRegistration->coach_captain_to_be_assigned ?? false);
         $this->days = $this->editingRegistration->days ?? [];
 
         $this->modalOpen = true;
@@ -491,6 +494,7 @@ class Registrations extends Component
         if ($this->vehicleType === 'coach') {
             $rules['sharingWithOtherCongregations'] = 'required|in:0,1';
             $rules['sharingCongregationsNotes'] = $this->sharingWithOtherCongregations === '1' ? 'required|string|max:1000' : 'nullable|string|max:1000';
+            $rules['coachCaptainToBeAssigned'] = 'boolean';
         }
         $this->validate($rules);
 
@@ -518,6 +522,7 @@ class Registrations extends Component
                 'elderly_infirm_parking' => filter_var($this->elderlyInfirmParking, FILTER_VALIDATE_BOOLEAN),
                 'sharing_with_other_congregations' => $this->vehicleType === 'coach' ? filter_var($this->sharingWithOtherCongregations, FILTER_VALIDATE_BOOLEAN) : false,
                 'sharing_congregations_notes' => $sharingNotes,
+                'coach_captain_to_be_assigned' => $this->vehicleType === 'coach' ? $this->coachCaptainToBeAssigned : false,
                 'days' => $this->days,
             ]);
 
@@ -525,7 +530,7 @@ class Registrations extends Component
         }
 
         $this->modalOpen = false;
-        $this->reset('editingRegistration', 'name', 'congregation', 'carParkId', 'vehicleType', 'vehicleReg', 'contactNumber', 'email', 'elderlyInfirmParking', 'sharingWithOtherCongregations', 'sharingCongregationsNotes', 'days');
+        $this->reset('editingRegistration', 'name', 'congregation', 'carParkId', 'vehicleType', 'vehicleReg', 'contactNumber', 'email', 'elderlyInfirmParking', 'sharingWithOtherCongregations', 'sharingCongregationsNotes', 'coachCaptainToBeAssigned', 'days');
     }
 
     public function toggleDay($day)
