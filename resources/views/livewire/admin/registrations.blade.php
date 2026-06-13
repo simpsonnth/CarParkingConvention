@@ -254,6 +254,8 @@
                                 <label class="flex items-center gap-2 cursor-pointer">
                                     <input type="checkbox" wire:model="filterDraftCarParks" value="{{ $park->id }}"
                                         class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="inline-block size-3 shrink-0 rounded-full ring-1 ring-zinc-300/80 dark:ring-zinc-600"
+                                        style="background-color: {{ $park->color ?? '#71717a' }}"></span>
                                     <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ $park->name }}</span>
                                 </label>
                             @endforeach
@@ -383,9 +385,13 @@
                         <td class="px-6 py-4 text-zinc-600 dark:text-zinc-300">
                             {{ $reg->congregation ?: '—' }}
                         </td>
-                        <td class="px-6 py-4 text-zinc-500 dark:text-zinc-400 text-xs">
-                            @if($reg->carPark)
-                                <flux:badge size="sm" color="violet">{{ $reg->carPark->name }}</flux:badge>
+                        <td class="px-6 py-4 text-xs">
+                            @php
+                                $effectiveCarPark = $reg->carPark
+                                    ?? ($congregationCarParkByName[trim($reg->congregation ?? '')] ?? null);
+                            @endphp
+                            @if($effectiveCarPark)
+                                <x-car-park-badge :park="$effectiveCarPark" />
                             @else
                                 <span class="text-zinc-400">—</span>
                             @endif

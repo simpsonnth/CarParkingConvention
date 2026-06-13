@@ -6,233 +6,747 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>
         Print Pass -
-        {{ isset($registration) && ($registration->is_circuit_overseer ?? false) ? __('print_pass.circuit_overseer') : $congregation->name }}
-        {{ isset($registration) && $registration->car_park_id ? ' (Coach / Elderly & Infirm)' : '' }}
+        {{ isset($registration) && ($registration->is_circuit_overseer ?? false) ? __('print_pass.circuit_overseer') : ($congregation->name ?? __('print_pass.circuit_overseer')) }}
     </title>
     @unless($forPdf ?? false)
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endunless
-    @if($forPdf ?? false)
     <style>
-        /* PDF-only: replicate Tailwind + keep entire ticket on one page */
-        body { font-family: ui-sans-serif, system-ui, sans-serif; -webkit-font-smoothing: antialiased; margin: 0; padding: 0; }
-        .ticket-outer { width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 0.5cm; page-break-inside: avoid; }
-        .ticket-container { width: 170mm; border: 4px solid #000; padding: 1cm; border-radius: 12mm; text-align: center; background: white; margin: 0 auto; page-break-inside: avoid; }
-        .mb-6 { margin-bottom: 1.5rem; }
-        .mb-8 { margin-bottom: 2rem; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mt-2 { margin-top: 0.5rem; }
-        .text-zinc-500 { color: #71717a; }
-        .text-zinc-400 { color: #a1a1aa; }
-        .text-zinc-900 { color: #18181b; }
-        .text-xs { font-size: 0.75rem; line-height: 1rem; }
-        .text-sm { font-size: 0.875rem; line-height: 1.25rem; }
-        .text-xl { font-size: 1.25rem; line-height: 1.75rem; }
-        .text-\[9px\] { font-size: 9px; }
-        .text-\[10px\] { font-size: 10px; }
-        .font-bold { font-weight: 700; }
-        .font-black { font-weight: 900; }
-        .uppercase { text-transform: uppercase; }
-        .tracking-tight { letter-spacing: -0.025em; }
-        .tracking-tighter { letter-spacing: -0.05em; }
-        .tracking-\[0\.2em\] { letter-spacing: 0.2em; }
-        .tracking-\[0\.3em\] { letter-spacing: 0.3em; }
-        .tracking-widest { letter-spacing: 0.1em; }
-        .w-full { width: 100%; }
-        .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
-        .py-4 { padding-top: 1rem; padding-bottom: 1rem; }
-        .px-4 { padding-left: 1rem; padding-right: 1rem; }
-        .p-4 { padding: 1rem; }
-        .px-8 { padding-left: 2rem; padding-right: 2rem; }
-        .border-y-2 { border-top-width: 2px; border-bottom-width: 2px; border-style: solid; }
-        .border-dashed { border-style: dashed; }
-        .border-2 { border-width: 2px; border-style: solid; }
-        .border-zinc-900 { border-color: #18181b; }
-        .rounded-2xl { border-radius: 1rem; }
-        .rounded-xl { border-radius: 0.75rem; }
-        .inline-block { display: inline-block; }
-        .mx-auto { margin-left: auto; margin-right: auto; }
-        .text-center { text-align: center; }
-        .object-contain { object-fit: contain; }
-        .h-16 { height: 4rem; }
-        .w-auto { width: auto; }
-        .h-64 { height: 16rem; }
-        .w-64 { width: 16rem; }
-        .bg-white { background-color: #fff; }
-        .border-zinc-100 { border-color: #f4f4f5; }
-        .border-amber-500 { border-color: #f59e0b; }
-        .bg-amber-50 { background-color: #fffbeb; }
-        .text-amber-800 { color: #92400e; }
-        .text-amber-900 { color: #78350f; }
-        .text-amber-100 { color: #fef3c7; }
-        .text-white { color: #fff; }
-        .bg-zinc-900 { background-color: #18181b; }
-        .font-mono { font-family: ui-monospace, monospace; }
-        .shadow-sm { box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
-    </style>
-    @endif
-    <style>
-        @media screen {
-            body {
-                background-color: #f4f4f5;
-                padding: 40px 20px;
-            }
+        :root {
+            --pass-park: #4338ca;
+            --pass-park-dark: #312e81;
+            --pass-park-text: #ffffff;
+            --pass-ink: #0c0a09;
+            --pass-muted: #78716c;
+        }
 
-            .ticket-container {
-                background: white;
-                margin: 0 auto;
-                width: 100%;
-                max-width: 500px;
-                border: 2px solid #18181b;
-                border-radius: 24px;
-                padding: 40px;
-                box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            }
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .print-color-exact {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .no-print {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            background: rgb(255 255 255 / 0.92);
+            border-bottom: 1px solid #e4e4e7;
+        }
+
+        .no-print button {
+            border: none;
+            padding: 0.65rem 1.5rem;
+            border-radius: 0.65rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .no-print button:first-child {
+            background: #18181b;
+            color: #fff;
+        }
+
+        .no-print button:last-child {
+            background: #f4f4f5;
+            color: #52525b;
+        }
+
+        .pass-outer {
+            width: 100%;
+            height: 100vh;
+            min-height: 100vh;
+            padding: 4mm;
+            display: flex;
+            page-break-inside: avoid;
+            page-break-after: avoid;
+        }
+
+        .pass {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: row;
+            border-radius: 6mm;
+            overflow: hidden;
+            background: #fff;
+            page-break-inside: avoid;
+            page-break-after: avoid;
+            box-shadow:
+                0 0 0 3px var(--pass-park),
+                0 20px 50px rgb(0 0 0 / 0.22);
+        }
+
+        .pass-spine {
+            flex: 0 0 10mm;
+            background: linear-gradient(180deg, var(--pass-park) 0%, var(--pass-park-dark) 100%);
+        }
+
+        .pass-inner {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pass-top {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 5mm;
+            padding: 4mm 7mm;
+            background: var(--pass-ink);
+            color: #fff;
+        }
+
+        .pass-top-start {
+            display: flex;
+            align-items: center;
+            gap: 4mm;
+            min-width: 0;
+        }
+
+        .pass-top-logo {
+            flex-shrink: 0;
+            max-height: 13mm;
+            max-width: 22mm;
+            object-fit: contain;
+            filter: brightness(0) invert(1);
+        }
+
+        .pass-top-org {
+            font-size: clamp(0.68rem, 1.6vw, 0.88rem);
+            font-weight: 800;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            line-height: 1.15;
+        }
+
+        .pass-top-event {
+            margin-top: 1mm;
+            font-size: clamp(0.58rem, 1.2vw, 0.72rem);
+            font-weight: 700;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #a8a29e;
+        }
+
+        .pass-top-badge {
+            flex-shrink: 0;
+            padding: 2mm 3.5mm;
+            border: 2px solid var(--pass-park);
+            border-radius: 2mm;
+            background: rgb(255 255 255 / 0.06);
+            font-size: clamp(0.55rem, 1.1vw, 0.68rem);
+            font-weight: 900;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            text-align: center;
+            line-height: 1.25;
+            color: #fff;
+        }
+
+        .pass-zone {
+            flex-shrink: 0;
+            position: relative;
+            padding: 5mm 7mm 6mm;
+            color: var(--pass-park-text);
+            background: linear-gradient(118deg, var(--pass-park) 0%, var(--pass-park-dark) 72%);
+            overflow: hidden;
+        }
+
+        .pass-zone::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                -55deg,
+                transparent,
+                transparent 7px,
+                rgb(255 255 255 / 0.07) 7px,
+                rgb(255 255 255 / 0.07) 14px
+            );
+            pointer-events: none;
+        }
+
+        .pass-zone::after {
+            content: '';
+            position: absolute;
+            right: -8mm;
+            top: -12mm;
+            width: 40mm;
+            height: 40mm;
+            border-radius: 50%;
+            background: rgb(255 255 255 / 0.08);
+            pointer-events: none;
+        }
+
+        .pass-zone-kicker {
+            position: relative;
+            font-size: clamp(0.55rem, 1.1vw, 0.68rem);
+            font-weight: 800;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            opacity: 0.88;
+        }
+
+        .pass-zone-name {
+            position: relative;
+            margin-top: 1.5mm;
+            font-size: clamp(2.4rem, 8vw, 4.5rem);
+            font-weight: 900;
+            line-height: 0.9;
+            letter-spacing: 0.01em;
+            text-transform: uppercase;
+            word-break: break-word;
+            hyphens: auto;
+            text-shadow: 0 2px 12px rgb(0 0 0 / 0.18);
+        }
+
+        .pass-main {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: row;
+        }
+
+        .pass-main-left {
+            flex: 1 1 auto;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 5mm 7mm;
+            gap: 4mm;
+            background: #fff;
+        }
+
+        .pass-identity-label {
+            font-size: clamp(0.62rem, 1.3vw, 0.75rem);
+            font-weight: 800;
+            letter-spacing: 0.24em;
+            text-transform: uppercase;
+            color: var(--pass-muted);
+        }
+
+        .pass-identity-name {
+            margin-top: 1.5mm;
+            font-size: clamp(2rem, 6.8vw, 3.75rem);
+            font-weight: 900;
+            line-height: 0.98;
+            letter-spacing: -0.03em;
+            text-transform: uppercase;
+            color: var(--pass-ink);
+            word-break: break-word;
+            hyphens: auto;
+        }
+
+        .pass-identity-name--long {
+            font-size: clamp(1.55rem, 5vw, 2.8rem);
+            letter-spacing: -0.05em;
+        }
+
+        .pass-identity-name::after {
+            content: '';
+            display: block;
+            width: 18mm;
+            height: 1.5mm;
+            margin-top: 3mm;
+            background: linear-gradient(90deg, var(--pass-park), var(--pass-park-dark));
+            border-radius: 999px;
+        }
+
+        .pass-identity-registrant {
+            margin-top: 2mm;
+            font-size: clamp(0.95rem, 2.4vw, 1.25rem);
+            font-weight: 700;
+            color: #57534e;
+        }
+
+        .pass-number {
+            display: inline-flex;
+            flex-direction: column;
+            align-self: flex-start;
+            padding: 3mm 5mm;
+            background: var(--pass-ink);
+            color: #fff;
+            border-radius: 3mm;
+            border-left: 4px solid var(--pass-park);
+            box-shadow: 0 4px 14px rgb(0 0 0 / 0.15);
+        }
+
+        .pass-number-label {
+            font-size: clamp(0.55rem, 1.1vw, 0.65rem);
+            font-weight: 800;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: #a8a29e;
+        }
+
+        .pass-number-value {
+            margin-top: 1mm;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: clamp(1.75rem, 5.5vw, 3rem);
+            font-weight: 900;
+            letter-spacing: 0.1em;
+            line-height: 1;
+        }
+
+        .pass-alerts {
+            display: flex;
+            flex-direction: column;
+            gap: 2mm;
+        }
+
+        .pass-alert {
+            padding: 2.5mm 4mm;
+            font-size: clamp(0.72rem, 1.7vw, 0.92rem);
+            font-weight: 900;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border-radius: 2mm;
+            border-left: 4px solid;
+        }
+
+        .pass-alert--coach {
+            background: linear-gradient(90deg, #fef3c7, #fffbeb);
+            color: #92400e;
+            border-left-color: #f59e0b;
+        }
+
+        .pass-alert--elderly {
+            background: linear-gradient(90deg, #eef2ff, #f5f3ff);
+            color: #3730a3;
+            border-left-color: #6366f1;
+        }
+
+        .pass-scan {
+            flex: 0 0 min(34%, 52mm);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2.5mm;
+            padding: 5mm 4mm;
+            background: var(--pass-ink);
+            color: #fff;
+        }
+
+        .pass-scan-label {
+            font-size: clamp(0.5rem, 1vw, 0.6rem);
+            font-weight: 800;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: #a8a29e;
+        }
+
+        .pass-qr-frame {
+            position: relative;
+            padding: 2.5mm;
+            background: #fff;
+            border-radius: 3mm;
+            box-shadow: 0 0 0 2px var(--pass-park), 0 8px 20px rgb(0 0 0 / 0.35);
+        }
+
+        .pass-qr-frame::before,
+        .pass-qr-frame::after {
+            content: '';
+            position: absolute;
+            width: 5mm;
+            height: 5mm;
+            border: 2px solid var(--pass-park);
+        }
+
+        .pass-qr-frame::before {
+            top: -1.5mm;
+            left: -1.5mm;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .pass-qr-frame::after {
+            bottom: -1.5mm;
+            right: -1.5mm;
+            border-left: none;
+            border-top: none;
+        }
+
+        .pass-qr {
+            display: block;
+            width: min(100%, 34mm);
+            height: auto;
+            aspect-ratio: 1;
+            object-fit: contain;
+        }
+
+        .pass-scan-id-label {
+            font-size: clamp(0.48rem, 0.9vw, 0.55rem);
+            font-weight: 800;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: #78716c;
+        }
+
+        .pass-scan-id {
+            max-width: 100%;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: clamp(0.4rem, 0.8vw, 0.48rem);
+            line-height: 1.3;
+            color: #a8a29e;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        .pass-ribbon {
+            flex-shrink: 0;
+            position: relative;
+            padding: 4.5mm 7mm;
+            text-align: center;
+            font-size: clamp(1rem, 2.8vw, 1.35rem);
+            font-weight: 900;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--pass-park-text);
+            background: linear-gradient(90deg, var(--pass-park-dark) 0%, var(--pass-park) 50%, var(--pass-park-dark) 100%);
+            overflow: hidden;
+        }
+
+        .pass-ribbon::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 12px,
+                rgb(255 255 255 / 0.06) 12px,
+                rgb(255 255 255 / 0.06) 24px
+            );
+            pointer-events: none;
+        }
+
+        .pass-ribbon-text {
+            position: relative;
+        }
+
+        .pass-fine-print {
+            flex-shrink: 0;
+            padding: 2.5mm 7mm;
+            background: #f5f5f4;
+            border-top: 1px solid #e7e5e4;
+            font-size: clamp(0.55rem, 1.2vw, 0.68rem);
+            line-height: 1.35;
+            font-weight: 600;
+            color: #57534e;
+            text-align: center;
         }
 
         @media print {
             @page {
                 margin: 0;
-                size: portrait;
+                size: A4 landscape;
             }
 
             .no-print {
                 display: none !important;
             }
 
+            html,
             body {
-                background: white !important;
-                margin: 0;
-                padding: 0;
+                overflow: hidden;
+                background: #fff !important;
             }
 
-            .ticket-outer {
-                width: 100%;
+            .pass-outer {
                 height: 100vh;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: flex-start;
-                padding-top: 2cm;
+                padding: 3mm;
             }
 
-            .ticket-container {
-                width: 170mm;
-                border: 4px solid #000;
-                padding: 1.5cm;
-                border-radius: 12mm;
-                text-align: center;
+            .pass {
+                border-radius: 4mm;
+                box-shadow: none;
+            }
+
+            .pass-spine {
+                flex-basis: 8mm;
+            }
+
+            .pass-top {
+                padding: 3.5mm 7mm;
+            }
+
+            .pass-top-org {
+                font-size: 3.5mm;
+            }
+
+            .pass-top-event {
+                font-size: 3mm;
+            }
+
+            .pass-top-badge {
+                font-size: 3mm;
+            }
+
+            .pass-zone {
+                padding: 4.5mm 7mm 5mm;
+            }
+
+            .pass-zone-kicker {
+                font-size: 3mm;
+            }
+
+            .pass-zone-name {
+                font-size: 26mm;
+            }
+
+            .pass-identity-label {
+                font-size: 3.5mm;
+            }
+
+            .pass-identity-name {
+                font-size: 18mm;
+            }
+
+            .pass-identity-name--long {
+                font-size: 14mm;
+            }
+
+            .pass-identity-registrant {
+                font-size: 8mm;
+            }
+
+            .pass-number-label {
+                font-size: 3mm;
+            }
+
+            .pass-number-value {
+                font-size: 12mm;
+            }
+
+            .pass-alert {
+                font-size: 5.5mm;
+            }
+
+            .pass-qr {
+                width: 32mm;
+            }
+
+            .pass-scan-label {
+                font-size: 2.5mm;
+            }
+
+            .pass-scan-id-label {
+                font-size: 2.2mm;
+            }
+
+            .pass-scan-id {
+                font-size: 2mm;
+            }
+
+            .pass-ribbon {
+                font-size: 5.5mm;
+                padding: 4mm 7mm;
+            }
+
+            .pass-fine-print {
+                font-size: 3.5mm;
             }
         }
 
-        .cong-name {
-            font-size: 3.5rem;
-            line-height: 1.1;
-            margin: 0.2rem 0;
-            font-weight: 900;
-            word-break: break-word;
-        }
+        @media screen {
+            body {
+                background: linear-gradient(145deg, #44403c, #1c1917);
+            }
 
-        .convention-text {
-            font-size: 1.25rem;
-            line-height: 1.2;
-            font-weight: 700;
+            .pass-outer {
+                padding-top: 4.5rem;
+            }
         }
     </style>
+    @if($forPdf ?? false)
+    <style>
+        @page { margin: 0; size: A4 landscape; }
+        .no-print { display: none !important; }
+        html, body { overflow: hidden; }
+        .pass-outer { height: 100vh; padding: 3mm; }
+        .pass { border-radius: 4mm; box-shadow: none; }
+        .pass-spine { flex-basis: 8mm; }
+        .pass-top { padding: 3.5mm 7mm; }
+        .pass-top-org { font-size: 3.5mm; }
+        .pass-top-event { font-size: 3mm; }
+        .pass-top-badge { font-size: 3mm; }
+        .pass-zone { padding: 4.5mm 7mm 5mm; }
+        .pass-zone-kicker { font-size: 3mm; }
+        .pass-zone-name { font-size: 26mm; }
+        .pass-identity-label { font-size: 3.5mm; }
+        .pass-identity-name { font-size: 18mm; }
+        .pass-identity-name--long { font-size: 14mm; }
+        .pass-identity-registrant { font-size: 8mm; }
+        .pass-number-label { font-size: 3mm; }
+        .pass-number-value { font-size: 12mm; }
+        .pass-alert { font-size: 5.5mm; }
+        .pass-qr { width: 32mm; }
+        .pass-scan-label { font-size: 2.5mm; }
+        .pass-scan-id-label { font-size: 2.2mm; }
+        .pass-scan-id { font-size: 2mm; }
+        .pass-ribbon { font-size: 5.5mm; padding: 4mm 7mm; }
+        .pass-fine-print { font-size: 3.5mm; }
+    </style>
+    @endif
 </head>
 
-<body class="antialiased font-sans">
+<body>
     @php
-        $convName = \App\Models\Setting::get('convention_name', "Convention of Jehovah's Witness");
         $convYear = \App\Models\Setting::get('convention_year', date('Y'));
         $convLoc = \App\Models\Setting::get('convention_location', 'Twickenham');
         $ticketLogo = \App\Models\Setting::get('ticket_logo');
+        $carPark = $effectiveCarPark ?? $congregation?->carPark ?? null;
+        $carParkColor = $carPark?->color ?? '#4338ca';
+        $carParkTextColor = $carPark?->contrastingTextColor() ?? '#ffffff';
+        $heroBackground = $carPark?->color ?? '#71717a';
+        $heroTextColor = $carPark ? $carParkTextColor : '#ffffff';
+
+        $ticketShade = static function (?string $hex, int $percent = 28): string {
+            $hex = ltrim((string) $hex, '#');
+            if (strlen($hex) === 3) {
+                $hex = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+            }
+            if (strlen($hex) !== 6 || ! ctype_xdigit($hex)) {
+                return '#312e81';
+            }
+            $factor = 1 - ($percent / 100);
+            $r = max(0, min(255, (int) round(hexdec(substr($hex, 0, 2)) * $factor)));
+            $g = max(0, min(255, (int) round(hexdec(substr($hex, 2, 2)) * $factor)));
+            $b = max(0, min(255, (int) round(hexdec(substr($hex, 4, 2)) * $factor)));
+
+            return sprintf('#%02x%02x%02x', $r, $g, $b);
+        };
+
+        $parkDark = $ticketShade($heroBackground, 28);
+        $hasQr = (! isset($registration) || ! ($registration->is_circuit_overseer ?? false)) && isset($congregation);
+        $zoneName = $carPark?->name ?? __('print_pass.unassigned_car_park');
+        $isCircuitOverseer = isset($registration) && ($registration->is_circuit_overseer ?? false);
+        $heroName = $isCircuitOverseer
+            ? __('print_pass.circuit_overseer')
+            : ($congregation->name ?? null);
+        $heroLabel = $isCircuitOverseer
+            ? __('print_pass.registration_type')
+            : (isset($congregation) ? __('print_pass.congregation') : null);
+        $heroNameLong = $heroName && strlen($heroName) > 40;
+        $showCoachAlert = isset($registration) && (($registration->vehicle_type ?? 'car') === 'coach');
+        $showElderlyAlert = isset($registration) && ($registration->elderly_infirm_parking ?? false);
     @endphp
 
     @if(!($forPdf ?? false))
-    <div class="no-print mb-8 flex justify-center gap-3">
-        <button onclick="window.print()"
-            class="bg-zinc-900 text-white px-8 py-3 rounded-xl font-bold hover:bg-black transition">
-            Print Master Pass
-        </button>
-        <button onclick="window.close()"
-            class="bg-zinc-100 text-zinc-600 px-8 py-3 rounded-xl font-bold hover:bg-zinc-200 transition">
-            Close
-        </button>
+    <div class="no-print">
+        <button type="button" onclick="window.print()">Print Pass</button>
+        <button type="button" onclick="window.close()">Close</button>
     </div>
     @endif
 
-    <div class="ticket-outer">
-        <div class="ticket-container">
-            @if($ticketLogo)
-                <div class="mb-6">
-                    <img src="{{ ($forPdf ?? false) ? url(asset($ticketLogo)) : asset($ticketLogo) }}" alt="Logo" class="h-16 w-auto object-contain mx-auto">
-                </div>
-            @endif
+    <div class="pass-outer">
+        <article class="pass print-color-exact"
+            style="--pass-park: {{ $carParkColor }}; --pass-park-dark: {{ $parkDark }}; --pass-park-text: {{ $heroTextColor }};">
+            <div class="pass-spine print-color-exact"></div>
 
-            <div class="mb-8 text-center">
-                <div class="text-zinc-500 uppercase font-bold tracking-[0.2em] text-xs mb-1">{{ $convName }}</div>
-                <div class="convention-text text-zinc-900 uppercase tracking-tight">{{ $convLoc }} {{ $convYear }}</div>
-            </div>
+            <div class="pass-inner">
+                <header class="pass-top print-color-exact">
+                    <div class="pass-top-start">
+                        @if($ticketLogo)
+                            <img src="{{ ($forPdf ?? false) ? url(asset($ticketLogo)) : asset($ticketLogo) }}" alt="Logo" class="pass-top-logo">
+                        @endif
+                        <div>
+                            <div class="pass-top-org">{{ __('print_pass.organization') }}</div>
+                            <div class="pass-top-event">{{ $convLoc }} {{ $convYear }}</div>
+                        </div>
+                    </div>
+                    <div class="pass-top-badge">{{ __('print_pass.car_park_pass') }}</div>
+                </header>
 
-            @if(isset($registration) && ($registration->is_circuit_overseer ?? false))
-                <div class="w-full py-6 border-y-2 border-dashed border-zinc-900 mb-6"
-                    style="border-color: {{ $effectiveCarPark?->color ?? '#18181b' }}">
-                    <div class="text-zinc-400 uppercase font-bold tracking-[0.3em] text-[10px] mb-2">{{ __('print_pass.registration_type') }}</div>
-                    <h1 class="cong-name uppercase tracking-tighter"
-                        style="color: {{ $effectiveCarPark?->color ?? '#4338ca' }}">
-                        {{ __('print_pass.circuit_overseer') }}
-                    </h1>
-                    <p class="mt-2 text-sm font-semibold text-zinc-500">{{ $registration->name }}</p>
-                </div>
-            @else
-                <div class="w-full py-6 border-y-2 border-dashed border-zinc-900 mb-6"
-                    style="border-color: {{ $congregation->carPark?->color ?? '#18181b' }}">
-                    <div class="text-zinc-400 uppercase font-bold tracking-[0.3em] text-[10px] mb-2">{{ __('print_pass.congregation') }}</div>
-                    <h1 class="cong-name uppercase tracking-tighter"
-                        style="color: {{ $congregation->carPark?->color ?? '#4338ca' }}">
-                        {{ $congregation->name }}
-                    </h1>
-                </div>
-            @endif
+                <section class="pass-zone print-color-exact"
+                    style="background: linear-gradient(118deg, {{ $heroBackground }} 0%, {{ $parkDark }} 72%); color: {{ $heroTextColor }};">
+                    <div class="pass-zone-kicker">{{ __('print_pass.parking_zone') }}</div>
+                    <div class="pass-zone-name">{{ $zoneName }}</div>
+                </section>
 
-            @if(isset($registration) && isset($effectiveCarPark) && $effectiveCarPark)
-            <div class="w-full py-4 px-4 mb-6 rounded-2xl border-2 border-amber-500 bg-amber-50 dark:bg-amber-900/20 dark:border-amber-600">
-                @if(($registration->vehicle_type ?? 'car') === 'coach')
-                <div class="text-amber-800 dark:text-amber-200 font-bold text-sm uppercase tracking-wide mb-1">{{ __('print_pass.ticket_for_coach_space') }}</div>
+                <div class="pass-main">
+                    <div class="pass-main-left">
+                        @if($heroName)
+                            @if($heroLabel)
+                                <div class="pass-identity-label">{{ $heroLabel }}</div>
+                            @endif
+                            <div @class(['pass-identity-name', 'pass-identity-name--long' => $heroNameLong])>{{ $heroName }}</div>
+                            @if($isCircuitOverseer)
+                                <div class="pass-identity-registrant">{{ $registration->name }}</div>
+                            @endif
+                        @endif
+
+                        @if(isset($registration))
+                            <div class="pass-number print-color-exact">
+                                <span class="pass-number-label">{{ __('print_pass.ticket_number') }}</span>
+                                <span class="pass-number-value">{{ str_pad((string) $registration->id, 6, '0', STR_PAD_LEFT) }}</span>
+                            </div>
+                        @endif
+
+                        @if($showCoachAlert || $showElderlyAlert)
+                            <div class="pass-alerts">
+                                @if($showCoachAlert)
+                                    <div class="pass-alert pass-alert--coach">{{ __('print_pass.ticket_for_coach_space') }}</div>
+                                @endif
+                                @if($showElderlyAlert)
+                                    <div class="pass-alert pass-alert--elderly">{{ __('print_pass.ticket_for_elderly_infirm_space') }}</div>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
+
+                    @if($hasQr)
+                        <aside class="pass-scan print-color-exact">
+                            <div class="pass-scan-label">{{ __('print_pass.pass_id') }}</div>
+                            <div class="pass-qr-frame">
+                                @php
+                                    $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' . urlencode(route('attendant.scan', ['code' => $congregation->uuid]));
+                                @endphp
+                                <img src="{{ $qrUrl }}" alt="QR Code" class="pass-qr" width="250" height="250">
+                            </div>
+                            <div class="pass-scan-id-label">UUID</div>
+                            <div class="pass-scan-id">{{ $congregation->uuid }}</div>
+                        </aside>
+                    @endif
+                </div>
+
+                <footer class="pass-ribbon print-color-exact"
+                    style="background: linear-gradient(90deg, {{ $parkDark }} 0%, {{ $heroBackground }} 50%, {{ $parkDark }} 100%); color: {{ $heroTextColor }};">
+                    <span class="pass-ribbon-text">{{ __('print_pass.display_on_dashboard') }}</span>
+                </footer>
+
+                @if(isset($registration))
+                    <div class="pass-fine-print">
+                        {{ __('print_pass.safety_notice') }}
+                    </div>
                 @endif
-                @if($registration->elderly_infirm_parking ?? false)
-                <div class="text-amber-800 dark:text-amber-200 font-bold text-sm uppercase tracking-wide mb-1">{{ __('print_pass.ticket_for_elderly_infirm_space') }}</div>
-                @endif
-                <div class="text-xl font-black text-amber-900 dark:text-amber-100 mt-2" style="color: {{ $effectiveCarPark->color ?? '#b45309' }}">{{ $effectiveCarPark->name }}</div>
             </div>
-            @endif
-
-            @if(isset($registration) && (!isset($effectiveCarPark) || !$effectiveCarPark))
-                <div class="w-full py-4 px-4 mb-6 rounded-2xl border-2 border-zinc-300 bg-zinc-50">
-                    <div class="text-sm font-bold text-zinc-600 uppercase tracking-wide mb-1">{{ __('print_pass.car_park_assignment') }}</div>
-                    <div class="text-xl font-black text-zinc-900 mt-2">{{ __('print_pass.unassigned_car_park') }}</div>
-                </div>
-            @endif
-
-            @if(!isset($registration) || !($registration->is_circuit_overseer ?? false))
-                <div class="mb-6 p-4 bg-white border border-zinc-100 rounded-2xl inline-block mx-auto">
-                    @php
-                        $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' . urlencode(route('attendant.scan', ['code' => $congregation->uuid]));
-                    @endphp
-                    <img src="{{ $qrUrl }}" alt="QR Code" class="h-64 w-64 object-contain" width="250" height="250">
-                </div>
-
-                <div class="text-[9px] text-zinc-400 font-mono mb-6 uppercase tracking-widest">
-                    {{ __('print_pass.pass_id') }}: {{ $congregation->uuid }}
-                </div>
-            @endif
-
-            <div
-                class="inline-block text-xl font-black text-white bg-zinc-900 px-8 py-4 rounded-xl uppercase tracking-tighter shadow-sm">
-                {{ __('print_pass.display_on_dashboard') }}
-            </div>
-        </div>
+        </article>
     </div>
 </body>
 

@@ -558,10 +558,18 @@ class Registrations extends Component
 
         $duplicateSignals = app(ParkingRegistrationDuplicateSignals::class);
 
+        $congregationCarParkByName = Congregation::query()
+            ->with('carPark')
+            ->whereNotNull('car_park_id')
+            ->get()
+            ->mapWithKeys(fn (Congregation $congregation) => [trim($congregation->name) => $congregation->carPark])
+            ->all();
+
         return view('livewire.admin.registrations', [
             'registrations' => $registrations,
             'congregations' => Congregation::orderBy('name')->pluck('name'),
             'carParks' => \App\Models\CarPark::orderBy('name')->get(),
+            'congregationCarParkByName' => $congregationCarParkByName,
             'registrationReportSummary' => [
                 'registration_total' => $registrationTotal,
                 'expected_total' => $expectedTotal,

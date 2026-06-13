@@ -68,7 +68,7 @@
                         </td>
                         <td class="px-6 py-4">
                             @if($congregation->carPark)
-                                <flux:badge color="zinc">{{ $congregation->carPark->name }}</flux:badge>
+                                <x-car-park-badge :park="$congregation->carPark" />
                             @else
                                 <span class="text-zinc-400 text-sm">Not assigned</span>
                             @endif

@@ -57,7 +57,10 @@ class MasterPassZipService
 
         try {
             foreach ($registrations as $registration) {
-                $congregation = Congregation::where('name', $registration->congregation)->first();
+                $congregation = Congregation::query()
+                    ->with('carPark')
+                    ->where('name', $registration->congregation)
+                    ->first();
                 if (! $congregation) {
                     continue;
                 }
@@ -83,9 +86,12 @@ class MasterPassZipService
 
     protected function generatePdfForRegistration(ParkingRegistration $registration, Congregation $congregation): string
     {
+        $effectiveCarPark = $registration->carPark ?? $congregation->carPark;
+
         $html = view('admin.print-pass', [
             'congregation' => $congregation,
             'registration' => $registration,
+            'effectiveCarPark' => $effectiveCarPark,
             'forPdf' => true,
         ])->render();
 
