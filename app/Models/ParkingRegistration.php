@@ -40,4 +40,18 @@ class ParkingRegistration extends Model
     {
         return $this->belongsTo(CarPark::class);
     }
+
+    /** Scope: registrations counted as assigned to this car park (individual override or congregation default). */
+    public function scopeAssignedToCarPark($query, int $carParkId)
+    {
+        return $query
+            ->leftJoin('congregations', fn ($join) => $join->whereRaw('TRIM(congregations.name) = TRIM(parking_registrations.congregation)'))
+            ->where(function ($q) use ($carParkId) {
+                $q->where('parking_registrations.car_park_id', $carParkId)
+                    ->orWhere(function ($q2) use ($carParkId) {
+                        $q2->whereNull('parking_registrations.car_park_id')
+                            ->where('congregations.car_park_id', $carParkId);
+                    });
+            });
+    }
 }

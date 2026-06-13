@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\CarPark;
 use App\Models\ParkingPass;
+use App\Models\ParkingRegistration;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Flux\Flux;
@@ -30,10 +31,25 @@ class CarParks extends Component
     public function render()
     {
         $query = CarPark::addSelect([
-            'current_occupancy' => ParkingPass::selectRaw('count(*)')
-                ->join('congregations', 'congregations.id', '=', 'parking_passes.congregation_id')
-                ->whereColumn('congregations.car_park_id', 'car_parks.id')
+            'current_occupancy' => ParkingPass::query()->selectRaw('count(*)')
+                ->leftJoin('congregations', 'congregations.id', '=', 'parking_passes.congregation_id')
                 ->where('parking_passes.status', 'parked')
+                ->where(function ($q) {
+                    $q->whereColumn('parking_passes.car_park_id', 'car_parks.id')
+                        ->orWhere(function ($q2) {
+                            $q2->whereNull('parking_passes.car_park_id')
+                                ->whereColumn('congregations.car_park_id', 'car_parks.id');
+                        });
+                }),
+            'assigned_count' => ParkingRegistration::query()->selectRaw('count(*)')
+                ->leftJoin('congregations', fn ($join) => $join->whereRaw('TRIM(congregations.name) = TRIM(parking_registrations.congregation)'))
+                ->where(function ($q) {
+                    $q->whereColumn('parking_registrations.car_park_id', 'car_parks.id')
+                        ->orWhere(function ($q2) {
+                            $q2->whereNull('parking_registrations.car_park_id')
+                                ->whereColumn('congregations.car_park_id', 'car_parks.id');
+                        });
+                }),
         ]);
 
         if ($this->search) {

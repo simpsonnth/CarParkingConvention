@@ -9,6 +9,17 @@
             class="w-full min-w-0 sm:max-w-xs" />
     </div>
 
+    <p class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
+        <span class="inline-flex items-center gap-1.5">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-green-500" aria-hidden="true"></span>
+            Clocked in
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-yellow-400 dark:bg-yellow-500" aria-hidden="true"></span>
+            Registered &amp; assigned, not yet arrived
+        </span>
+    </p>
+
     <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700 -mx-4 sm:mx-0">
         <table class="w-full min-w-[640px] text-left text-sm text-zinc-500 dark:text-zinc-400">
             <thead class="bg-zinc-50 text-xs uppercase text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
@@ -23,8 +34,16 @@
             <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700 bg-white dark:bg-zinc-800">
                 @forelse ($carParks as $park)
                     @php
-                        $percentage = $park->capacity > 0 ? ($park->current_occupancy / $park->capacity) * 100 : 0;
-                        $colorClass = $percentage > 90 ? 'bg-red-500' : ($percentage > 75 ? 'bg-yellow-500' : 'bg-green-500');
+                        $parked = (int) $park->current_occupancy;
+                        $assigned = (int) $park->assigned_count;
+                        $capacity = (int) $park->capacity;
+                        $parkedPct = $capacity > 0 ? min(100, 100 * $parked / $capacity) : 0;
+                        $assignedPct = $capacity > 0 ? min(100, 100 * $assigned / $capacity) : 0;
+                        $pendingPct = max(0, $assignedPct - $parkedPct);
+                        $pending = max(0, $assigned - $parked);
+                        $available = max(0, $capacity - max($parked, $assigned));
+                        $overCapacity = $parked > $capacity || $assigned > $capacity;
+                        $utilizationTooltip = "{$parked} clocked in · {$pending} not yet arrived · {$available} spaces free";
                     @endphp
                     <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
                         <td class="px-6 py-4">
@@ -42,18 +61,30 @@
                         </td>
                         <td class="px-6 py-4 text-zinc-600 dark:text-zinc-400">{{ $park->capacity }}</td>
                         <td class="px-6 py-4">
-                            <flux:badge color="{{ $percentage > 90 ? 'red' : ($percentage > 75 ? 'yellow' : 'zinc') }}">
-                                {{ $park->current_occupancy }} / {{ $park->capacity }}
+                            <flux:badge color="{{ $overCapacity ? 'red' : 'zinc' }}">
+                                {{ $parked }} in · {{ $assigned }} assigned / {{ $capacity }}
                             </flux:badge>
+                            @if ($overCapacity)
+                                <span class="mt-1 block text-xs font-medium text-red-600 dark:text-red-400">Over capacity</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4 w-48">
-                            <div class="flex items-center gap-2">
-                                <div class="h-2 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700">
-                                    <div class="h-full rounded-full transition-all duration-500 {{ $colorClass }}"
-                                        style="width: {{ min(100, $percentage) }}%"></div>
+                            <flux:tooltip :content="$utilizationTooltip" position="top">
+                                <div class="flex cursor-help items-center gap-2">
+                                    <div class="flex h-2 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700"
+                                        role="progressbar"
+                                        aria-valuenow="{{ (int) max($parkedPct, $assignedPct) }}"
+                                        aria-valuemin="0"
+                                        aria-valuemax="100"
+                                        aria-label="{{ $park->name }} utilization: {{ $utilizationTooltip }}">
+                                        <div class="h-full bg-green-500 transition-all duration-500"
+                                            style="width: {{ $parkedPct }}%"></div>
+                                        <div class="h-full bg-yellow-400 transition-all duration-500 dark:bg-yellow-500"
+                                            style="width: {{ $pendingPct }}%"></div>
+                                    </div>
+                                    <span class="text-xs font-medium tabular-nums text-zinc-500">{{ number_format(max($parkedPct, $assignedPct), 0) }}%</span>
                                 </div>
-                                <span class="text-xs font-medium text-zinc-500">{{ number_format($percentage, 0) }}%</span>
-                            </div>
+                            </flux:tooltip>
                         </td>
                         <td class="px-6 py-4 text-end">
                             <flux:dropdown>
