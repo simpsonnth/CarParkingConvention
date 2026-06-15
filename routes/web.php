@@ -13,6 +13,7 @@ Route::view('dashboard', 'dashboard')
     ->name('dashboard');
 
 Route::get('/scan/ticket/{registration}', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan.ticket');
+Route::get('/scan/walk-in/coach', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan.walk-in.coach');
 Route::get('/scan/walk-in', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan.walk-in');
 Route::get('/scan/{code?}', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan');
 
@@ -180,8 +181,11 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/lessons-learned', App\Livewire\Admin\LessonsLearned::class)->name('lessons-learned');
         Route::get('/parking-qr-codes', App\Livewire\Admin\GenericParkingQrCodes::class)->name('parking-qr-codes');
         Route::get('/parking-qr-codes/print-walk-in', function () {
-            return view('admin.print-walk-in-qr');
+            return view('admin.print-walk-in-qr', ['walkInType' => 'car']);
         })->name('parking-qr-codes.print-walk-in');
+        Route::get('/parking-qr-codes/print-walk-in-coach', function () {
+            return view('admin.print-walk-in-qr', ['walkInType' => 'coach']);
+        })->name('parking-qr-codes.print-walk-in-coach');
         Route::get('/routes-list', App\Livewire\Admin\PublicRoutesList::class)->name('routes-list');
     });
 

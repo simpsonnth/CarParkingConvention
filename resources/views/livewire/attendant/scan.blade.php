@@ -5,7 +5,9 @@
         </div>
         <flux:heading size="xl" class="tracking-tight">Vehicle Check-in</flux:heading>
         <p class="text-zinc-400 text-sm">
-            @if($walkInMode)
+            @if($walkInMode && $walkInVehicleType === 'coach')
+                Coach walk-in check-in — no ticket required
+            @elseif($walkInMode)
                 Walk-in check-in — no ticket required
             @elseif($step === 'confirm' && $quickCheckIn)
                 Ticket scanned — confirm and clock in
@@ -356,7 +358,14 @@
         @else
         <div class="bg-white dark:bg-zinc-800 p-4 sm:p-8 rounded-3xl border border-zinc-200 dark:border-zinc-700 shadow-2xl space-y-8 animate-in slide-in-from-bottom-4 duration-300">
             <div class="text-center">
-                @if($walkInMode)
+                @if($walkInMode && $walkInVehicleType === 'coach')
+                    <div class="text-xs font-bold text-amber-600 uppercase tracking-widest mb-1">Coach Walk-in Check-in</div>
+                    <flux:heading size="xl" class="text-2xl">No ticket — enter coach details</flux:heading>
+                    <div class="mt-3 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-700 dark:text-amber-300 font-bold text-sm">
+                        <flux:icon name="truck" class="size-4" />
+                        Coach space
+                    </div>
+                @elseif($walkInMode)
                     <div class="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Walk-in Check-in</div>
                     <flux:heading size="xl" class="text-2xl">No ticket — enter details</flux:heading>
                 @else
@@ -410,11 +419,16 @@
 
                      <div class="space-y-3">
                         <label class="block text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
-                            Vehicle Plate Number <span class="text-red-500">*</span>
+                            @if($walkInMode && $walkInVehicleType === 'coach')
+                                Coach Registration
+                                <span class="text-zinc-400 font-normal normal-case">(Optional)</span>
+                            @else
+                                Vehicle Plate Number <span class="text-red-500">*</span>
+                            @endif
                         </label>
                         <flux:input 
                             wire:model.live.debounce.500ms="vehicleReg" 
-                            placeholder="Enter Registration..."
+                            placeholder="{{ ($walkInMode && $walkInVehicleType === 'coach') ? 'Enter coach plate if displayed...' : 'Enter Registration...' }}"
                             class="uppercase text-center text-xl h-14 bg-zinc-50 dark:bg-zinc-900 border-none rounded-xl font-mono tracking-wider" 
                             autofocus
                         />
@@ -550,13 +564,25 @@
                         @enderror
                     </div>
 
-                    <div class="space-y-3">
-                        <label class="flex items-center gap-3 cursor-pointer">
-                            <input type="checkbox" wire:model="elderlyInfirmParking"
-                                class="w-5 h-5 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
-                            <span class="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Needs Elderly &amp; Infirm parking</span>
-                        </label>
-                    </div>
+                    @if(!($walkInMode && $walkInVehicleType === 'coach'))
+                        <div class="space-y-3">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" wire:model="elderlyInfirmParking"
+                                    class="w-5 h-5 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Needs Elderly &amp; Infirm parking</span>
+                            </label>
+                        </div>
+                    @endif
+
+                    @if($walkInMode && $walkInVehicleType === 'coach')
+                        <div class="space-y-3">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" wire:model="coachCaptainToBeAssigned"
+                                    class="w-5 h-5 rounded border-zinc-300 text-amber-600 focus:ring-amber-500">
+                                <span class="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Coach captain to be assigned</span>
+                            </label>
+                        </div>
+                    @endif
 
                     <div class="space-y-3">
                         <label class="block text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
@@ -564,7 +590,7 @@
                         </label>
                         <flux:input 
                             wire:model="notes" 
-                            placeholder="Where they have parked..." 
+                            placeholder="{{ ($walkInMode && $walkInVehicleType === 'coach') ? 'Coach bay, size, or parking location...' : 'Where they have parked...' }}" 
                             class="text-center text-lg h-12 bg-zinc-50 dark:bg-zinc-900 border-none rounded-xl"
                         />
                     </div>

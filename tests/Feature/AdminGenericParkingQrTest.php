@@ -35,12 +35,15 @@ test('admin can view parking qr codes page with walk-in url', function () {
     ]);
 
     $walkInUrl = route('attendant.scan.walk-in');
+    $coachWalkInUrl = route('attendant.scan.walk-in.coach');
 
     $this->actingAs($admin)
         ->get(route('admin.parking-qr-codes'))
         ->assertOk()
         ->assertSee(__('parking_qr.title'))
         ->assertSee($walkInUrl)
+        ->assertSee($coachWalkInUrl)
+        ->assertSee(__('parking_qr.coach_walk_in_heading'))
         ->assertSee('QR Hall');
 
     Livewire::actingAs($admin)
@@ -60,4 +63,16 @@ test('admin print walk-in poster contains walk-in scan url', function () {
         ->assertOk()
         ->assertSee(__('parking_qr.poster_title'))
         ->assertSee($walkInUrl);
+});
+
+test('admin print coach walk-in poster contains coach walk-in scan url', function () {
+    $admin = User::factory()->create(['role' => 'admin']);
+
+    $coachWalkInUrl = urlencode(route('attendant.scan.walk-in.coach'));
+
+    $this->actingAs($admin)
+        ->get(route('admin.parking-qr-codes.print-walk-in-coach'))
+        ->assertOk()
+        ->assertSee(__('parking_qr.poster_coach_title'))
+        ->assertSee($coachWalkInUrl);
 });

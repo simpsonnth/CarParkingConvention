@@ -13,6 +13,13 @@ return [
     'print_poster' => 'Imprimir cartel',
     'open_scanner' => 'Abrir escáner',
 
+    'coach_walk_in_heading' => 'QR sin boleto para autobús',
+    'coach_walk_in_description' => 'Coloque este QR en la zona de autobuses. Al escanearlo, el asistente selecciona la congregación e ingresa los datos del autobús.',
+    'coach_walk_in_label' => 'Registro de autobús sin boleto',
+    'coach_walk_in_qr_alt' => 'Código QR de registro de autobús sin boleto',
+    'print_coach_poster' => 'Imprimir cartel de autobús',
+    'open_coach_scanner' => 'Abrir escáner de autobús',
+
     'ticket_heading' => 'QR de boleto (pase maestro)',
     'ticket_description' => 'Cada pase maestro de registro imprime su propio QR para registro con un toque. Imprima desde Registros → Ver pase maestro.',
 
@@ -29,10 +36,15 @@ return [
     'empty' => 'No se encontraron congregaciones.',
 
     'print_title' => 'Cartel QR sin boleto',
+    'print_coach_title' => 'Cartel QR de autobús sin boleto',
     'print_button' => 'Imprimir cartel',
     'close_button' => 'Cerrar',
     'poster_title' => 'Registro sin boleto',
     'poster_subtitle' => '¿Sin boleto? Escanee aquí.',
     'poster_instructions' => 'Para asistentes: escanee este código, seleccione la congregación, ingrese la placa y los datos de contacto, luego registre la entrada.',
     'poster_footer' => 'Colocar en la entrada del estacionamiento',
+    'poster_coach_title' => 'Registro de autobús sin boleto',
+    'poster_coach_subtitle' => '¿Sin boleto de autobús? Escanee aquí.',
+    'poster_coach_instructions' => 'Para asistentes: escanee este código, seleccione la congregación, ingrese los datos del autobús y contacto, luego registre la entrada.',
+    'poster_coach_footer' => 'Colocar en la zona de autobuses',
 ];

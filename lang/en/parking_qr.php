@@ -13,6 +13,13 @@ return [
     'print_poster' => 'Print poster',
     'open_scanner' => 'Open scanner',
 
+    'coach_walk_in_heading' => 'Coach walk-in QR (no ticket)',
+    'coach_walk_in_description' => 'Post this QR at the coach parking area. When scanned, attendants select the congregation and enter coach details manually.',
+    'coach_walk_in_label' => 'Coach walk-in check-in',
+    'coach_walk_in_qr_alt' => 'Coach walk-in parking check-in QR code',
+    'print_coach_poster' => 'Print coach poster',
+    'open_coach_scanner' => 'Open coach scanner',
+
     'ticket_heading' => 'Ticket QR (master pass)',
     'ticket_description' => 'Each registration master pass prints its own ticket QR for one-tap check-in. Print passes from Registrations → View master pass.',
 
@@ -29,10 +36,15 @@ return [
     'empty' => 'No congregations found.',
 
     'print_title' => 'Walk-in Parking QR Poster',
+    'print_coach_title' => 'Coach Walk-in Parking QR Poster',
     'print_button' => 'Print poster',
     'close_button' => 'Close',
     'poster_title' => 'Car Park Walk-in',
     'poster_subtitle' => 'No ticket? Scan here to check in.',
     'poster_instructions' => 'For car park attendants: scan this code, select the congregation, enter the vehicle plate and contact details, then clock in.',
     'poster_footer' => 'Display at car park entrance',
+    'poster_coach_title' => 'Coach Walk-in',
+    'poster_coach_subtitle' => 'No coach ticket? Scan here to check in.',
+    'poster_coach_instructions' => 'For car park attendants: scan this code, select the congregation, enter coach and contact details, then clock in.',
+    'poster_coach_footer' => 'Display at coach parking area',
 ];

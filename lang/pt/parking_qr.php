@@ -13,6 +13,13 @@ return [
     'print_poster' => 'Imprimir cartaz',
     'open_scanner' => 'Abrir scanner',
 
+    'coach_walk_in_heading' => 'QR sem bilhete para autocarro',
+    'coach_walk_in_description' => 'Coloque este QR na zona de autocarros. Ao digitalizar, o assistente seleciona a congregação e introduz os dados do autocarro.',
+    'coach_walk_in_label' => 'Registo de autocarro sem bilhete',
+    'coach_walk_in_qr_alt' => 'Código QR de registo de autocarro sem bilhete',
+    'print_coach_poster' => 'Imprimir cartaz de autocarro',
+    'open_coach_scanner' => 'Abrir scanner de autocarro',
+
     'ticket_heading' => 'QR de bilhete (passe principal)',
     'ticket_description' => 'Cada passe principal de registo imprime o seu próprio QR para registo com um toque. Imprima em Registos → Ver passe principal.',
 
@@ -29,10 +36,15 @@ return [
     'empty' => 'Nenhuma congregação encontrada.',
 
     'print_title' => 'Cartaz QR sem bilhete',
+    'print_coach_title' => 'Cartaz QR de autocarro sem bilhete',
     'print_button' => 'Imprimir cartaz',
     'close_button' => 'Fechar',
     'poster_title' => 'Registo sem bilhete',
     'poster_subtitle' => 'Sem bilhete? Digitalize aqui.',
     'poster_instructions' => 'Para assistentes: digitalize este código, selecione a congregação, introduza a matrícula e os dados de contacto, depois registe a entrada.',
     'poster_footer' => 'Exibir na entrada do estacionamento',
+    'poster_coach_title' => 'Registo de autocarro sem bilhete',
+    'poster_coach_subtitle' => 'Sem bilhete de autocarro? Digitalize aqui.',
+    'poster_coach_instructions' => 'Para assistentes: digitalize este código, selecione a congregação, introduza os dados do autocarro e contacto, depois registe a entrada.',
+    'poster_coach_footer' => 'Exibir na zona de autocarros',
 ];

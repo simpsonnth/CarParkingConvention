@@ -37,6 +37,7 @@ class GenericParkingQrCodes extends Component
         return view('livewire.admin.generic-parking-qr-codes', [
             'congregations' => $this->congregations(),
             'walkInScanUrl' => route('attendant.scan.walk-in'),
+            'coachWalkInScanUrl' => route('attendant.scan.walk-in.coach'),
             'convName' => \App\Models\Setting::get('convention_name', "Convention of Jehovah's Witness"),
             'convYear' => \App\Models\Setting::get('convention_year', date('Y')),
             'convLoc' => \App\Models\Setting::get('convention_location', 'Twickenham'),

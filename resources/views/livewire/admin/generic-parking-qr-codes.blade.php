@@ -49,6 +49,46 @@
         </div>
     </div>
 
+    <div class="rounded-2xl border border-amber-200 bg-white p-6 shadow-sm dark:border-amber-800 dark:bg-zinc-900">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex-1 space-y-3">
+                <flux:heading size="lg">{{ __('parking_qr.coach_walk_in_heading') }}</flux:heading>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ __('parking_qr.coach_walk_in_description') }}</p>
+                <p class="text-xs font-mono text-zinc-500 break-all">{{ $coachWalkInScanUrl }}</p>
+                <div class="flex flex-wrap gap-2">
+                    <flux:button
+                        variant="primary"
+                        icon="printer"
+                        onclick="window.open('{{ route('admin.parking-qr-codes.print-walk-in-coach') }}', '_blank')">
+                        {{ __('parking_qr.print_coach_poster') }}
+                    </flux:button>
+                    <flux:button
+                        variant="ghost"
+                        icon="arrow-top-right-on-square"
+                        :href="route('attendant.scan.walk-in.coach')"
+                        target="_blank">
+                        {{ __('parking_qr.open_coach_scanner') }}
+                    </flux:button>
+                </div>
+            </div>
+            <div class="flex flex-col items-center rounded-xl border border-amber-200 bg-amber-50 p-6 dark:border-amber-800 dark:bg-amber-950/30">
+                @if($ticketLogo)
+                    <img src="{{ asset($ticketLogo) }}" alt="Logo" class="mb-4 h-10 w-auto">
+                @endif
+                <div class="mb-2 text-center text-[10px] font-bold uppercase tracking-widest text-zinc-400">{{ $convName }}</div>
+                <div class="mb-4 text-center text-lg font-black text-zinc-900 dark:text-white">{{ $convLoc }} {{ $convYear }}</div>
+                <img
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{ urlencode($coachWalkInScanUrl) }}"
+                    alt="{{ __('parking_qr.coach_walk_in_qr_alt') }}"
+                    class="h-auto w-full max-w-[200px]"
+                />
+                <div class="mt-4 text-center text-xs font-bold uppercase tracking-widest text-amber-700 dark:text-amber-300">
+                    {{ __('parking_qr.coach_walk_in_label') }}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="space-y-4">
         <div>
             <flux:heading size="lg">{{ __('parking_qr.ticket_heading') }}</flux:heading>

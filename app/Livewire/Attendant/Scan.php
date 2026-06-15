@@ -53,13 +53,23 @@ class Scan extends Component
 
     public bool $walkInMode = false;
 
+    public string $walkInVehicleType = 'car';
+
+    public bool $coachCaptainToBeAssigned = false;
+
     public ?int $selectedCongregationId = null;
 
     #[Layout('components.layouts.public')]
     public function mount($code = null, ?ParkingRegistration $registration = null): void
     {
+        if (request()->routeIs('attendant.scan.walk-in.coach')) {
+            $this->startWalkInMode('coach');
+
+            return;
+        }
+
         if (request()->routeIs('attendant.scan.walk-in') || request()->query('mode') === 'walk-in') {
-            $this->startWalkInMode();
+            $this->startWalkInMode('car');
 
             return;
         }
@@ -273,18 +283,11 @@ class Scan extends Component
             return;
         }
 
-        $this->validate([
-            'vehicleReg' => 'required|string|min:2',
-            'contactNumber' => 'required|string|min:6',
-            'name' => 'nullable|string',
-            'email' => 'nullable|email',
-            'days' => 'nullable|array',
-            'notes' => 'nullable|string|max:255',
-        ]);
+        $this->validate($this->confirmValidationRules());
 
-        $formattedReg = strtoupper(str_replace(' ', '', trim($this->vehicleReg)));
+        $formattedReg = $this->resolveVehicleRegForCheckIn();
 
-        if (strlen($formattedReg) >= 2) {
+        if (strlen($formattedReg) >= 2 && ! str_starts_with($formattedReg, 'COACH')) {
             $alreadyParked = ParkingPass::query()
                 ->where('status', 'parked')
                 ->get()
@@ -319,6 +322,8 @@ class Scan extends Component
         }
 
         try {
+            $passNotes = $this->buildPassNotes();
+
             $pass = ParkingPass::query()->create([
                 'congregation_id' => $this->scannedCongregation->id,
                 'car_park_id' => $carPark->id,
@@ -328,22 +333,13 @@ class Scan extends Component
                 'name' => $this->name,
                 'email' => $this->email,
                 'days' => $this->days,
-                'elderly_infirm_parking' => $this->elderlyInfirmParking,
-                'notes' => trim($this->notes) !== '' ? trim($this->notes) : null,
+                'elderly_infirm_parking' => $this->isCoachWalkIn() ? false : $this->elderlyInfirmParking,
+                'notes' => $passNotes,
                 'scanned_at' => now(),
                 'scanned_by_user_id' => auth()->id(),
             ]);
 
-            ParkingRegistration::query()->updateOrCreate(
-                ['vehicle_registration' => $formattedReg],
-                [
-                    'congregation' => $this->scannedCongregation->name,
-                    'name' => $this->name ?? '',
-                    'contact_number' => $this->contactNumber,
-                    'email' => $this->email,
-                    'days' => $this->days,
-                ]
-            );
+            $this->syncParkingRegistration($formattedReg);
 
             $this->setResult('success', 'ACCESS GRANTED', $this->scannedCongregation->name.' -> '.$carPark->name);
 
@@ -382,12 +378,13 @@ class Scan extends Component
 
     public function checkInAnotherCar(): void
     {
-        $this->reset('vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass', 'scannedRegistration', 'quickCheckIn');
+        $this->reset('vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass', 'scannedRegistration', 'quickCheckIn', 'coachCaptainToBeAssigned');
     }
 
     public function cancel(): void
     {
         $walkIn = $this->walkInMode;
+        $walkInVehicleType = $this->walkInVehicleType;
 
         $this->reset(
             'uuid',
@@ -407,24 +404,115 @@ class Scan extends Component
             'selectedCongregationId',
             'lastScanResult',
             'lastScanMessage',
+            'coachCaptainToBeAssigned',
         );
 
         if ($walkIn) {
             $this->walkInMode = true;
+            $this->walkInVehicleType = $walkInVehicleType;
             $this->step = 'confirm';
         } else {
             $this->walkInMode = false;
+            $this->walkInVehicleType = 'car';
             $this->step = 'scan';
         }
     }
 
-    protected function startWalkInMode(): void
+    protected function startWalkInMode(string $vehicleType = 'car'): void
     {
         $this->walkInMode = true;
+        $this->walkInVehicleType = $vehicleType;
         $this->quickCheckIn = false;
         $this->step = 'confirm';
         $this->scannedCongregation = null;
         $this->selectedCongregationId = null;
+        $this->coachCaptainToBeAssigned = false;
+        $this->elderlyInfirmParking = false;
+    }
+
+    protected function isCoachWalkIn(): bool
+    {
+        return $this->walkInMode && $this->walkInVehicleType === 'coach';
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function confirmValidationRules(): array
+    {
+        $rules = [
+            'contactNumber' => 'required|string|min:6',
+            'name' => 'nullable|string',
+            'email' => 'nullable|email',
+            'days' => 'nullable|array',
+            'notes' => 'nullable|string|max:255',
+        ];
+
+        if ($this->isCoachWalkIn()) {
+            $rules['vehicleReg'] = 'nullable|string|max:20';
+            $rules['coachCaptainToBeAssigned'] = 'boolean';
+        } else {
+            $rules['vehicleReg'] = 'required|string|min:2';
+        }
+
+        return $rules;
+    }
+
+    protected function resolveVehicleRegForCheckIn(): string
+    {
+        $formattedReg = strtoupper(str_replace(' ', '', trim($this->vehicleReg)));
+
+        if (strlen($formattedReg) >= 2) {
+            return $formattedReg;
+        }
+
+        if ($this->isCoachWalkIn() && $this->scannedCongregation !== null) {
+            return 'COACH'.$this->scannedCongregation->id.now()->format('His');
+        }
+
+        return $formattedReg;
+    }
+
+    protected function buildPassNotes(): ?string
+    {
+        $notes = trim($this->notes);
+
+        if ($this->isCoachWalkIn()) {
+            $coachNote = 'Coach walk-in';
+            if ($this->coachCaptainToBeAssigned) {
+                $coachNote .= ' (captain TBA)';
+            }
+
+            return $notes !== '' ? $coachNote.' — '.$notes : $coachNote;
+        }
+
+        return $notes !== '' ? $notes : null;
+    }
+
+    protected function syncParkingRegistration(string $formattedReg): void
+    {
+        $payload = [
+            'congregation' => $this->scannedCongregation->name,
+            'name' => $this->name ?? '',
+            'contact_number' => $this->contactNumber,
+            'email' => $this->email,
+            'days' => $this->days,
+            'vehicle_type' => $this->isCoachWalkIn() ? 'coach' : 'car',
+            'coach_captain_to_be_assigned' => $this->isCoachWalkIn() && $this->coachCaptainToBeAssigned,
+        ];
+
+        if ($this->isCoachWalkIn() && strlen(strtoupper(str_replace(' ', '', trim($this->vehicleReg)))) < 2) {
+            ParkingRegistration::query()->create(array_merge($payload, [
+                'vehicle_registration' => null,
+            ]));
+
+            return;
+        }
+
+        ParkingRegistration::query()->updateOrCreate(
+            ['vehicle_registration' => $formattedReg],
+            $payload,
+        );
     }
 
     protected function canQuickCheckIn(): bool
@@ -467,6 +555,7 @@ class Scan extends Component
     protected function resetAfterSuccessfulCheckIn(): void
     {
         $walkIn = $this->walkInMode;
+        $walkInVehicleType = $this->walkInVehicleType;
 
         $this->reset(
             'uuid',
@@ -483,13 +572,16 @@ class Scan extends Component
             'scannedRegistration',
             'quickCheckIn',
             'selectedCongregationId',
+            'coachCaptainToBeAssigned',
         );
 
         if ($walkIn) {
             $this->walkInMode = true;
+            $this->walkInVehicleType = $walkInVehicleType;
             $this->step = 'confirm';
         } else {
             $this->walkInMode = false;
+            $this->walkInVehicleType = 'car';
             $this->step = 'scan';
         }
     }
