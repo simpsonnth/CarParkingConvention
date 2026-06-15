@@ -15,14 +15,17 @@ Route::view('dashboard', 'dashboard')
 Route::get('/scan/ticket/{registration}', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan.ticket');
 Route::get('/scan/walk-in', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan.walk-in');
 Route::get('/scan/{code?}', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan');
-Route::get('/parking-registration', App\Livewire\Public\Register::class)->name('parking.register');
-Route::get('/register-simple', App\Livewire\Public\CongregationNumbers::class)->name('parking.register-simple');
-Route::get('/register-circuit-overseer', App\Livewire\Public\CircuitOverseerRegister::class)->name('parking.register-circuit-overseer');
-Route::get('/congregation-portal', App\Livewire\Public\CongregationPortal::class)->name('parking.congregation-portal');
-Route::middleware('throttle:10,1')->group(function () {
-    Route::get('/parking-incidents', App\Livewire\Public\ParkingIncidentReport::class)->name('management.parking-incidents');
-    Route::get('/toolbox-feedback', App\Livewire\Public\ToolboxFeedback::class)->name('management.toolbox-feedback');
-    Route::get('/lessons-learned', App\Livewire\Public\LessonLearned::class)->name('management.lessons-learned');
+
+Route::middleware('public.route')->group(function () {
+    Route::get('/parking-registration', App\Livewire\Public\Register::class)->name('parking.register');
+    Route::get('/register-simple', App\Livewire\Public\CongregationNumbers::class)->name('parking.register-simple');
+    Route::get('/register-circuit-overseer', App\Livewire\Public\CircuitOverseerRegister::class)->name('parking.register-circuit-overseer');
+    Route::get('/congregation-portal', App\Livewire\Public\CongregationPortal::class)->name('parking.congregation-portal');
+    Route::middleware('throttle:10,1')->group(function () {
+        Route::get('/parking-incidents', App\Livewire\Public\ParkingIncidentReport::class)->name('management.parking-incidents');
+        Route::get('/toolbox-feedback', App\Livewire\Public\ToolboxFeedback::class)->name('management.toolbox-feedback');
+        Route::get('/lessons-learned', App\Livewire\Public\LessonLearned::class)->name('management.lessons-learned');
+    });
 });
 Route::get('/locale/{locale}', function (string $locale) {
     if (in_array($locale, ['en', 'pt', 'es'], true)) {

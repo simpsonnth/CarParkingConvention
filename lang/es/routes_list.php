@@ -13,9 +13,28 @@ return [
     'col_route_name' => 'Nombre de ruta',
     'col_path' => 'Ruta',
     'col_url' => 'URL completa',
+    'col_public_access' => 'Acceso público',
 
     'open' => 'Abrir',
     'empty' => 'No hay rutas para mostrar.',
+    'status_open' => 'Abierto',
+    'status_closed' => 'Cerrado',
+    'status_always_on' => 'Siempre activo',
+    'access_note' => 'Al cerrar una ruta, los visitantes verán un mensaje en lugar del formulario. El inicio de sesión del equipo y el cambio de idioma no se pueden cerrar.',
+
+    'toast_opened' => ':page ya está abierto al público.',
+    'toast_closed' => ':page ya está cerrado al público.',
+
+    'closed_heading' => 'No disponible',
+    'closed_back_home' => 'Volver al inicio',
+    'closed_default' => 'Esta página no está disponible en este momento. Vuelva a intentarlo más tarde.',
+    'closed_parking_register' => 'La inscripción de aparcamiento está cerrada. Gracias por su interés.',
+    'closed_register_simple' => 'La inscripción de números de congregación está cerrada.',
+    'closed_register_circuit_overseer' => 'La inscripción del Superintendente de Circuito está cerrada.',
+    'closed_congregation_portal' => 'El portal de congregación está cerrado.',
+    'closed_parking_incidents' => 'El informe de incidentes de estacionamiento está cerrado.',
+    'closed_toolbox_feedback' => 'Los comentarios para charlas matutinas están cerrados.',
+    'closed_lessons_learned' => 'Las lecciones aprendidas están cerradas.',
 
     'row_home' => 'Bienvenida',
     'row_parking' => 'Inscripción de aparcamiento',
