@@ -5,10 +5,14 @@
         </div>
         <flux:heading size="xl" class="tracking-tight">Vehicle Check-in</flux:heading>
         <p class="text-zinc-400 text-sm">
-            @if($step === 'confirm') 
-                Please verify the vehicle details below 
-            @else 
-                Scan a congregation pass to check-in a vehicle 
+            @if($walkInMode)
+                Walk-in check-in — no ticket required
+            @elseif($step === 'confirm' && $quickCheckIn)
+                Ticket scanned — confirm and clock in
+            @elseif($step === 'confirm')
+                Please verify the vehicle details below
+            @else
+                Scan a ticket or congregation pass to check in a vehicle
             @endif
         </p>
     </div>
@@ -218,10 +222,147 @@
         </div>
 
     @elseif($step === 'confirm')
+        @if($lastScanResult === 'success' && $lastScanPass)
+            <div class="relative overflow-hidden p-6 rounded-2xl border-2 bg-green-500/5 border-green-500/30">
+                <div class="flex items-center gap-4">
+                    <div class="p-3 rounded-full bg-green-500 text-white shadow-lg shadow-green-500/30">
+                        <flux:icon name="check" class="size-6" />
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-xs font-bold uppercase tracking-widest text-green-500">{{ $lastScanMessage }}</div>
+                        <div class="text-zinc-900 dark:text-white font-bold text-lg mt-0.5">{{ $lastScanPass->congregation->name ?? 'Unknown' }}</div>
+                        <div class="text-zinc-500 dark:text-zinc-400 text-sm flex items-center gap-1.5 mt-1">
+                            <flux:icon name="map-pin" class="size-3.5" />
+                            {{ $lastScanPass->carPark?->name ?? $lastScanPass->congregation->carPark?->name ?? 'Unassigned' }}
+                        </div>
+                        @if($lastScanPass->vehicle_reg)
+                            <div class="mt-3 inline-block px-3 py-1 bg-white/20 dark:bg-zinc-900/50 border border-white/30 dark:border-zinc-700/50 rounded-lg text-lg font-mono tracking-wider text-zinc-900 dark:text-white">
+                                {{ $lastScanPass->vehicle_reg }}
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if($quickCheckIn && $scannedRegistration)
+            <div class="bg-white dark:bg-zinc-800 p-4 sm:p-8 rounded-3xl border border-zinc-200 dark:border-zinc-700 shadow-2xl space-y-8 animate-in slide-in-from-bottom-4 duration-300">
+                <div class="text-center">
+                    <div class="text-xs font-bold text-green-500 uppercase tracking-widest mb-1">Ticket Verified</div>
+                    <flux:heading size="xl" class="text-3xl">{{ $scannedCongregation->name }}</flux:heading>
+                    @if($effectiveCarPark ?? null)
+                        <div class="mt-3 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-indigo-500/10 text-indigo-500 font-bold text-sm">
+                            <flux:icon name="map-pin" class="size-4" />
+                            {{ $effectiveCarPark->name }}
+                            @if($foundRegistration?->car_park_id)
+                                <span class="text-xs font-normal opacity-90">(individual)</span>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+
+                <form wire:submit.prevent="confirm" class="space-y-6">
+                    @if($lastScanResult === 'error' && $lastScanMessage)
+                        <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3 text-red-600">
+                            <flux:icon name="exclamation-circle" class="size-5 shrink-0" />
+                            <span class="text-sm font-bold uppercase tracking-wide">{{ $lastScanMessage }}</span>
+                        </div>
+                    @endif
+
+                    <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 p-6 space-y-4">
+                        <div class="text-center">
+                            <div class="text-xs font-bold text-zinc-400 uppercase tracking-widest">Ticket Number</div>
+                            <div class="text-2xl font-mono font-bold text-zinc-900 dark:text-white mt-1">
+                                {{ str_pad((string) $scannedRegistration->id, 6, '0', STR_PAD_LEFT) }}
+                            </div>
+                        </div>
+
+                        <div class="grid gap-3 text-sm">
+                            <div class="flex justify-between gap-4">
+                                <span class="text-zinc-500">Name</span>
+                                <span class="font-semibold text-zinc-900 dark:text-white text-end">{{ $name }}</span>
+                            </div>
+                            <div class="flex justify-between gap-4">
+                                <span class="text-zinc-500">Vehicle</span>
+                                <span class="font-mono font-bold text-zinc-900 dark:text-white">{{ $vehicleReg }}</span>
+                            </div>
+                            <div class="flex justify-between gap-4">
+                                <span class="text-zinc-500">Contact</span>
+                                <span class="font-mono text-zinc-900 dark:text-white">{{ $contactNumber }}</span>
+                            </div>
+                            @if($email)
+                                <div class="flex justify-between gap-4">
+                                    <span class="text-zinc-500">Email</span>
+                                    <span class="text-zinc-900 dark:text-white text-end">{{ $email }}</span>
+                                </div>
+                            @endif
+                            @if(count($days) > 0)
+                                <div class="flex justify-between gap-4 items-start">
+                                    <span class="text-zinc-500">Days</span>
+                                    <span class="flex flex-wrap gap-1 justify-end">
+                                        @foreach($days as $day)
+                                            <span class="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-xs font-medium">{{ substr($day, 0, 3) }}</span>
+                                        @endforeach
+                                    </span>
+                                </div>
+                            @endif
+                        </div>
+
+                        @if(($scannedRegistration->vehicle_type ?? 'car') === 'coach')
+                            <div class="rounded-lg bg-amber-500/10 border border-amber-500/30 px-3 py-2 text-center text-sm font-semibold text-amber-700 dark:text-amber-300">
+                                Coach space required
+                            </div>
+                        @endif
+                        @if($elderlyInfirmParking)
+                            <div class="rounded-lg bg-sky-500/10 border border-sky-500/30 px-3 py-2 text-center text-sm font-semibold text-sky-700 dark:text-sky-300">
+                                Elderly &amp; Infirm parking
+                            </div>
+                        @endif
+                    </div>
+
+                    @if(auth()->check() && $existingParkedPass)
+                        <div class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20 p-4 space-y-3">
+                            <div class="flex items-center gap-2 text-sm font-bold text-amber-800 dark:text-amber-200">
+                                <flux:icon name="truck" class="size-5" />
+                                Already parked
+                            </div>
+                            <button type="button"
+                                wire:click="clockOut({{ $existingParkedPass->id }})"
+                                wire:confirm="Clock out this vehicle?"
+                                class="inline-flex items-center gap-2 rounded-lg border border-amber-300 dark:border-amber-600 px-3 py-2 text-sm font-medium text-amber-700 dark:text-amber-300">
+                                <flux:icon name="arrow-right-start-on-rectangle" class="size-4" />
+                                Clock out
+                            </button>
+                        </div>
+                    @endif
+
+                    <div class="flex flex-col gap-3">
+                        @if($existingParkedPass)
+                            <flux:button type="button" variant="primary" disabled class="w-full h-14 text-lg font-bold rounded-xl opacity-60 cursor-not-allowed">
+                                CLOCK IN / PARK CAR
+                            </flux:button>
+                        @else
+                            <flux:button type="submit" variant="primary" wire:loading.attr="disabled" class="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-indigo-500/20">
+                                <span wire:loading.remove>CLOCK IN / PARK CAR</span>
+                                <span wire:loading>PROCESSING...</span>
+                            </flux:button>
+                        @endif
+                        <flux:button type="button" variant="ghost" wire:click="cancel" class="w-full h-12">
+                            Abort Scan
+                        </flux:button>
+                    </div>
+                </form>
+            </div>
+        @else
         <div class="bg-white dark:bg-zinc-800 p-4 sm:p-8 rounded-3xl border border-zinc-200 dark:border-zinc-700 shadow-2xl space-y-8 animate-in slide-in-from-bottom-4 duration-300">
             <div class="text-center">
-                <div class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-1">Pass Authorized</div>
-                <flux:heading size="xl" class="text-3xl">{{ $scannedCongregation->name }}</flux:heading>
+                @if($walkInMode)
+                    <div class="text-xs font-bold text-amber-500 uppercase tracking-widest mb-1">Walk-in Check-in</div>
+                    <flux:heading size="xl" class="text-2xl">No ticket — enter details</flux:heading>
+                @else
+                    <div class="text-xs font-bold text-indigo-500 uppercase tracking-widest mb-1">Pass Authorized</div>
+                    <flux:heading size="xl" class="text-3xl">{{ $scannedCongregation?->name }}</flux:heading>
+                @endif
                 @if($effectiveCarPark ?? null)
                     <div class="mt-3 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-indigo-500/10 text-indigo-500 font-bold text-sm">
                         <flux:icon name="map-pin" class="size-4" />
@@ -230,7 +371,11 @@
                             <span class="text-xs font-normal opacity-90">(individual)</span>
                         @endif
                     </div>
-                @else
+                @elseif($walkInMode && $selectedCongregationId)
+                    <div class="mt-3 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-sm">
+                        Not assigned to a car park
+                    </div>
+                @elseif(!$walkInMode)
                     <div class="mt-3 inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-sm">
                         Not assigned to a car park
                     </div>
@@ -246,6 +391,23 @@
                 @endif
 
                 <div class="space-y-5">
+                    @if($walkInMode)
+                        <div class="space-y-3">
+                            <label class="block text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                                Congregation <span class="text-red-500">*</span>
+                            </label>
+                            <flux:select wire:model.live="selectedCongregationId" placeholder="Select congregation...">
+                                <flux:select.option value="">Select congregation...</flux:select.option>
+                                @foreach($this->congregations as $congregation)
+                                    <flux:select.option value="{{ $congregation->id }}">{{ $congregation->name }}</flux:select.option>
+                                @endforeach
+                            </flux:select>
+                            @error('selectedCongregationId')
+                                <span class="text-red-500 text-sm block mt-1">{{ $message }}</span>
+                            @enderror
+                        </div>
+                    @endif
+
                      <div class="space-y-3">
                         <label class="block text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
                             Vehicle Plate Number <span class="text-red-500">*</span>
@@ -425,10 +587,11 @@
                         </flux:button>
                     @endif
                     <flux:button type="button" variant="ghost" wire:click="cancel" wire:loading.attr="disabled" class="w-full h-12">
-                        Abort Scan
+                        {{ $walkInMode ? 'Cancel' : 'Abort Scan' }}
                     </flux:button>
                 </div>
             </form>
         </div>
+        @endif
     @endif
 </div>

@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'title' => 'Lessons learned',
+    'subtitle' => 'Share what worked well and what did not for next year\'s convention.',
+    'reporter_name' => 'Your name',
+    'category' => 'Area',
+    'category_parking' => 'Parking',
+    'category_registration' => 'Registration',
+    'category_operations' => 'Operations',
+    'category_other' => 'Other',
+    'convention_day' => 'Convention day',
+    'convention_day_friday' => 'Friday',
+    'convention_day_saturday' => 'Saturday',
+    'convention_day_sunday' => 'Sunday',
+    'convention_day_all_days' => 'All three days (Friday–Sunday)',
+    'title_field' => 'Short title (optional)',
+    'title_placeholder' => 'Brief summary',
+    'worked_well' => 'What worked well',
+    'worked_well_placeholder' => 'Things to repeat next year…',
+    'didnt_work_well' => 'What did not work well',
+    'didnt_work_well_placeholder' => 'Things to improve next year…',
+    'submit' => 'Submit lesson',
+    'complete_title' => 'Thank you',
+    'complete_body' => 'Your lesson has been recorded for the team.',
+    'submit_another' => 'Submit another lesson',
+    'validation_lesson_content' => 'Please provide at least one of "what worked well" or "what did not work well".',
+];

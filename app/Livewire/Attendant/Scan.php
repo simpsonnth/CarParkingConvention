@@ -1,43 +1,91 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire\Attendant;
 
 use App\Models\CarPark;
+use App\Models\Congregation;
 use App\Models\ParkingPass;
 use App\Models\ParkingRegistration;
 use Flux\Flux;
-use Livewire\Component;
+use Illuminate\Support\Collection;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 class Scan extends Component
 {
-    public $uuid = '';
-    public $vehicleReg = '';
-    public $contactNumber = '';
-    public $name = '';
-    public $email = '';
-    public $days = [];
-    public $elderlyInfirmParking = false;
-    public $notes = '';
+    public string $uuid = '';
 
-    public $step = 'scan'; // 'scan', 'confirm'
-    public $scannedCongregation = null;
+    public string $vehicleReg = '';
 
+    public string $contactNumber = '';
 
-    public $lastScanResult = null; // 'success', 'error', 'warning'
-    public $lastScanMessage = '';
-    public $lastScanPass = null; // Used for "Previous Scan" info
+    public string $name = '';
+
+    public string $email = '';
+
+    /** @var list<string> */
+    public array $days = [];
+
+    public bool $elderlyInfirmParking = false;
+
+    public string $notes = '';
+
+    public string $step = 'scan';
+
+    public ?Congregation $scannedCongregation = null;
+
+    public ?string $lastScanResult = null;
+
+    public string $lastScanMessage = '';
+
+    public ?ParkingPass $lastScanPass = null;
+
+    public ?ParkingRegistration $foundRegistration = null;
+
+    public ?ParkingPass $existingParkedPass = null;
+
+    public ?ParkingRegistration $scannedRegistration = null;
+
+    public bool $quickCheckIn = false;
+
+    public bool $walkInMode = false;
+
+    public ?int $selectedCongregationId = null;
 
     #[Layout('components.layouts.public')]
-    public function mount($code = null)
+    public function mount($code = null, ?ParkingRegistration $registration = null): void
     {
+        if (request()->routeIs('attendant.scan.walk-in') || request()->query('mode') === 'walk-in') {
+            $this->startWalkInMode();
+
+            return;
+        }
+
+        if ($registration !== null) {
+            $this->scanRegistration($registration);
+
+            return;
+        }
+
         if ($code) {
-            $this->uuid = $code;
+            $this->uuid = (string) $code;
             $this->scan();
         } elseif (request()->has('code')) {
-            $this->uuid = request()->query('code');
+            $this->uuid = (string) request()->query('code');
             $this->scan();
         }
+    }
+
+    #[Computed]
+    public function congregations(): Collection
+    {
+        return Congregation::query()
+            ->with('carPark')
+            ->orderBy('name')
+            ->get();
     }
 
     public function render()
@@ -49,62 +97,118 @@ class Scan extends Component
         ]);
     }
 
-    public function scan()
+    public function scan(): void
     {
         $this->uuid = trim($this->uuid);
 
-        if (empty($this->uuid)) {
+        if ($this->uuid === '') {
             return;
         }
 
-        // If UUID is a full URL, extract the last segment
         if (filter_var($this->uuid, FILTER_VALIDATE_URL)) {
             try {
-                $path = parse_url($this->uuid, PHP_URL_PATH);
+                $path = (string) parse_url($this->uuid, PHP_URL_PATH);
+                if (preg_match('#registrations/(\d+)/print#', $path, $matches)) {
+                    $registration = ParkingRegistration::query()->find((int) $matches[1]);
+                    if ($registration !== null) {
+                        $this->scanRegistration($registration);
+
+                        return;
+                    }
+                }
+
                 $segments = explode('/', trim($path, '/'));
-                // Assuming URL structure like /scan/{uuid} or /admin/congregations/{uuid}/print...
-                // But usually the public scan link is /scan/{uuid}
-                $this->uuid = end($segments);
-            } catch (\Exception $e) {
+                $lastSegment = end($segments);
+                if (is_string($lastSegment) && $lastSegment !== '') {
+                    $this->uuid = $lastSegment;
+                }
+            } catch (\Exception) {
                 // Keep original value if parsing fails
             }
         }
 
-        // Find the Congregation by the scanned UUID
-        $congregation = \App\Models\Congregation::where('uuid', $this->uuid)->with('carPark')->first();
+        if (preg_match('#^ticket[/-](\d+)$#i', $this->uuid, $matches)) {
+            $registration = ParkingRegistration::query()->find((int) $matches[1]);
+            if ($registration !== null) {
+                $this->scanRegistration($registration);
 
-        if (!$congregation) {
+                return;
+            }
+        }
+
+        $congregation = Congregation::query()
+            ->where('uuid', $this->uuid)
+            ->with('carPark')
+            ->first();
+
+        if ($congregation === null) {
             $this->setResult('error', 'INVALID PASS', 'This code does not match any congregation.');
             $this->reset('uuid');
+
             return;
         }
 
         $this->scannedCongregation = $congregation;
         $this->step = 'confirm';
-        $this->reset('vehicleReg', 'elderlyInfirmParking', 'notes', 'existingParkedPass');
+        $this->quickCheckIn = false;
+        $this->walkInMode = false;
+        $this->reset('vehicleReg', 'elderlyInfirmParking', 'notes', 'existingParkedPass', 'scannedRegistration');
     }
 
-    public $foundRegistration = null;
-
-    /** Single parked pass when the typed reg matches an already-parked vehicle (for display only). */
-    public $existingParkedPass = null;
-
-    public function toggleDay($day)
+    public function scanRegistration(ParkingRegistration $registration): void
     {
-        if (in_array($day, $this->days)) {
+        $registration->load('carPark');
+
+        if ($registration->is_circuit_overseer) {
+            $this->setResult('error', 'INVALID TICKET', 'Circuit overseer tickets cannot be scanned this way. Use walk-in check-in.');
+            $this->reset('uuid');
+
+            return;
+        }
+
+        $congregation = Congregation::query()
+            ->where('name', $registration->congregation)
+            ->with('carPark')
+            ->first();
+
+        if ($congregation === null) {
+            $this->setResult('error', 'INVALID TICKET', 'Congregation not found for this registration.');
+            $this->reset('uuid');
+
+            return;
+        }
+
+        $this->scannedRegistration = $registration;
+        $this->scannedCongregation = $congregation;
+        $this->foundRegistration = $registration;
+        $this->vehicleReg = strtoupper(str_replace(' ', '', (string) $registration->vehicle_registration));
+        $this->contactNumber = (string) $registration->contact_number;
+        $this->name = (string) $registration->name;
+        $this->email = (string) ($registration->email ?? '');
+        $this->days = $registration->days ?? [];
+        $this->elderlyInfirmParking = (bool) ($registration->elderly_infirm_parking ?? false);
+        $this->notes = '';
+        $this->step = 'confirm';
+        $this->walkInMode = false;
+        $this->quickCheckIn = $this->canQuickCheckIn();
+        $this->checkExistingParkedPass();
+    }
+
+    public function toggleDay(string $day): void
+    {
+        if (in_array($day, $this->days, true)) {
             $this->days = array_values(array_diff($this->days, [$day]));
         } else {
             $this->days[] = $day;
         }
     }
 
-    public function updatedVehicleReg()
+    public function updatedVehicleReg(): void
     {
         $this->vehicleReg = strtoupper(str_replace(' ', '', trim($this->vehicleReg)));
-        // ... (rest of function)
 
         if (strlen($this->vehicleReg) > 2) {
-            $query = ParkingRegistration::where('vehicle_registration', $this->vehicleReg);
+            $query = ParkingRegistration::query()->where('vehicle_registration', $this->vehicleReg);
             if ($this->scannedCongregation) {
                 $reg = (clone $query)->where('congregation', $this->scannedCongregation->name)->first()
                     ?? $query->first();
@@ -114,46 +218,58 @@ class Scan extends Component
 
             if ($reg) {
                 $this->foundRegistration = $reg;
-                $this->contactNumber = $reg->contact_number;
-                $this->name = $reg->name;
-                $this->email = $reg->email ?? '';
+                $this->contactNumber = (string) $reg->contact_number;
+                $this->name = (string) $reg->name;
+                $this->email = (string) ($reg->email ?? '');
                 $this->days = $reg->days ?? [];
                 $this->elderlyInfirmParking = (bool) ($reg->elderly_infirm_parking ?? false);
             } else {
                 $this->foundRegistration = null;
-                // Keep contact number if user typed it, or reset? 
-                // Better to not reset if they typed it manually, but if it was autofilled from previous check, maybe?
-                // For now, let's leave it.
             }
         } else {
             $this->foundRegistration = null;
             $this->existingParkedPass = null;
         }
 
-        if (strlen($this->vehicleReg) > 2 && auth()->check() && $this->scannedCongregation) {
-            $formattedReg = strtoupper(str_replace(' ', '', $this->vehicleReg));
-            $pass = ParkingPass::where('congregation_id', $this->scannedCongregation->id)
-                ->where('status', 'parked')
-                ->whereRaw('REPLACE(UPPER(vehicle_reg), " ", "") = ?', [$formattedReg])
-                ->first();
-            $this->existingParkedPass = $pass;
-        }
+        $this->checkExistingParkedPass();
     }
 
-    public function confirm()
+    public function updatedSelectedCongregationId(): void
     {
-        \Log::info('Check-in started for congregation: ' . ($this->scannedCongregation->name ?? 'None'));
+        if ($this->selectedCongregationId) {
+            $this->scannedCongregation = Congregation::query()
+                ->with('carPark')
+                ->find($this->selectedCongregationId);
+        } else {
+            $this->scannedCongregation = null;
+        }
 
-        if (!$this->scannedCongregation) {
-            \Log::warning('Check-in aborted: No congregation scanned.');
+        $this->foundRegistration = null;
+        $this->existingParkedPass = null;
+    }
+
+    public function confirm(): void
+    {
+        if ($this->walkInMode) {
+            $this->validate([
+                'selectedCongregationId' => 'required|integer|exists:congregations,id',
+            ]);
+
+            $this->scannedCongregation = Congregation::query()
+                ->with('carPark')
+                ->find($this->selectedCongregationId);
+        }
+
+        if ($this->scannedCongregation === null) {
             $this->cancel();
+
             return;
         }
 
-        // Resolve car park: individual (registration) overrides congregation default
         $carPark = $this->resolveEffectiveCarPark();
-        if (!$carPark) {
+        if ($carPark === null) {
             $this->setResult('error', 'NO CAR PARK', 'No car park assigned. Assign the congregation or this individual to a car park in Admin first.');
+
             return;
         }
 
@@ -166,23 +282,23 @@ class Scan extends Component
             'notes' => 'nullable|string|max:255',
         ]);
 
-        // Format registration for consistency
         $formattedReg = strtoupper(str_replace(' ', '', trim($this->vehicleReg)));
 
-        // Prevent clocking in the same vehicle more than once (any car park)
         if (strlen($formattedReg) >= 2) {
-            $alreadyParked = ParkingPass::where('status', 'parked')
+            $alreadyParked = ParkingPass::query()
+                ->where('status', 'parked')
                 ->get()
                 ->contains(fn (ParkingPass $p) => strtoupper(str_replace(' ', '', (string) ($p->vehicle_reg ?? ''))) === $formattedReg);
 
             if ($alreadyParked) {
                 $this->setResult('error', 'ALREADY PARKED', 'This vehicle is already clocked in and cannot be registered again.');
+
                 return;
             }
         }
 
-        // Check Capacity (count by pass car_park_id or legacy: congregation car_park_id)
-        $currentOccupancy = ParkingPass::where('status', 'parked')
+        $currentOccupancy = ParkingPass::query()
+            ->where('status', 'parked')
             ->where(function ($query) use ($carPark) {
                 $query->where('car_park_id', $carPark->id)
                     ->orWhere(function ($q) use ($carPark) {
@@ -193,18 +309,17 @@ class Scan extends Component
             ->count();
 
         if ($currentOccupancy >= $carPark->capacity) {
-            \Log::warning('Check-in failed: Car park ' . $carPark->name . ' is full.');
-            $this->setResult('error', 'CAR PARK FULL', 'The ' . $carPark->name . ' is at capacity (' . $carPark->capacity . ').');
+            $this->setResult('error', 'CAR PARK FULL', 'The '.$carPark->name.' is at capacity ('.$carPark->capacity.').');
+
             return;
         }
 
         if ($currentOccupancy >= ($carPark->capacity * 0.9)) {
-            Flux::toast('Warning: ' . $carPark->name . ' is almost full!', variant: 'warning');
+            Flux::toast('Warning: '.$carPark->name.' is almost full!', variant: 'warning');
         }
 
         try {
-            \Log::info('Attempting to create ParkingPass...');
-            $pass = ParkingPass::create([
+            $pass = ParkingPass::query()->create([
                 'congregation_id' => $this->scannedCongregation->id,
                 'car_park_id' => $carPark->id,
                 'status' => 'parked',
@@ -214,14 +329,12 @@ class Scan extends Component
                 'email' => $this->email,
                 'days' => $this->days,
                 'elderly_infirm_parking' => $this->elderlyInfirmParking,
-                'notes' => trim($this->notes) ?: null,
+                'notes' => trim($this->notes) !== '' ? trim($this->notes) : null,
                 'scanned_at' => now(),
-                'scanned_by_user_id' => auth()->check() ? auth()->id() : null,
+                'scanned_by_user_id' => auth()->id(),
             ]);
 
-            \Log::info('ParkingPass created successfully.');
-
-            ParkingRegistration::updateOrCreate(
+            ParkingRegistration::query()->updateOrCreate(
                 ['vehicle_registration' => $formattedReg],
                 [
                     'congregation' => $this->scannedCongregation->name,
@@ -231,30 +344,30 @@ class Scan extends Component
                     'days' => $this->days,
                 ]
             );
-            \Log::info('ParkingRegistration synced successfully.');
-            $this->setResult('success', 'ACCESS GRANTED', $this->scannedCongregation->name . ' -> ' . $carPark->name);
+
+            $this->setResult('success', 'ACCESS GRANTED', $this->scannedCongregation->name.' -> '.$carPark->name);
 
             $pass->load('congregation', 'carPark');
             $this->lastScanPass = $pass;
 
-            $this->reset('uuid', 'step', 'scannedCongregation', 'vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass');
+            $this->resetAfterSuccessfulCheckIn();
         } catch (\Exception $e) {
-            \Log::error('Check-in database error: ' . $e->getMessage());
-            Flux::toast('Error: ' . $e->getMessage(), variant: 'danger');
+            Flux::toast('Error: '.$e->getMessage(), variant: 'danger');
         }
     }
 
     public function clockOut(int $passId): void
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return;
         }
 
-        $pass = ParkingPass::where('id', $passId)->where('status', 'parked')->first();
+        $pass = ParkingPass::query()->where('id', $passId)->where('status', 'parked')->first();
 
-        if (!$pass) {
+        if ($pass === null) {
             Flux::toast('Pass not found or already clocked out.', variant: 'warning');
             $this->existingParkedPass = null;
+
             return;
         }
 
@@ -263,49 +376,137 @@ class Scan extends Component
             'left_at' => now(),
         ]);
 
-        $reg = $pass->vehicle_reg;
         $this->existingParkedPass = null;
-        Flux::toast('Vehicle ' . ($reg ?? '') . ' clocked out.');
+        Flux::toast('Vehicle '.($pass->vehicle_reg ?? '').' clocked out.');
     }
 
     public function checkInAnotherCar(): void
     {
-        $this->reset('vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass');
+        $this->reset('vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass', 'scannedRegistration', 'quickCheckIn');
     }
 
-    public function cancel()
+    public function cancel(): void
     {
-        $this->reset('uuid', 'step', 'scannedCongregation', 'vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass');
+        $walkIn = $this->walkInMode;
+
+        $this->reset(
+            'uuid',
+            'step',
+            'scannedCongregation',
+            'vehicleReg',
+            'contactNumber',
+            'name',
+            'email',
+            'days',
+            'elderlyInfirmParking',
+            'notes',
+            'foundRegistration',
+            'existingParkedPass',
+            'scannedRegistration',
+            'quickCheckIn',
+            'selectedCongregationId',
+            'lastScanResult',
+            'lastScanMessage',
+        );
+
+        if ($walkIn) {
+            $this->walkInMode = true;
+            $this->step = 'confirm';
+        } else {
+            $this->walkInMode = false;
+            $this->step = 'scan';
+        }
     }
 
-    /**
-     * Resolve which car park to use: individual (registration) overrides congregation.
-     * e.g. Person in congregation West (assigned West) but individually assigned East → use East.
-     */
+    protected function startWalkInMode(): void
+    {
+        $this->walkInMode = true;
+        $this->quickCheckIn = false;
+        $this->step = 'confirm';
+        $this->scannedCongregation = null;
+        $this->selectedCongregationId = null;
+    }
+
+    protected function canQuickCheckIn(): bool
+    {
+        return strlen($this->vehicleReg) >= 2
+            && strlen($this->contactNumber) >= 6;
+    }
+
+    protected function checkExistingParkedPass(): void
+    {
+        if (strlen($this->vehicleReg) <= 2 || ! auth()->check() || $this->scannedCongregation === null) {
+            $this->existingParkedPass = null;
+
+            return;
+        }
+
+        $formattedReg = strtoupper(str_replace(' ', '', $this->vehicleReg));
+        $this->existingParkedPass = ParkingPass::query()
+            ->where('congregation_id', $this->scannedCongregation->id)
+            ->where('status', 'parked')
+            ->whereRaw('REPLACE(UPPER(vehicle_reg), " ", "") = ?', [$formattedReg])
+            ->first();
+    }
+
     protected function resolveEffectiveCarPark(): ?CarPark
     {
         if ($this->foundRegistration) {
-            $reg = ParkingRegistration::find($this->foundRegistration->id);
+            $reg = ParkingRegistration::query()->find($this->foundRegistration->id);
             if ($reg?->car_park_id) {
-                $park = CarPark::find($reg->car_park_id);
+                $park = CarPark::query()->find($reg->car_park_id);
                 if ($park) {
                     return $park;
                 }
             }
         }
-        return $this->scannedCongregation->carPark;
+
+        return $this->scannedCongregation?->carPark;
     }
 
-    protected function setResult($type, $title, $message)
+    protected function resetAfterSuccessfulCheckIn(): void
+    {
+        $walkIn = $this->walkInMode;
+
+        $this->reset(
+            'uuid',
+            'scannedCongregation',
+            'vehicleReg',
+            'contactNumber',
+            'name',
+            'email',
+            'days',
+            'elderlyInfirmParking',
+            'notes',
+            'foundRegistration',
+            'existingParkedPass',
+            'scannedRegistration',
+            'quickCheckIn',
+            'selectedCongregationId',
+        );
+
+        if ($walkIn) {
+            $this->walkInMode = true;
+            $this->step = 'confirm';
+        } else {
+            $this->walkInMode = false;
+            $this->step = 'scan';
+        }
+    }
+
+    protected function setResult(string $type, string $title, string $message): void
     {
         $this->lastScanResult = $type;
         $this->lastScanMessage = $title;
-        // We can add more details if needed
-        if ($type === 'success')
+
+        if ($type === 'success') {
             Flux::toast('Pass Scanned Successfully');
-        if ($type === 'error')
+        }
+        if ($type === 'error') {
             Flux::toast('Invalid Pass', variant: 'danger');
-        if ($type === 'warning')
+        }
+        if ($type === 'warning') {
             Flux::toast('Already Scanned', variant: 'warning');
+        }
     }
 }

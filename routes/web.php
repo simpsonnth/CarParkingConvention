@@ -12,11 +12,18 @@ Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
+Route::get('/scan/ticket/{registration}', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan.ticket');
+Route::get('/scan/walk-in', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan.walk-in');
 Route::get('/scan/{code?}', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan');
 Route::get('/parking-registration', App\Livewire\Public\Register::class)->name('parking.register');
 Route::get('/register-simple', App\Livewire\Public\CongregationNumbers::class)->name('parking.register-simple');
 Route::get('/register-circuit-overseer', App\Livewire\Public\CircuitOverseerRegister::class)->name('parking.register-circuit-overseer');
 Route::get('/congregation-portal', App\Livewire\Public\CongregationPortal::class)->name('parking.congregation-portal');
+Route::middleware('throttle:10,1')->group(function () {
+    Route::get('/parking-incidents', App\Livewire\Public\ParkingIncidentReport::class)->name('management.parking-incidents');
+    Route::get('/toolbox-feedback', App\Livewire\Public\ToolboxFeedback::class)->name('management.toolbox-feedback');
+    Route::get('/lessons-learned', App\Livewire\Public\LessonLearned::class)->name('management.lessons-learned');
+});
 Route::get('/locale/{locale}', function (string $locale) {
     if (in_array($locale, ['en', 'pt', 'es'], true)) {
         session(['locale' => $locale]);
@@ -147,6 +154,31 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/reports', App\Livewire\Admin\Reports::class)->name('reports');
         Route::get('/survey-vs-registrations', App\Livewire\Admin\SurveyVsRegistrationReport::class)->name('survey-vs-registrations');
         Route::get('/circuit-overseer-parking', App\Livewire\Admin\CircuitOverseerParking::class)->name('circuit-overseer-parking');
+        Route::get('/parking-incidents', App\Livewire\Admin\ParkingIncidents::class)->name('parking-incidents');
+        Route::get('/parking-incidents/export', function () {
+            $filename = 'parking-incidents-'.now()->format('Y-m-d-His').'.xlsx';
+
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\ParkingIncidentsExport,
+                $filename,
+                \Maatwebsite\Excel\Excel::XLSX
+            );
+        })->name('parking-incidents.export');
+        Route::get('/toolbox-feedback', App\Livewire\Admin\ToolboxFeedbackAdmin::class)->name('toolbox-feedback');
+        Route::get('/toolbox-feedback/export', function () {
+            $filename = 'toolbox-feedback-'.now()->format('Y-m-d-His').'.xlsx';
+
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\ToolboxFeedbackExport,
+                $filename,
+                \Maatwebsite\Excel\Excel::XLSX
+            );
+        })->name('toolbox-feedback.export');
+        Route::get('/lessons-learned', App\Livewire\Admin\LessonsLearned::class)->name('lessons-learned');
+        Route::get('/parking-qr-codes', App\Livewire\Admin\GenericParkingQrCodes::class)->name('parking-qr-codes');
+        Route::get('/parking-qr-codes/print-walk-in', function () {
+            return view('admin.print-walk-in-qr');
+        })->name('parking-qr-codes.print-walk-in');
         Route::get('/routes-list', App\Livewire\Admin\PublicRoutesList::class)->name('routes-list');
     });
 

@@ -725,12 +725,20 @@
                             <div class="pass-scan-label">{{ __('print_pass.pass_id') }}</div>
                             <div class="pass-qr-frame">
                                 @php
-                                    $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' . urlencode(route('attendant.scan', ['code' => $congregation->uuid]));
+                                    $scanUrl = isset($registration)
+                                        ? route('attendant.scan.ticket', $registration)
+                                        : route('attendant.scan', ['code' => $congregation->uuid]);
+                                    $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' . urlencode($scanUrl);
                                 @endphp
                                 <img src="{{ $qrUrl }}" alt="QR Code" class="pass-qr" width="250" height="250">
                             </div>
-                            <div class="pass-scan-id-label">UUID</div>
-                            <div class="pass-scan-id">{{ $congregation->uuid }}</div>
+                            @if(isset($registration))
+                                <div class="pass-scan-id-label">{{ __('print_pass.ticket_number') }}</div>
+                                <div class="pass-scan-id">{{ str_pad((string) $registration->id, 6, '0', STR_PAD_LEFT) }}</div>
+                            @else
+                                <div class="pass-scan-id-label">UUID</div>
+                                <div class="pass-scan-id">{{ $congregation->uuid }}</div>
+                            @endif
                         </aside>
                     @endif
                 </div>

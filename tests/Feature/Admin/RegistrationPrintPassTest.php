@@ -62,7 +62,8 @@ test('registration print page uses landscape layout with car park band, hero con
         ->assertSee(__('print_pass.ticket_number'))
         ->assertSee($ticketNumber)
         ->assertSee(__('print_pass.safety_notice'))
-        ->assertSee(__('print_pass.display_on_dashboard'));
+        ->assertSee(__('print_pass.display_on_dashboard'))
+        ->assertSee(urlencode(route('attendant.scan.ticket', $registration)));
 });
 
 test('registration print page uses registration car park override for band colour', function () {

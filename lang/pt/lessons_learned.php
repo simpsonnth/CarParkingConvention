@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'title' => 'Lições aprendidas',
+    'subtitle' => 'Partilhe o que funcionou bem e o que não funcionou para a convenção do próximo ano.',
+    'reporter_name' => 'O seu nome',
+    'category' => 'Área',
+    'category_parking' => 'Estacionamento',
+    'category_registration' => 'Registo',
+    'category_operations' => 'Operações',
+    'category_other' => 'Outro',
+    'convention_day' => 'Dia da convenção',
+    'convention_day_friday' => 'Sexta-feira',
+    'convention_day_saturday' => 'Sábado',
+    'convention_day_sunday' => 'Domingo',
+    'convention_day_all_days' => 'Os três dias (sexta–domingo)',
+    'title_field' => 'Título curto (opcional)',
+    'title_placeholder' => 'Resumo breve',
+    'worked_well' => 'O que funcionou bem',
+    'worked_well_placeholder' => 'Coisas a repetir no próximo ano…',
+    'didnt_work_well' => 'O que não funcionou bem',
+    'didnt_work_well_placeholder' => 'Coisas a melhorar no próximo ano…',
+    'submit' => 'Enviar lição',
+    'complete_title' => 'Obrigado',
+    'complete_body' => 'A sua lição foi registada para a equipa.',
+    'submit_another' => 'Enviar outra lição',
+    'validation_lesson_content' => 'Indique pelo menos um dos campos "o que funcionou bem" ou "o que não funcionou bem".',
+];

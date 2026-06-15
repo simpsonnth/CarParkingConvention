@@ -32,6 +32,9 @@
                 <flux:navlist.item icon="clipboard-document-list" :href="route('admin.registrations')"
                     :current="request()->routeIs(['admin.registrations', 'admin.registrations.attendance-by-day'])" wire:navigate>{{ __('Registrations') }}
                 </flux:navlist.item>
+                <flux:navlist.item icon="qr-code" :href="route('admin.parking-qr-codes')"
+                    :current="request()->routeIs('admin.parking-qr-codes*')" wire:navigate>{{ __('parking_qr.nav') }}
+                </flux:navlist.item>
                 <flux:navlist.item icon="truck" :href="route('admin.coaches')"
                     :current="request()->routeIs('admin.coaches*')" wire:navigate>{{ __('coaches.nav') }}
                 </flux:navlist.item>
@@ -43,6 +46,20 @@
                 </flux:navlist.item>
                 <flux:navlist.item icon="cog-6-tooth" :href="route('admin.settings')"
                     :current="request()->routeIs('admin.settings')" wire:navigate>{{ __('Settings') }}
+                </flux:navlist.item>
+            </flux:navlist.group>
+
+            <flux:separator class="my-2" />
+
+            <flux:navlist.group :heading="__('management.nav_group')" class="grid">
+                <flux:navlist.item icon="exclamation-triangle" :href="route('admin.parking-incidents')"
+                    :current="request()->routeIs('admin.parking-incidents*')" wire:navigate>{{ __('management.nav_parking_incidents') }}
+                </flux:navlist.item>
+                <flux:navlist.item icon="chat-bubble-left-right" :href="route('admin.toolbox-feedback')"
+                    :current="request()->routeIs('admin.toolbox-feedback*')" wire:navigate>{{ __('management.nav_toolbox_feedback') }}
+                </flux:navlist.item>
+                <flux:navlist.item icon="light-bulb" :href="route('admin.lessons-learned')"
+                    :current="request()->routeIs('admin.lessons-learned')" wire:navigate>{{ __('management.nav_lessons_learned') }}
                 </flux:navlist.item>
             </flux:navlist.group>
 

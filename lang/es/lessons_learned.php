@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'title' => 'Lecciones aprendidas',
+    'subtitle' => 'Comparta lo que funcionó bien y lo que no para la convención del próximo año.',
+    'reporter_name' => 'Su nombre',
+    'category' => 'Área',
+    'category_parking' => 'Estacionamiento',
+    'category_registration' => 'Registro',
+    'category_operations' => 'Operaciones',
+    'category_other' => 'Otro',
+    'convention_day' => 'Día de la convención',
+    'convention_day_friday' => 'Viernes',
+    'convention_day_saturday' => 'Sábado',
+    'convention_day_sunday' => 'Domingo',
+    'convention_day_all_days' => 'Los tres días (viernes–domingo)',
+    'title_field' => 'Título breve (opcional)',
+    'title_placeholder' => 'Resumen breve',
+    'worked_well' => 'Lo que funcionó bien',
+    'worked_well_placeholder' => 'Cosas que repetir el próximo año…',
+    'didnt_work_well' => 'Lo que no funcionó bien',
+    'didnt_work_well_placeholder' => 'Cosas que mejorar el próximo año…',
+    'submit' => 'Enviar lección',
+    'complete_title' => 'Gracias',
+    'complete_body' => 'Su lección ha sido registrada para el equipo.',
+    'submit_another' => 'Enviar otra lección',
+    'validation_lesson_content' => 'Indique al menos uno de "lo que funcionó bien" o "lo que no funcionó bien".',
+];
