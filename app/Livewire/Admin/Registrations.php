@@ -19,6 +19,11 @@ class Registrations extends Component
 {
     use WithPagination;
 
+    private const CIRCUIT_OVERSEER_CONGREGATION_LABELS = [
+        'Circuit Overseer',
+        'Circuit Overseers',
+    ];
+
     public $search = '';
 
     public array $selectedIds = [];
@@ -190,6 +195,13 @@ class Registrations extends Component
     public function congregationsFilterOptions(): array
     {
         $names = Congregation::query()->orderBy('name')->pluck('name')->all();
+        $names = array_values(array_filter(
+            $names,
+            fn (string $name): bool => ! in_array($name, self::CIRCUIT_OVERSEER_CONGREGATION_LABELS, true)
+        ));
+        $names[] = 'Circuit Overseer';
+        sort($names, SORT_NATURAL | SORT_FLAG_CASE);
+
         $term = mb_strtolower(trim($this->filterDraftCongregationSearch));
         if ($term === '') {
             return $names;
@@ -417,6 +429,32 @@ class Registrations extends Component
         }
     }
 
+    protected function applyCongregationFilter($query): void
+    {
+        $selectedCircuitOverseer = array_values(array_intersect(
+            $this->filterCongregations,
+            self::CIRCUIT_OVERSEER_CONGREGATION_LABELS
+        ));
+        $selectedCongregations = array_values(array_diff(
+            $this->filterCongregations,
+            self::CIRCUIT_OVERSEER_CONGREGATION_LABELS
+        ));
+
+        $query->where(function ($outer) use ($selectedCongregations, $selectedCircuitOverseer): void {
+            if ($selectedCongregations !== []) {
+                $outer->whereIn('congregation', $selectedCongregations);
+            }
+
+            if ($selectedCircuitOverseer !== []) {
+                if ($selectedCongregations !== []) {
+                    $outer->orWhere('is_circuit_overseer', true);
+                } else {
+                    $outer->where('is_circuit_overseer', true);
+                }
+            }
+        });
+    }
+
     protected function getRegistrationsQuery()
     {
         $query = ParkingRegistration::query()
@@ -430,7 +468,7 @@ class Registrations extends Component
                 });
             })
             ->when(! empty($this->filterCongregations), function ($q) {
-                $q->whereIn('congregation', $this->filterCongregations);
+                $this->applyCongregationFilter($q);
             })
             ->when(! empty($this->filterCarParks), function ($q) {
                 $q->assignedToAnyCarPark($this->filterCarParks);
