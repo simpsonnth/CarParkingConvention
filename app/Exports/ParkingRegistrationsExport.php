@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Exports;
 
+use App\Models\Congregation;
 use App\Models\ParkingRegistration;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -9,8 +12,18 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 
 class ParkingRegistrationsExport implements FromQuery, WithHeadings, WithMapping
 {
+    /** @var array<string, \App\Models\CarPark|null> */
+    private array $congregationCarParkByName = [];
+
     public function query()
     {
+        $this->congregationCarParkByName = Congregation::query()
+            ->with('carPark')
+            ->whereNotNull('car_park_id')
+            ->get()
+            ->mapWithKeys(fn (Congregation $congregation) => [trim($congregation->name) => $congregation->carPark])
+            ->all();
+
         return ParkingRegistration::query()
             ->with('carPark')
             ->orderBy('created_at', 'desc');
@@ -41,16 +54,18 @@ class ParkingRegistrationsExport implements FromQuery, WithHeadings, WithMapping
         $sharing = $isCoach && ($row->sharing_with_other_congregations ?? false)
             ? __('registrations.yes')
             : ($isCoach ? __('registrations.no') : '');
-        // The TBA column is only meaningful for coach rows; leave blank for cars.
         $coachCaptainTba = $isCoach
             ? (($row->coach_captain_to_be_assigned ?? false) ? __('registrations.yes') : __('registrations.no'))
             : '';
+
+        $effectiveCarPark = $row->carPark
+            ?? ($this->congregationCarParkByName[trim($row->congregation ?? '')] ?? null);
 
         return [
             $row->created_at?->format('Y-m-d H:i'),
             $row->name,
             $row->congregation,
-            $row->carPark?->name ?? '',
+            $effectiveCarPark?->name ?? '',
             ucfirst($row->vehicle_type ?? 'car'),
             $coachCaptainTba,
             $sharing,

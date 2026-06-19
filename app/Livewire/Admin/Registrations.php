@@ -433,7 +433,7 @@ class Registrations extends Component
                 $q->whereIn('congregation', $this->filterCongregations);
             })
             ->when(! empty($this->filterCarParks), function ($q) {
-                $q->whereIn('car_park_id', $this->filterCarParks);
+                $q->assignedToAnyCarPark($this->filterCarParks);
             })
             ->when(! empty($this->filterVehicleType), function ($q) {
                 $q->whereIn('vehicle_type', $this->filterVehicleType);

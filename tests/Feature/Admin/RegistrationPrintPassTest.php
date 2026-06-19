@@ -20,7 +20,7 @@ test('guest cannot access registration print page', function () {
 });
 
 test('registration print page uses landscape layout with car park band, hero congregation, ticket number, and safety notice', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $park = CarPark::query()->create([
         'name' => 'Red Car Park A',
@@ -67,7 +67,7 @@ test('registration print page uses landscape layout with car park band, hero con
 });
 
 test('registration print page uses registration car park override for band colour', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $defaultPark = CarPark::query()->create([
         'name' => 'Default Park',
@@ -109,7 +109,7 @@ test('registration print page uses registration car park override for band colou
 });
 
 test('registration print page shows coach alert strip', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $park = CarPark::query()->create([
         'name' => 'Coach Park',

@@ -9,7 +9,7 @@ use Livewire\Livewire;
 
 function createWalkInScanFixtures(): array
 {
-    $attendant = User::factory()->create(['role' => 'attendant']);
+    $attendant = User::factory()->attendant()->create();
 
     $park = CarPark::query()->create([
         'name' => 'Walk-in Park',

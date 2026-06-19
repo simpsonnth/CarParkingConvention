@@ -54,7 +54,7 @@ test('bulk delete standard cars removes only standard cars and preserves coaches
         'is_circuit_overseer' => true,
     ]);
 
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test(Registrations::class)
@@ -117,7 +117,7 @@ test('bulk delete disabled registrations preserves coaches and circuit overseers
         'is_circuit_overseer' => true,
     ]);
 
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test(Registrations::class)

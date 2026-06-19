@@ -10,7 +10,7 @@ use Livewire\Livewire;
 
 function createTicketScanFixtures(): array
 {
-    $attendant = User::factory()->create(['role' => 'attendant']);
+    $attendant = User::factory()->attendant()->create();
 
     $park = CarPark::query()->create([
         'name' => 'Scan Park',
@@ -106,7 +106,7 @@ test('soft-deleted registration ticket scan returns not found', function () {
 });
 
 test('legacy congregation uuid scan still uses manual confirm flow', function () {
-    $attendant = User::factory()->create(['role' => 'attendant']);
+    $attendant = User::factory()->attendant()->create();
 
     $park = CarPark::query()->create([
         'name' => 'Legacy Park',

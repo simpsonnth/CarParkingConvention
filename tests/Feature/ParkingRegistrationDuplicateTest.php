@@ -164,7 +164,7 @@ test('admin registrations page shows duplicate email badge text', function () {
         'elderly_infirm_parking' => false,
     ]);
 
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test(Registrations::class)
@@ -194,7 +194,7 @@ test('admin registrations page shows duplicate vehicle reg badge text', function
         'elderly_infirm_parking' => false,
     ]);
 
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test(Registrations::class)

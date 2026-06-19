@@ -26,7 +26,7 @@ function seedTrashedRegistration(array $overrides = []): ParkingRegistration
 test('admin can permanently delete one trashed registration from recycle bin', function () {
     $reg = seedTrashedRegistration();
 
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test(RegistrationsTrash::class)
@@ -39,7 +39,7 @@ test('admin can empty recycle bin permanently', function () {
     seedTrashedRegistration(['email' => 'a@example.test', 'vehicle_registration' => 'AA11AAA']);
     seedTrashedRegistration(['email' => 'b@example.test', 'vehicle_registration' => 'BB22BBB']);
 
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test(RegistrationsTrash::class)

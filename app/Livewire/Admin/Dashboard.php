@@ -71,7 +71,7 @@ class Dashboard extends Component
         }
 
         $surveyVsRegistration = null;
-        if (auth()->user()?->role === 'admin') {
+        if (auth()->user()?->can('reports.view')) {
             $surveyVsRegistration = app(SurveyVsRegistrationMetrics::class)->compute();
         }
 

@@ -16,6 +16,15 @@ class UserFactory extends Factory
      */
     protected static ?string $password;
 
+    public function configure(): static
+    {
+        return $this->afterCreating(function (\App\Models\User $user): void {
+            if ($user->roles()->count() === 0) {
+                $user->assignRole('attendant');
+            }
+        });
+    }
+
     /**
      * Define the model's default state.
      *
@@ -55,5 +64,19 @@ class UserFactory extends Factory
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
         ]);
+    }
+
+    public function admin(): static
+    {
+        return $this->afterCreating(function (\App\Models\User $user): void {
+            $user->syncRoles(['admin']);
+        });
+    }
+
+    public function attendant(): static
+    {
+        return $this->afterCreating(function (\App\Models\User $user): void {
+            $user->syncRoles(['attendant']);
+        });
     }
 }

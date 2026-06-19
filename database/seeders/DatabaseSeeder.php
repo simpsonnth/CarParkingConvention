@@ -13,26 +13,26 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Super Admin
-        User::firstOrCreate(
+        $this->call(RolesAndPermissionsSeeder::class);
+
+        $admin = User::firstOrCreate(
             ['email' => 'nathan-simpson@outlook.com'],
             [
                 'name' => 'Nathan Simpson',
                 'password' => bcrypt('bacon'),
                 'email_verified_at' => now(),
-                'role' => 'admin',
             ]
         );
+        $admin->syncRoles(['admin']);
 
-        // Shared Attendant Account
-        User::firstOrCreate(
+        $attendant = User::firstOrCreate(
             ['email' => 'staff@twickenham.com'],
             [
                 'name' => 'Parking Staff',
                 'password' => bcrypt('remote'),
                 'email_verified_at' => now(),
-                'role' => 'attendant',
             ]
         );
+        $attendant->syncRoles(['attendant']);
     }
 }

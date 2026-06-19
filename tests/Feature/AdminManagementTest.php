@@ -6,28 +6,28 @@ use App\Livewire\Admin\ToolboxFeedbackAdmin;
 use App\Models\LessonLearned;
 use App\Models\ParkingIncidentReport;
 use App\Models\ToolboxFeedback;
-use App\Support\ConventionDay;
 use App\Models\User;
+use App\Support\ConventionDay;
 use Livewire\Livewire;
 
 test('non-admin cannot access management admin pages', function () {
-    $user = User::factory()->create(['role' => 'user']);
+    $user = User::factory()->attendant()->create();
 
     $this->actingAs($user)
         ->get(route('admin.parking-incidents'))
-        ->assertRedirect(route('dashboard'));
+        ->assertForbidden();
 
     $this->actingAs($user)
         ->get(route('admin.toolbox-feedback'))
-        ->assertRedirect(route('dashboard'));
+        ->assertForbidden();
 
     $this->actingAs($user)
         ->get(route('admin.lessons-learned'))
-        ->assertRedirect(route('dashboard'));
+        ->assertForbidden();
 });
 
 test('admin can view parking incidents list', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     ParkingIncidentReport::query()->create([
         'type' => ParkingIncidentReport::TYPE_NEAR_MISS,
@@ -52,7 +52,7 @@ test('admin can view parking incidents list', function () {
 });
 
 test('admin can view toolbox feedback list', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     ToolboxFeedback::query()->create([
         'submitter_name' => 'Feedback User',
@@ -68,7 +68,7 @@ test('admin can view toolbox feedback list', function () {
 });
 
 test('admin can open toolbox talk reminders modal', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test(ToolboxFeedbackAdmin::class)
@@ -79,7 +79,7 @@ test('admin can open toolbox talk reminders modal', function () {
 });
 
 test('admin can create toolbox feedback', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test(ToolboxFeedbackAdmin::class)
@@ -95,7 +95,7 @@ test('admin can create toolbox feedback', function () {
 });
 
 test('admin can mark toolbox feedback as added to talk with day', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $id = ToolboxFeedback::query()->create([
         'submitter_name' => 'Attendee',
@@ -116,7 +116,7 @@ test('admin can mark toolbox feedback as added to talk with day', function () {
 });
 
 test('admin can create edit and delete lessons learned', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test(LessonsLearned::class)

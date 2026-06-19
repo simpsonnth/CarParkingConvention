@@ -11,15 +11,15 @@ test('guest cannot access parking qr codes admin page', function () {
 });
 
 test('non-admin cannot access parking qr codes admin page', function () {
-    $user = User::factory()->create(['role' => 'user']);
+    $user = User::factory()->attendant()->create();
 
     $this->actingAs($user)
         ->get(route('admin.parking-qr-codes'))
-        ->assertRedirect(route('dashboard'));
+        ->assertForbidden();
 });
 
 test('admin can view parking qr codes page with walk-in url', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $park = CarPark::query()->create([
         'name' => 'QR Park',
@@ -54,7 +54,7 @@ test('admin can view parking qr codes page with walk-in url', function () {
 });
 
 test('admin print walk-in poster contains walk-in scan url', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $walkInUrl = urlencode(route('attendant.scan.walk-in'));
 
@@ -66,7 +66,7 @@ test('admin print walk-in poster contains walk-in scan url', function () {
 });
 
 test('admin print coach walk-in poster contains coach walk-in scan url', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $coachWalkInUrl = urlencode(route('attendant.scan.walk-in.coach'));
 

@@ -16,12 +16,17 @@
                     <th class="px-6 py-3">Name</th>
                     <th class="px-6 py-3">Email</th>
                     <th class="px-6 py-3">Role</th>
+                    <th class="px-6 py-3">Permissions</th>
                     <th class="px-6 py-3">Joined</th>
                     <th class="px-6 py-3">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700 bg-white dark:bg-zinc-800">
                 @forelse ($users as $user)
+                    @php
+                        $roleName = $user->primaryRoleName();
+                        $directPermissionCount = $user->permissions->count();
+                    @endphp
                     <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
                         <td class="px-6 py-4 font-medium text-zinc-900 dark:text-white">
                             <div class="flex items-center gap-3">
@@ -34,9 +39,18 @@
                         </td>
                         <td class="px-6 py-4">{{ $user->email }}</td>
                         <td class="px-6 py-4">
-                            <flux:badge color="{{ $user->role === 'admin' ? 'purple' : 'blue' }}">
-                                {{ ucfirst($user->role ?? 'attendant') }}
+                            <flux:badge color="{{ $roleName === 'admin' ? 'purple' : 'blue' }}">
+                                {{ ucfirst($roleName) }}
                             </flux:badge>
+                        </td>
+                        <td class="px-6 py-4">
+                            @if ($roleName === 'admin')
+                                <span class="text-zinc-500">All permissions</span>
+                            @elseif ($directPermissionCount > 0)
+                                <flux:badge color="amber">{{ $directPermissionCount }} extra</flux:badge>
+                            @else
+                                <span class="text-zinc-500">Scan only</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4">{{ $user->created_at->format('M d, Y') }}</td>
                         <td class="px-6 py-4">
@@ -55,7 +69,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-zinc-500">
+                        <td colspan="6" class="px-6 py-8 text-center text-zinc-500">
                             No users found.
                         </td>
                     </tr>
@@ -68,11 +82,11 @@
         {{ $users->links() }}
     </div>
 
-    <flux:modal wire:model="modalOpen" class="w-[calc(100vw-2rem)] max-w-lg">
+    <flux:modal wire:model="modalOpen" class="w-[calc(100vw-2rem)] max-w-2xl">
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">{{ $userId ? 'Edit User' : 'Add User' }}</flux:heading>
-                <flux:subheading>Manage user details and roles.</flux:subheading>
+                <flux:subheading>Manage user details, role, and optional extra permissions.</flux:subheading>
             </div>
 
             <div class="space-y-4">
@@ -81,12 +95,41 @@
 
                 <div class="space-y-2">
                     <label for="role" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Role</label>
-                    <select wire:model="role" id="role"
+                    <select wire:model.live="role" id="role"
                         class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
                         <option value="attendant">Attendant</option>
                         <option value="admin">Admin</option>
                     </select>
                 </div>
+
+                @if ($role === 'attendant')
+                    <div class="space-y-3 rounded-lg border border-zinc-200 p-4 dark:border-zinc-700">
+                        <div>
+                            <p class="text-sm font-medium text-zinc-900 dark:text-white">Extra permissions</p>
+                            <p class="text-xs text-zinc-500">Attendants can always scan and clock in vehicles. Grant additional access below.</p>
+                        </div>
+
+                        @foreach ($permissionGroups as $group => $permissions)
+                            @php
+                                $groupPermissions = array_values(array_intersect($permissions, $assignablePermissions));
+                            @endphp
+                            @if ($groupPermissions !== [])
+                                <div class="space-y-2">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500">{{ $group }}</p>
+                                    <div class="grid gap-2 sm:grid-cols-2">
+                                        @foreach ($groupPermissions as $permission)
+                                            <label class="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                                                <input type="checkbox" wire:model="selectedPermissions" value="{{ $permission }}"
+                                                    class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500 dark:border-zinc-600 dark:bg-zinc-800">
+                                                <span>{{ \App\Support\PermissionRegistry::label($permission) }}</span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
+                        @endforeach
+                    </div>
+                @endif
 
                 <flux:input wire:model="password" label="Password" type="password"
                     placeholder="{{ $userId ? 'Leave blank to keep current' : 'Enter password' }}" />

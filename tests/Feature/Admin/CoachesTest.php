@@ -11,15 +11,15 @@ test('guest cannot access coaches page', function () {
 });
 
 test('non-admin cannot access coaches page', function () {
-    $user = User::factory()->create(['role' => 'user']);
+    $user = User::factory()->attendant()->create();
 
     $this->actingAs($user)
         ->get(route('admin.coaches'))
-        ->assertRedirect(route('dashboard'));
+        ->assertForbidden();
 });
 
 test('admin coaches page lists only coach registrations', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     ParkingRegistration::query()->create([
         'name' => 'Car Driver',
@@ -50,7 +50,7 @@ test('admin coaches page lists only coach registrations', function () {
 });
 
 test('admin can update staying on site inline', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $coach = ParkingRegistration::query()->create([
         'name' => 'Captain',
@@ -82,7 +82,7 @@ test('admin can update staying on site inline', function () {
 });
 
 test('admin can edit coach contact and captain tba from coaches page', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $coach = ParkingRegistration::query()->create([
         'name' => 'Old Name',
@@ -115,7 +115,7 @@ test('admin can edit coach contact and captain tba from coaches page', function 
 });
 
 test('staying on site filter shows only matching coaches', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     ParkingRegistration::query()->create([
         'name' => 'Staying Yes',
@@ -145,7 +145,7 @@ test('staying on site filter shows only matching coaches', function () {
 });
 
 test('registrations admin edit saves coach captain tba for coaches', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $coach = ParkingRegistration::query()->create([
         'name' => 'Captain',
@@ -169,7 +169,7 @@ test('registrations admin edit saves coach captain tba for coaches', function ()
 });
 
 test('admin can export coaches spreadsheet', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     ParkingRegistration::query()->create([
         'name' => 'Export Coach',

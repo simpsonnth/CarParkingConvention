@@ -9,13 +9,21 @@ Route::get('/', function () {
 })->name('home');
 
 Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'verified', 'permission:dashboard.view'])
     ->name('dashboard');
 
-Route::get('/scan/ticket/{registration}', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan.ticket');
-Route::get('/scan/walk-in/coach', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan.walk-in.coach');
-Route::get('/scan/walk-in', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan.walk-in');
-Route::get('/scan/{code?}', App\Livewire\Attendant\Scan::class)->middleware('auth')->name('attendant.scan');
+Route::get('/scan/ticket/{registration}', App\Livewire\Attendant\Scan::class)
+    ->middleware(['auth', 'permission:scan.access'])
+    ->name('attendant.scan.ticket');
+Route::get('/scan/walk-in/coach', App\Livewire\Attendant\Scan::class)
+    ->middleware(['auth', 'permission:scan.access'])
+    ->name('attendant.scan.walk-in.coach');
+Route::get('/scan/walk-in', App\Livewire\Attendant\Scan::class)
+    ->middleware(['auth', 'permission:scan.access'])
+    ->name('attendant.scan.walk-in');
+Route::get('/scan/{code?}', App\Livewire\Attendant\Scan::class)
+    ->middleware(['auth', 'permission:scan.access'])
+    ->name('attendant.scan');
 
 Route::middleware('public.route')->group(function () {
     Route::get('/parking-registration', App\Livewire\Public\Register::class)->name('parking.register');
@@ -54,19 +62,36 @@ Route::middleware(['auth'])->group(function () {
         )
         ->name('two-factor.show');
 
-    // Admin Routes (auth + admin role only)
-    Route::middleware(['admin'])->prefix('admin')->name('admin.')->group(function () {
-        Route::get('/', App\Livewire\Admin\Dashboard::class)->name('dashboard');
-        Route::get('/parks', App\Livewire\Admin\CarParks::class)->name('car-parks');
-        Route::get('/parks/{carPark}', App\Livewire\Admin\CarParkDetail::class)->name('car-parks.show');
-        Route::get('/congregations', App\Livewire\Admin\Congregations::class)->name('congregations');
-        Route::get('/congregations/{congregation}', App\Livewire\Admin\CongregationDetail::class)->name('congregations.show');
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('/', App\Livewire\Admin\Dashboard::class)
+            ->middleware('permission:dashboard.view')
+            ->name('dashboard');
+        Route::get('/parks', App\Livewire\Admin\CarParks::class)
+            ->middleware('permission:car-parks.view')
+            ->name('car-parks');
+        Route::get('/parks/{carPark}', App\Livewire\Admin\CarParkDetail::class)
+            ->middleware('permission:car-parks.view')
+            ->name('car-parks.show');
+        Route::get('/congregations', App\Livewire\Admin\Congregations::class)
+            ->middleware('permission:congregations.view')
+            ->name('congregations');
+        Route::get('/congregations/{congregation}', App\Livewire\Admin\CongregationDetail::class)
+            ->middleware('permission:congregations.view')
+            ->name('congregations.show');
         Route::get('/congregations/{congregation}/print', function (App\Models\Congregation $congregation) {
             return view('admin.print-pass', ['congregation' => $congregation]);
-        })->name('congregations.print');
-        Route::get('/users', App\Livewire\Admin\Users::class)->name('users');
-        Route::get('/registrations', App\Livewire\Admin\Registrations::class)->name('registrations');
-        Route::get('/coaches', App\Livewire\Admin\Coaches::class)->name('coaches');
+        })
+            ->middleware('permission:congregations.view')
+            ->name('congregations.print');
+        Route::get('/users', App\Livewire\Admin\Users::class)
+            ->middleware('permission:users.manage')
+            ->name('users');
+        Route::get('/registrations', App\Livewire\Admin\Registrations::class)
+            ->middleware('permission:registrations.view')
+            ->name('registrations');
+        Route::get('/coaches', App\Livewire\Admin\Coaches::class)
+            ->middleware('permission:coaches.view')
+            ->name('coaches');
         Route::get('/coaches/export', function () {
             $filename = 'coaches-'.now()->format('Y-m-d-His').'.xlsx';
 
@@ -75,9 +100,15 @@ Route::middleware(['auth'])->group(function () {
                 $filename,
                 \Maatwebsite\Excel\Excel::XLSX
             );
-        })->name('coaches.export');
-        Route::get('/registrations/attendance-by-day', App\Livewire\Admin\RegistrationAttendanceByDayReport::class)->name('registrations.attendance-by-day');
-        Route::get('/congregation-numbers', App\Livewire\Admin\CongregationNumbers::class)->name('congregation-numbers');
+        })
+            ->middleware('permission:coaches.export')
+            ->name('coaches.export');
+        Route::get('/registrations/attendance-by-day', App\Livewire\Admin\RegistrationAttendanceByDayReport::class)
+            ->middleware('permission:reports.view')
+            ->name('registrations.attendance-by-day');
+        Route::get('/congregation-numbers', App\Livewire\Admin\CongregationNumbers::class)
+            ->middleware('permission:congregation-numbers.view')
+            ->name('congregation-numbers');
         Route::get('/congregation-numbers/export-missing', function () {
             $filename = 'register-simple-not-submitted-'.now()->format('Y-m-d-His').'.xlsx';
 
@@ -86,7 +117,9 @@ Route::middleware(['auth'])->group(function () {
                 $filename,
                 \Maatwebsite\Excel\Excel::XLSX
             );
-        })->name('congregation-numbers.export-missing');
+        })
+            ->middleware('permission:congregation-numbers.view')
+            ->name('congregation-numbers.export-missing');
         Route::get('/congregation-numbers/export', function () {
             $filename = 'register-simple-all-responses-'.now()->format('Y-m-d-His').'.xlsx';
 
@@ -95,8 +128,12 @@ Route::middleware(['auth'])->group(function () {
                 $filename,
                 \Maatwebsite\Excel\Excel::XLSX
             );
-        })->name('congregation-numbers.export');
-        Route::get('/congregation-numbers/trash', App\Livewire\Admin\CongregationNumbersTrash::class)->name('congregation-numbers.trash');
+        })
+            ->middleware('permission:congregation-numbers.view')
+            ->name('congregation-numbers.export');
+        Route::get('/congregation-numbers/trash', App\Livewire\Admin\CongregationNumbersTrash::class)
+            ->middleware('permission:congregation-numbers.manage')
+            ->name('congregation-numbers.trash');
         Route::get('/registrations/{registration}/print', function (App\Models\ParkingRegistration $registration) {
             $registration->load('carPark');
             if ($registration->is_circuit_overseer) {
@@ -123,8 +160,12 @@ Route::middleware(['auth'])->group(function () {
                 'registration' => $registration,
                 'effectiveCarPark' => $effectiveCarPark,
             ]);
-        })->name('registrations.print');
-        Route::get('/registrations/trash', App\Livewire\Admin\RegistrationsTrash::class)->name('registrations.trash');
+        })
+            ->middleware('permission:registrations.print')
+            ->name('registrations.print');
+        Route::get('/registrations/trash', App\Livewire\Admin\RegistrationsTrash::class)
+            ->middleware('permission:registrations.manage')
+            ->name('registrations.trash');
         Route::get('/registrations/download-master-passes-zip/{token}', function (string $token) {
             $cacheKey = 'master-passes-zip:'.$token;
             $registrationIds = cache()->get($cacheKey);
@@ -144,7 +185,9 @@ Route::middleware(['auth'])->group(function () {
                 return redirect()->route('admin.registrations')
                     ->with('error', $e->getMessage());
             }
-        })->name('registrations.download-passes-zip');
+        })
+            ->middleware('permission:registrations.print')
+            ->name('registrations.download-passes-zip');
         Route::get('/registrations/export', function () {
             $filename = 'parking-registrations-'.now()->format('Y-m-d-His').'.xlsx';
 
@@ -153,12 +196,24 @@ Route::middleware(['auth'])->group(function () {
                 $filename,
                 \Maatwebsite\Excel\Excel::XLSX
             );
-        })->name('registrations.export');
-        Route::get('/settings', App\Livewire\Admin\Settings::class)->name('settings');
-        Route::get('/reports', App\Livewire\Admin\Reports::class)->name('reports');
-        Route::get('/survey-vs-registrations', App\Livewire\Admin\SurveyVsRegistrationReport::class)->name('survey-vs-registrations');
-        Route::get('/circuit-overseer-parking', App\Livewire\Admin\CircuitOverseerParking::class)->name('circuit-overseer-parking');
-        Route::get('/parking-incidents', App\Livewire\Admin\ParkingIncidents::class)->name('parking-incidents');
+        })
+            ->middleware('permission:registrations.export')
+            ->name('registrations.export');
+        Route::get('/settings', App\Livewire\Admin\Settings::class)
+            ->middleware('permission:settings.manage')
+            ->name('settings');
+        Route::get('/reports', App\Livewire\Admin\Reports::class)
+            ->middleware('permission:reports.view')
+            ->name('reports');
+        Route::get('/survey-vs-registrations', App\Livewire\Admin\SurveyVsRegistrationReport::class)
+            ->middleware('permission:reports.view')
+            ->name('survey-vs-registrations');
+        Route::get('/circuit-overseer-parking', App\Livewire\Admin\CircuitOverseerParking::class)
+            ->middleware('permission:reports.view')
+            ->name('circuit-overseer-parking');
+        Route::get('/parking-incidents', App\Livewire\Admin\ParkingIncidents::class)
+            ->middleware('permission:parking-incidents.view')
+            ->name('parking-incidents');
         Route::get('/parking-incidents/export', function () {
             $filename = 'parking-incidents-'.now()->format('Y-m-d-His').'.xlsx';
 
@@ -167,8 +222,12 @@ Route::middleware(['auth'])->group(function () {
                 $filename,
                 \Maatwebsite\Excel\Excel::XLSX
             );
-        })->name('parking-incidents.export');
-        Route::get('/toolbox-feedback', App\Livewire\Admin\ToolboxFeedbackAdmin::class)->name('toolbox-feedback');
+        })
+            ->middleware('permission:parking-incidents.view')
+            ->name('parking-incidents.export');
+        Route::get('/toolbox-feedback', App\Livewire\Admin\ToolboxFeedbackAdmin::class)
+            ->middleware('permission:toolbox-feedback.view')
+            ->name('toolbox-feedback');
         Route::get('/toolbox-feedback/export', function () {
             $filename = 'toolbox-feedback-'.now()->format('Y-m-d-His').'.xlsx';
 
@@ -177,16 +236,28 @@ Route::middleware(['auth'])->group(function () {
                 $filename,
                 \Maatwebsite\Excel\Excel::XLSX
             );
-        })->name('toolbox-feedback.export');
-        Route::get('/lessons-learned', App\Livewire\Admin\LessonsLearned::class)->name('lessons-learned');
-        Route::get('/parking-qr-codes', App\Livewire\Admin\GenericParkingQrCodes::class)->name('parking-qr-codes');
+        })
+            ->middleware('permission:toolbox-feedback.view')
+            ->name('toolbox-feedback.export');
+        Route::get('/lessons-learned', App\Livewire\Admin\LessonsLearned::class)
+            ->middleware('permission:lessons-learned.view')
+            ->name('lessons-learned');
+        Route::get('/parking-qr-codes', App\Livewire\Admin\GenericParkingQrCodes::class)
+            ->middleware('permission:parking-qr.view')
+            ->name('parking-qr-codes');
         Route::get('/parking-qr-codes/print-walk-in', function () {
             return view('admin.print-walk-in-qr', ['walkInType' => 'car']);
-        })->name('parking-qr-codes.print-walk-in');
+        })
+            ->middleware('permission:parking-qr.view')
+            ->name('parking-qr-codes.print-walk-in');
         Route::get('/parking-qr-codes/print-walk-in-coach', function () {
             return view('admin.print-walk-in-qr', ['walkInType' => 'coach']);
-        })->name('parking-qr-codes.print-walk-in-coach');
-        Route::get('/routes-list', App\Livewire\Admin\PublicRoutesList::class)->name('routes-list');
+        })
+            ->middleware('permission:parking-qr.view')
+            ->name('parking-qr-codes.print-walk-in-coach');
+        Route::get('/routes-list', App\Livewire\Admin\PublicRoutesList::class)
+            ->middleware('permission:routes.view')
+            ->name('routes-list');
     });
 
 });

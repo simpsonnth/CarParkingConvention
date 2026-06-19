@@ -44,14 +44,33 @@ class ParkingRegistration extends Model
     /** Scope: registrations counted as assigned to this car park (individual override or congregation default). */
     public function scopeAssignedToCarPark($query, int $carParkId)
     {
+        return $query->assignedToAnyCarPark([$carParkId]);
+    }
+
+    /**
+     * @param  list<int>  $carParkIds
+     */
+    public function scopeAssignedToAnyCarPark($query, array $carParkIds)
+    {
+        $carParkIds = array_values(array_filter(array_map('intval', $carParkIds)));
+
+        if ($carParkIds === []) {
+            return $query;
+        }
+
         return $query
             ->leftJoin('congregations', fn ($join) => $join->whereRaw('TRIM(congregations.name) = TRIM(parking_registrations.congregation)'))
-            ->where(function ($q) use ($carParkId) {
-                $q->where('parking_registrations.car_park_id', $carParkId)
-                    ->orWhere(function ($q2) use ($carParkId) {
-                        $q2->whereNull('parking_registrations.car_park_id')
-                            ->where('congregations.car_park_id', $carParkId);
+            ->where(function ($q) use ($carParkIds): void {
+                foreach ($carParkIds as $carParkId) {
+                    $q->orWhere(function ($parkQuery) use ($carParkId): void {
+                        $parkQuery->where('parking_registrations.car_park_id', $carParkId)
+                            ->orWhere(function ($inheritedQuery) use ($carParkId): void {
+                                $inheritedQuery->whereNull('parking_registrations.car_park_id')
+                                    ->where('congregations.car_park_id', $carParkId);
+                            });
                     });
-            });
+                }
+            })
+            ->select('parking_registrations.*');
     }
 }

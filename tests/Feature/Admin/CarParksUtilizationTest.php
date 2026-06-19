@@ -13,7 +13,7 @@ test('guest cannot access car parks page', function () {
 });
 
 test('car parks page shows assigned registrations and stacked utilization bar', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $park = CarPark::query()->create([
         'name' => 'North Car Park',
@@ -52,7 +52,7 @@ test('car parks page shows assigned registrations and stacked utilization bar', 
 });
 
 test('car parks page shows green segment for clocked in vehicles', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $park = CarPark::query()->create([
         'name' => 'South Car Park',
@@ -95,7 +95,7 @@ test('car parks page shows green segment for clocked in vehicles', function () {
 });
 
 test('individual registration car park override counts toward override park not congregation default', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $defaultPark = CarPark::query()->create([
         'name' => 'Default Park',
@@ -147,7 +147,7 @@ test('individual registration car park override counts toward override park not 
 });
 
 test('parked pass with scan car park id counts toward occupancy even when congregation assigned elsewhere', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     $congregationPark = CarPark::query()->create([
         'name' => 'Congregation Park',

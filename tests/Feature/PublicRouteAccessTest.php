@@ -28,7 +28,7 @@ test('reopened parking registration shows registration form', function () {
 });
 
 test('admin routes list shows public access controls', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test(PublicRoutesList::class)
@@ -38,7 +38,7 @@ test('admin routes list shows public access controls', function () {
 });
 
 test('admin can close and reopen a public route from routes list', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     PublicRouteAccess::setEnabled('parking.register', true);
 
@@ -59,7 +59,7 @@ test('admin can close and reopen a public route from routes list', function () {
 });
 
 test('admin cannot toggle always-on routes', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test(PublicRoutesList::class)

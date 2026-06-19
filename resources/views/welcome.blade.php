@@ -36,17 +36,19 @@
                     </div>
 
                     <div class="grid gap-3">
-                        <a href="{{ route('dashboard') }}"
-                            class="block w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold text-center hover:opacity-90 transition">
-                            Go to Dashboard
-                        </a>
+                        @can('dashboard.view')
+                            <a href="{{ route('dashboard') }}"
+                                class="block w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold text-center hover:opacity-90 transition">
+                                Go to Dashboard
+                            </a>
+                        @endcan
 
-                        @if(auth()->user()->role === 'attendant')
+                        @can('scan.access')
                             <a href="{{ route('attendant.scan') }}"
                                 class="block w-full py-3 px-4 rounded-lg bg-indigo-600 text-white font-semibold text-center hover:bg-indigo-700 transition">
                                 Open Scanner
                             </a>
-                        @endif
+                        @endcan
                     </div>
                 </div>
             @else

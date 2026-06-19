@@ -9,84 +9,136 @@
     <flux:sidebar sticky stashable class="border-e border-zinc-200 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900">
         <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
 
-        <a href="{{ route('dashboard') }}" class="me-5 flex items-center space-x-2 rtl:space-x-reverse" wire:navigate>
+        <a href="{{ auth()->user()->can('dashboard.view') ? route('dashboard') : route('attendant.scan') }}" class="me-5 flex items-center space-x-2 rtl:space-x-reverse" wire:navigate>
             <x-app-logo />
         </a>
 
         <flux:navlist variant="outline">
-            <flux:navlist.group :heading="__('Platform')" class="grid">
-                <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
-                    wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
-            </flux:navlist.group>
+            @can('scan.access')
+                <flux:navlist.group :heading="__('Scanning')" class="grid">
+                    <flux:navlist.item icon="qr-code" :href="route('attendant.scan')"
+                        :current="request()->routeIs('attendant.scan*')" wire:navigate>{{ __('Open Scanner') }}
+                    </flux:navlist.item>
+                </flux:navlist.group>
+            @endcan
 
-            <flux:navlist.group :heading="__('Admin')" class="grid">
-                <flux:navlist.item icon="truck" :href="route('admin.car-parks')"
-                    :current="request()->routeIs('admin.car-parks')" wire:navigate>{{ __('Car Parks') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="users" :href="route('admin.congregations')"
-                    :current="request()->routeIs('admin.congregations')" wire:navigate>{{ __('Congregations') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="user-group" :href="route('admin.users')"
-                    :current="request()->routeIs('admin.users')" wire:navigate>{{ __('Users') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="clipboard-document-list" :href="route('admin.registrations')"
-                    :current="request()->routeIs(['admin.registrations', 'admin.registrations.attendance-by-day'])" wire:navigate>{{ __('Registrations') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="qr-code" :href="route('admin.parking-qr-codes')"
-                    :current="request()->routeIs('admin.parking-qr-codes*')" wire:navigate>{{ __('parking_qr.nav') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="truck" :href="route('admin.coaches')"
-                    :current="request()->routeIs('admin.coaches*')" wire:navigate>{{ __('coaches.nav') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="table-cells" :href="route('admin.congregation-numbers')"
-                    :current="request()->routeIs('admin.congregation-numbers*')" wire:navigate>{{ __('congregation_numbers.nav') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="trash" :href="route('admin.registrations.trash')"
-                    :current="request()->routeIs('admin.registrations.trash')" wire:navigate>{{ __('registrations.recycle_bin') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="cog-6-tooth" :href="route('admin.settings')"
-                    :current="request()->routeIs('admin.settings')" wire:navigate>{{ __('Settings') }}
-                </flux:navlist.item>
-            </flux:navlist.group>
+            @can('dashboard.view')
+                <flux:navlist.group :heading="__('Platform')" class="grid">
+                    <flux:navlist.item icon="home" :href="route('dashboard')" :current="request()->routeIs('dashboard')"
+                        wire:navigate>{{ __('Dashboard') }}</flux:navlist.item>
+                </flux:navlist.group>
+            @endcan
 
-            <flux:separator class="my-2" />
+            @if (auth()->user()->canAny([
+                'car-parks.view',
+                'congregations.view',
+                'users.manage',
+                'registrations.view',
+                'parking-qr.view',
+                'coaches.view',
+                'congregation-numbers.view',
+                'registrations.manage',
+                'settings.manage',
+            ]))
+                <flux:navlist.group :heading="__('Admin')" class="grid">
+                    @can('car-parks.view')
+                        <flux:navlist.item icon="truck" :href="route('admin.car-parks')"
+                            :current="request()->routeIs('admin.car-parks*')" wire:navigate>{{ __('Car Parks') }}
+                        </flux:navlist.item>
+                    @endcan
+                    @can('congregations.view')
+                        <flux:navlist.item icon="users" :href="route('admin.congregations')"
+                            :current="request()->routeIs('admin.congregations*')" wire:navigate>{{ __('Congregations') }}
+                        </flux:navlist.item>
+                    @endcan
+                    @can('users.manage')
+                        <flux:navlist.item icon="user-group" :href="route('admin.users')"
+                            :current="request()->routeIs('admin.users')" wire:navigate>{{ __('Users') }}
+                        </flux:navlist.item>
+                    @endcan
+                    @can('registrations.view')
+                        <flux:navlist.item icon="clipboard-document-list" :href="route('admin.registrations')"
+                            :current="request()->routeIs(['admin.registrations', 'admin.registrations.attendance-by-day'])" wire:navigate>{{ __('Registrations') }}
+                        </flux:navlist.item>
+                    @endcan
+                    @can('parking-qr.view')
+                        <flux:navlist.item icon="qr-code" :href="route('admin.parking-qr-codes')"
+                            :current="request()->routeIs('admin.parking-qr-codes*')" wire:navigate>{{ __('parking_qr.nav') }}
+                        </flux:navlist.item>
+                    @endcan
+                    @can('coaches.view')
+                        <flux:navlist.item icon="truck" :href="route('admin.coaches')"
+                            :current="request()->routeIs('admin.coaches*')" wire:navigate>{{ __('coaches.nav') }}
+                        </flux:navlist.item>
+                    @endcan
+                    @can('congregation-numbers.view')
+                        <flux:navlist.item icon="table-cells" :href="route('admin.congregation-numbers')"
+                            :current="request()->routeIs('admin.congregation-numbers*')" wire:navigate>{{ __('congregation_numbers.nav') }}
+                        </flux:navlist.item>
+                    @endcan
+                    @can('registrations.manage')
+                        <flux:navlist.item icon="trash" :href="route('admin.registrations.trash')"
+                            :current="request()->routeIs('admin.registrations.trash')" wire:navigate>{{ __('registrations.recycle_bin') }}
+                        </flux:navlist.item>
+                    @endcan
+                    @can('settings.manage')
+                        <flux:navlist.item icon="cog-6-tooth" :href="route('admin.settings')"
+                            :current="request()->routeIs('admin.settings')" wire:navigate>{{ __('Settings') }}
+                        </flux:navlist.item>
+                    @endcan
+                </flux:navlist.group>
+            @endif
 
-            <flux:navlist.group :heading="__('management.nav_group')" class="grid">
-                <flux:navlist.item icon="exclamation-triangle" :href="route('admin.parking-incidents')"
-                    :current="request()->routeIs('admin.parking-incidents*')" wire:navigate>{{ __('management.nav_parking_incidents') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="chat-bubble-left-right" :href="route('admin.toolbox-feedback')"
-                    :current="request()->routeIs('admin.toolbox-feedback*')" wire:navigate>{{ __('management.nav_toolbox_feedback') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="light-bulb" :href="route('admin.lessons-learned')"
-                    :current="request()->routeIs('admin.lessons-learned')" wire:navigate>{{ __('management.nav_lessons_learned') }}
-                </flux:navlist.item>
-            </flux:navlist.group>
+            @if (auth()->user()->canAny(['parking-incidents.view', 'toolbox-feedback.view', 'lessons-learned.view']))
+                <flux:separator class="my-2" />
 
-            <flux:separator class="my-2" />
+                <flux:navlist.group :heading="__('management.nav_group')" class="grid">
+                    @can('parking-incidents.view')
+                        <flux:navlist.item icon="exclamation-triangle" :href="route('admin.parking-incidents')"
+                            :current="request()->routeIs('admin.parking-incidents*')" wire:navigate>{{ __('management.nav_parking_incidents') }}
+                        </flux:navlist.item>
+                    @endcan
+                    @can('toolbox-feedback.view')
+                        <flux:navlist.item icon="chat-bubble-left-right" :href="route('admin.toolbox-feedback')"
+                            :current="request()->routeIs('admin.toolbox-feedback*')" wire:navigate>{{ __('management.nav_toolbox_feedback') }}
+                        </flux:navlist.item>
+                    @endcan
+                    @can('lessons-learned.view')
+                        <flux:navlist.item icon="light-bulb" :href="route('admin.lessons-learned')"
+                            :current="request()->routeIs('admin.lessons-learned')" wire:navigate>{{ __('management.nav_lessons_learned') }}
+                        </flux:navlist.item>
+                    @endcan
+                </flux:navlist.group>
+            @endif
 
-            <flux:navlist.group :heading="__('reports.nav_group')" class="grid">
-                <flux:navlist.item icon="scale" :href="route('admin.survey-vs-registrations')"
-                    :current="request()->routeIs('admin.survey-vs-registrations')" wire:navigate>{{ __('reports.nav_survey_vs_registrations') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="calendar-days" :href="route('admin.registrations.attendance-by-day')"
-                    :current="request()->routeIs('admin.registrations.attendance-by-day')" wire:navigate>{{ __('reports.nav_registration_attendance_by_day') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="chart-bar" :href="route('admin.reports')"
-                    :current="request()->routeIs('admin.reports')" wire:navigate>{{ __('reports.nav_reports') }}
-                </flux:navlist.item>
-                <flux:navlist.item icon="identification" :href="route('admin.circuit-overseer-parking')"
-                    :current="request()->routeIs('admin.circuit-overseer-parking')" wire:navigate>{{ __('reports.nav_circuit_overseer') }}
-                </flux:navlist.item>
-            </flux:navlist.group>
+            @can('reports.view')
+                <flux:separator class="my-2" />
 
-            <flux:separator class="my-2" />
+                <flux:navlist.group :heading="__('reports.nav_group')" class="grid">
+                    <flux:navlist.item icon="scale" :href="route('admin.survey-vs-registrations')"
+                        :current="request()->routeIs('admin.survey-vs-registrations')" wire:navigate>{{ __('reports.nav_survey_vs_registrations') }}
+                    </flux:navlist.item>
+                    <flux:navlist.item icon="calendar-days" :href="route('admin.registrations.attendance-by-day')"
+                        :current="request()->routeIs('admin.registrations.attendance-by-day')" wire:navigate>{{ __('reports.nav_registration_attendance_by_day') }}
+                    </flux:navlist.item>
+                    <flux:navlist.item icon="chart-bar" :href="route('admin.reports')"
+                        :current="request()->routeIs('admin.reports')" wire:navigate>{{ __('reports.nav_reports') }}
+                    </flux:navlist.item>
+                    <flux:navlist.item icon="identification" :href="route('admin.circuit-overseer-parking')"
+                        :current="request()->routeIs('admin.circuit-overseer-parking')" wire:navigate>{{ __('reports.nav_circuit_overseer') }}
+                    </flux:navlist.item>
+                </flux:navlist.group>
+            @endcan
 
-            <flux:navlist.group :heading="__('routes_list.nav_group')" class="grid">
-                <flux:navlist.item icon="link" :href="route('admin.routes-list')"
-                    :current="request()->routeIs('admin.routes-list')" wire:navigate>{{ __('routes_list.nav_link') }}
-                </flux:navlist.item>
-            </flux:navlist.group>
+            @can('routes.view')
+                <flux:separator class="my-2" />
+
+                <flux:navlist.group :heading="__('routes_list.nav_group')" class="grid">
+                    <flux:navlist.item icon="link" :href="route('admin.routes-list')"
+                        :current="request()->routeIs('admin.routes-list')" wire:navigate>{{ __('routes_list.nav_link') }}
+                    </flux:navlist.item>
+                </flux:navlist.group>
+            @endcan
         </flux:navlist>
 
         <flux:spacer />

@@ -9,7 +9,7 @@ test('guest cannot access admin routes list page', function () {
 });
 
 test('admin can view routes list page', function () {
-    $admin = User::factory()->create(['role' => 'admin']);
+    $admin = User::factory()->admin()->create();
 
     Livewire::actingAs($admin)
         ->test(PublicRoutesList::class)
