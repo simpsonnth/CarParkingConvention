@@ -26,6 +26,8 @@ return [
     'filter_duplicates_section' => 'Duplicações',
     'filter_duplicates_only' => 'Apenas e-mail ou matrícula duplicados',
     'filter_duplicates_hint' => 'Inclui todas as linhas que partilham um e-mail ou matrícula com pelo menos outra inscrição.',
+    'filter_unassigned_car_park_only' => 'Mostrar apenas sem parque atribuído',
+    'filter_unassigned_car_park_hint' => 'Sem parque individual nem parque predefinido da congregação.',
     'apply_filters' => 'Aplicar filtros',
     'apply' => 'Aplicar',
     'close' => 'Fechar',

@@ -26,6 +26,8 @@ return [
     'filter_duplicates_section' => 'Duplicados',
     'filter_duplicates_only' => 'Solo correo o matrícula duplicados',
     'filter_duplicates_hint' => 'Incluye todas las filas que comparten un correo o una matrícula con al menos otra inscripción.',
+    'filter_unassigned_car_park_only' => 'Mostrar solo sin aparcamiento asignado',
+    'filter_unassigned_car_park_hint' => 'Sin aparcamiento individual ni aparcamiento predeterminado de la congregación.',
     'apply_filters' => 'Aplicar filtros',
     'apply' => 'Aplicar',
     'close' => 'Cerrar',

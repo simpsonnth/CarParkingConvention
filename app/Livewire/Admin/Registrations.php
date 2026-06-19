@@ -67,6 +67,10 @@ class Registrations extends Component
 
     public bool $filterDraftDuplicatesOnly = false;
 
+    public bool $filterUnassignedCarPark = false;
+
+    public bool $filterDraftUnassignedCarPark = false;
+
     public bool $modalOpen = false;
 
     public bool $bulkAssignCarParkModalOpen = false;
@@ -132,6 +136,7 @@ class Registrations extends Component
         $this->filterDraftVehicleType = $this->filterVehicleType;
         $this->filterDraftElderlyInfirm = $this->filterElderlyInfirm === null ? 'any' : ($this->filterElderlyInfirm ? '1' : '0');
         $this->filterDraftDuplicatesOnly = $this->filterDuplicatesOnly;
+        $this->filterDraftUnassignedCarPark = $this->filterUnassignedCarPark;
         $this->filterOpen = true;
     }
 
@@ -143,6 +148,7 @@ class Registrations extends Component
         $draft = $this->filterDraftElderlyInfirm;
         $this->filterElderlyInfirm = ($draft === 'any' || $draft === '' || $draft === null) ? null : (bool) (int) $draft;
         $this->filterDuplicatesOnly = $this->filterDraftDuplicatesOnly;
+        $this->filterUnassignedCarPark = $this->filterDraftUnassignedCarPark;
         $this->filterOpen = false;
         $this->resetPage();
     }
@@ -165,6 +171,8 @@ class Registrations extends Component
         $this->filterDraftCongregationSearch = '';
         $this->filterDuplicatesOnly = false;
         $this->filterDraftDuplicatesOnly = false;
+        $this->filterUnassignedCarPark = false;
+        $this->filterDraftUnassignedCarPark = false;
         $this->resetPage();
     }
 
@@ -184,6 +192,9 @@ class Registrations extends Component
             $n += 1;
         }
         if ($this->filterDuplicatesOnly) {
+            $n += 1;
+        }
+        if ($this->filterUnassignedCarPark) {
             $n += 1;
         }
 
@@ -472,6 +483,9 @@ class Registrations extends Component
             })
             ->when(! empty($this->filterCarParks), function ($q) {
                 $q->assignedToAnyCarPark($this->filterCarParks);
+            })
+            ->when($this->filterUnassignedCarPark, function ($q) {
+                $q->withoutEffectiveCarPark();
             })
             ->when(! empty($this->filterVehicleType), function ($q) {
                 $q->whereIn('vehicle_type', $this->filterVehicleType);

@@ -260,6 +260,14 @@
                                 </label>
                             @endforeach
                         </div>
+                        <label class="mt-3 flex items-start gap-2 cursor-pointer">
+                            <input type="checkbox" wire:model="filterDraftUnassignedCarPark"
+                                class="mt-1 rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                            <span>
+                                <span class="text-sm font-medium text-zinc-800 dark:text-zinc-200">{{ __('registrations.filter_unassigned_car_park_only') }}</span>
+                                <span class="block text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">{{ __('registrations.filter_unassigned_car_park_hint') }}</span>
+                            </span>
+                        </label>
                     </div>
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-2">{{ __('registrations.type') }}</p>

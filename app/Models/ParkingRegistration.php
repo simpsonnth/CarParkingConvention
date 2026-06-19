@@ -73,4 +73,14 @@ class ParkingRegistration extends Model
             })
             ->select('parking_registrations.*');
     }
+
+    /** Registrations with no individual override and no congregation default car park. */
+    public function scopeWithoutEffectiveCarPark($query)
+    {
+        return $query
+            ->leftJoin('congregations', fn ($join) => $join->whereRaw('TRIM(congregations.name) = TRIM(parking_registrations.congregation)'))
+            ->whereNull('parking_registrations.car_park_id')
+            ->whereNull('congregations.car_park_id')
+            ->select('parking_registrations.*');
+    }
 }
