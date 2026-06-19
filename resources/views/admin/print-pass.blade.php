@@ -431,6 +431,42 @@
             word-break: break-all;
         }
 
+        .pass-scan-staff {
+            margin-top: 2.5mm;
+            padding: 2.5mm 2mm;
+            border-radius: 2mm;
+            border: 1px dashed #d6d3d1;
+            background: #fafaf9;
+            text-align: center;
+        }
+
+        .pass-scan-staff-label {
+            font-size: clamp(0.45rem, 0.85vw, 0.52rem);
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #57534e;
+            line-height: 1.35;
+        }
+
+        .pass-scan-staff-code {
+            margin-top: 1mm;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: clamp(0.65rem, 1.2vw, 0.8rem);
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            color: #1c1917;
+            line-height: 1.2;
+        }
+
+        .pass-scan-staff-hint {
+            margin-top: 1mm;
+            font-size: clamp(0.42rem, 0.75vw, 0.5rem);
+            font-weight: 600;
+            line-height: 1.35;
+            color: #78716c;
+        }
+
         .pass-ribbon {
             flex-shrink: 0;
             position: relative;
@@ -775,6 +811,23 @@
                 font-size: 2mm;
             }
 
+            .pass-scan-staff {
+                margin-top: 2mm;
+                padding: 2mm 1.5mm;
+            }
+
+            .pass-scan-staff-label {
+                font-size: 2.1mm;
+            }
+
+            .pass-scan-staff-code {
+                font-size: 3.2mm;
+            }
+
+            .pass-scan-staff-hint {
+                font-size: 1.9mm;
+            }
+
             .pass-ribbon {
                 font-size: 5.5mm;
                 padding: 4mm 7mm;
@@ -831,6 +884,9 @@
         .pass-scan-label { font-size: 2.5mm; }
         .pass-scan-id-label { font-size: 2.2mm; }
         .pass-scan-id { font-size: 2mm; }
+        .pass-scan-staff-label { font-size: 2.1mm; }
+        .pass-scan-staff-code { font-size: 3.2mm; }
+        .pass-scan-staff-hint { font-size: 1.9mm; }
         .pass-ribbon { font-size: 5.5mm; padding: 4mm 7mm; }
         .pass-fine-print { font-size: 3.5mm; }
     </style>
@@ -955,8 +1011,17 @@
                                 <img src="{{ $qrUrl }}" alt="QR Code" class="pass-qr" width="400" height="400">
                             </div>
                             @if(isset($registration))
+                                @php
+                                    $ticketNumber = str_pad((string) $registration->id, 6, '0', STR_PAD_LEFT);
+                                    $staffManualCode = 'ticket-'.$registration->id;
+                                @endphp
                                 <div class="pass-scan-id-label">{{ __('print_pass.ticket_number') }}</div>
-                                <div class="pass-scan-id">{{ str_pad((string) $registration->id, 6, '0', STR_PAD_LEFT) }}</div>
+                                <div class="pass-scan-id">{{ $ticketNumber }}</div>
+                                <div class="pass-scan-staff print-color-exact">
+                                    <div class="pass-scan-staff-label">{{ __('print_pass.staff_manual_code_label') }}</div>
+                                    <div class="pass-scan-staff-code">{{ $staffManualCode }}</div>
+                                    <div class="pass-scan-staff-hint">{{ __('print_pass.staff_manual_code_hint') }}</div>
+                                </div>
                             @else
                                 <div class="pass-scan-id-label">UUID</div>
                                 <div class="pass-scan-id">{{ $congregation->uuid }}</div>

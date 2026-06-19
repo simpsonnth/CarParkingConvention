@@ -9,7 +9,9 @@ test('attendant can access scanner but not admin users page', function () {
 
     $this->actingAs($attendant)
         ->get(route('attendant.scan'))
-        ->assertOk();
+        ->assertOk()
+        ->assertDontSee('cdn.jsdelivr.net/npm/html5-qrcode', false)
+        ->assertSee('attendant-scan', false);
 
     $this->actingAs($attendant)
         ->get(route('admin.users'))

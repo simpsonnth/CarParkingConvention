@@ -11,6 +11,8 @@ return [
     'pass_id' => 'ID do passe',
     'display_on_dashboard' => 'Mostrar no painel',
     'ticket_number' => 'N.º do bilhete',
+    'staff_manual_code_label' => 'Equipa — se o QR falhar, escreva:',
+    'staff_manual_code_hint' => 'Remova os zeros iniciais do número do bilhete acima.',
     'safety_notice' => 'Por razões de segurança, tenha cuidado com o calçado. Não entregue este bilhete a outra pessoa, pois foi atribuído a si.',
     'organization' => 'Assembleia das Testemunhas de Jeová',
     'car_park_pass' => 'Passe de estacionamento',

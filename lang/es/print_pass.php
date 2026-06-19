@@ -11,6 +11,8 @@ return [
     'pass_id' => 'ID del pase',
     'display_on_dashboard' => 'Mostrar en el panel',
     'ticket_number' => 'N.º de ticket',
+    'staff_manual_code_label' => 'Personal — si el QR falla, escriba:',
+    'staff_manual_code_hint' => 'Elimine los ceros iniciales del número de ticket de arriba.',
     'safety_notice' => 'Por razones de seguridad, tenga cuidado con el calzado. No entregue este ticket a otra persona, ya que ha sido asignado a usted.',
     'organization' => 'Asamblea de los Testigos de Jehová',
     'car_park_pass' => 'Pase de aparcamiento',

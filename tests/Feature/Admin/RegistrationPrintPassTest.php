@@ -61,6 +61,9 @@ test('registration print page uses landscape layout with car park band, hero con
         ->assertSeeHtml('linear-gradient(118deg, #dc2626')
         ->assertSee(__('print_pass.ticket_number'))
         ->assertSee($ticketNumber)
+        ->assertSee(__('print_pass.staff_manual_code_label'))
+        ->assertSee('ticket-'.$registration->id)
+        ->assertSee(__('print_pass.staff_manual_code_hint'))
         ->assertSee(__('print_pass.safety_notice'))
         ->assertSee(__('print_pass.display_on_dashboard'))
         ->assertSee(urlencode(route('attendant.scan.ticket', $registration)));

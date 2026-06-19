@@ -1,3 +1,19 @@
+@assets
+@vite(['resources/js/attendant-scan.js'])
+@endassets
+
+@script
+<script>
+    const start = () => {
+        if (typeof window.initAttendantScan === 'function') {
+            window.initAttendantScan($wire);
+        }
+    };
+    start();
+    document.addEventListener('attendant-scan:ready', start, { once: true });
+</script>
+@endscript
+
 <div class="flex flex-col gap-8 max-w-lg mx-auto py-4">
     <div class="text-center space-y-3">
         <div class="inline-flex items-center justify-center p-3 bg-indigo-500/10 rounded-2xl mb-2">
@@ -56,113 +72,6 @@
                     </div>
                 </form>
             </div>
-
-            {{-- Scripts --}}
-            <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/dist/html5-qrcode.min.js" type="text/javascript"></script>
-            <script>
-                (function() {
-                    var html5QrCode = null;
-                    var isScanning = false;
-                    function init() {
-                        document.body.addEventListener('click', function(e) {
-                            if (!e.target.closest('#toggle-camera')) return;
-                            var toggleBtn = document.getElementById('toggle-camera');
-                            var readerDiv = document.getElementById('reader');
-                            if (!toggleBtn || !readerDiv) return;
-
-                        if (isScanning) {
-                            if(html5QrCode) {
-                                html5QrCode.stop().then(() => {
-                                    isScanning = false;
-                                    readerDiv.style.display = 'none';
-                                    toggleBtn.innerText = 'Scan with Camera';
-                                }).catch(err => console.error(err));
-                            }
-                        } else {
-                            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                                alert('Your browser does not support camera access. Use HTTPS and a modern browser (e.g. Chrome or Safari on your phone).');
-                                return;
-                            }
-                            if (typeof Html5Qrcode === 'undefined') {
-                                alert('Scanner not loaded. Refresh the page and try again.');
-                                return;
-                            }
-
-                            readerDiv.style.display = 'block';
-
-                            Html5Qrcode.getCameras().then(devices => {
-                                if (devices && devices.length) {
-                                    if (html5QrCode) {
-                                        html5QrCode.stop().catch(function() {}).then(function() {
-                                            html5QrCode = null;
-                                            doStart();
-                                        });
-                                    } else {
-                                        doStart();
-                                    }
-                                    function doStart() {
-                                    html5QrCode = new Html5Qrcode("reader");
-                                    html5QrCode.start(
-                                        { facingMode: "environment" }, 
-                                        { fps: 10, qrbox: 250 },
-                                        (decodedText, decodedResult) => {
-                                            console.log(`Scan matched: ${decodedText}`, decodedResult);
-                                            @this.set('uuid', decodedText);
-                                            // Play a beep or haptic feedback if possible
-                                            if (navigator.vibrate) navigator.vibrate(200);
-                                            
-                                            html5QrCode.stop().then(() => {
-                                                isScanning = false;
-                                                readerDiv.style.display = 'none';
-                                                toggleBtn.innerText = 'Scan with Camera';
-                                                @this.scan();
-                                            });
-                                        },
-                                        (errorMessage) => {
-                                            // ignore
-                                        }
-                                    ).then(() => {
-                                        isScanning = true;
-                                        toggleBtn.innerText = 'Stop Camera';
-                                    }).catch(err => {
-                                        console.error(err);
-                                        // Specific error handling
-                                        if (err.name === 'NotAllowedError') {
-                                           alert('Camera access was denied. Please allow camera permissions in your browser settings.');
-                                        } else if (err.name === 'NotFoundError') {
-                                            alert('No camera found on this device.');
-                                        } else if (err.name === 'NotReadableError') {
-                                            alert('Camera is improperly configured, in use, or blocked by system settings.');
-                                        } else if (err.name === 'OverconstrainedError') {
-                                            alert('Camera constraints failed. Retrying with default settings...');
-                                            // Fallback retry could go here
-                                        } else {
-                                            alert('Camera Start Error: ' + err);
-                                        }
-                                        
-                                        readerDiv.style.display = 'none';
-                                        isScanning = false;
-                                    });
-                                    }
-                                } else {
-                                    alert('No cameras found on your device.');
-                                    readerDiv.style.display = 'none';
-                                }
-                            }).catch(err => {
-                                console.error('Error fetching cameras', err);
-                                alert('Error accessing camera information: ' + err);
-                                readerDiv.style.display = 'none';
-                            });
-                        }
-                        });
-                    }
-                    if (document.readyState === 'loading') {
-                        document.addEventListener('DOMContentLoaded', init);
-                    } else {
-                        init();
-                    }
-                })();
-            </script>
 
             {{-- Result Card --}}
             @if ($lastScanResult)
