@@ -7,7 +7,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CarPark extends Model
 {
-    protected $fillable = ['name', 'capacity', 'location', 'color'];
+    protected $fillable = ['name', 'capacity', 'location', 'map_image_path', 'color'];
+
+    public function mapImageUrl(): ?string
+    {
+        return $this->map_image_path ?: null;
+    }
 
     public function congregations(): HasMany
     {

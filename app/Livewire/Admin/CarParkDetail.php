@@ -4,24 +4,35 @@ namespace App\Livewire\Admin;
 
 use App\Models\CarPark;
 use App\Models\ParkingPass;
-use Livewire\Component;
-use Livewire\WithPagination;
-use Livewire\Attributes\Layout;
 use Flux\Flux;
+use Illuminate\Support\Facades\Storage;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 class CarParkDetail extends Component
 {
+    use WithFileUploads;
     use WithPagination;
 
     public CarPark $carPark;
 
     public $name = '';
+
     public $capacity = '';
+
     public $location = '';
+
     public $color = '';
+
+    public $mapImage = null;
+
+    public $existingMapImage = '';
+
     public bool $modalOpen = false;
 
     public ?ParkingPass $viewingPass = null;
+
     public bool $detailsModalOpen = false;
 
     public function viewDetails($passId)
@@ -36,6 +47,8 @@ class CarParkDetail extends Component
         $this->capacity = $this->carPark->capacity;
         $this->location = $this->carPark->location;
         $this->color = $this->carPark->color;
+        $this->existingMapImage = $this->carPark->map_image_path ?? '';
+        $this->mapImage = null;
         $this->modalOpen = true;
     }
 
@@ -46,14 +59,24 @@ class CarParkDetail extends Component
             'capacity' => 'required|integer|min:1',
             'location' => 'nullable|string',
             'color' => 'nullable|string|max:50',
+            'mapImage' => 'nullable|image|max:3072',
         ]);
 
-        $this->carPark->update([
+        $data = [
             'name' => $this->name,
             'capacity' => $this->capacity,
             'location' => $this->location,
             'color' => $this->color,
-        ]);
+        ];
+
+        if ($this->mapImage) {
+            $this->deleteMapImage($this->carPark->map_image_path);
+            $path = $this->mapImage->store('car-park-maps', 'public');
+            $data['map_image_path'] = '/storage/'.$path;
+        }
+
+        $this->carPark->update($data);
+        $this->carPark->refresh();
 
         $this->modalOpen = false;
         Flux::toast('Car Park details updated successfully.');
@@ -120,7 +143,7 @@ class CarParkDetail extends Component
             ->withCount([
                 'parkingPasses as parked_count' => function ($query) {
                     $query->where('status', 'parked');
-                }
+                },
             ])
             ->orderByDesc('parked_count')
             ->get();
@@ -130,7 +153,16 @@ class CarParkDetail extends Component
             'percentage' => $percentage,
             'parkedCars' => $parkedCars,
             'history' => $history,
-            'congregationBreakdown' => $congregationBreakdown
+            'congregationBreakdown' => $congregationBreakdown,
         ]);
+    }
+
+    protected function deleteMapImage(?string $mapImagePath): void
+    {
+        if (! $mapImagePath) {
+            return;
+        }
+
+        Storage::disk('public')->delete(str_replace('/storage/', '', $mapImagePath));
     }
 }

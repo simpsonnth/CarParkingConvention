@@ -22,6 +22,14 @@
         </div>
     </div>
 
+    @if ($carPark->map_image_path)
+        <div class="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+            <flux:heading size="lg" class="mb-4">Parking Map</flux:heading>
+            <img src="{{ $carPark->map_image_path }}" alt="Parking map for {{ $carPark->name }}"
+                class="max-h-96 w-full rounded-lg border border-zinc-200 object-contain dark:border-zinc-700">
+        </div>
+    @endif
+
     {{-- Stats Cards --}}
     <div class="grid gap-6 md:grid-cols-3">
         <div class="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
@@ -213,6 +221,27 @@
                         class="h-10 w-20 cursor-pointer rounded-lg border-2 border-zinc-200 bg-white p-1" />
                     <span class="text-sm font-mono text-zinc-500">{{ $color ?? '#000000' }}</span>
                 </div>
+            </div>
+
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Parking Map</label>
+                <p class="text-xs text-zinc-500">Shown on the back of printed tickets. JPG or PNG, max 3MB.</p>
+
+                @if ($existingMapImage && !$mapImage)
+                    <div class="mb-2">
+                        <img src="{{ $existingMapImage }}" alt="Current parking map"
+                            class="max-h-40 w-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+                    </div>
+                @endif
+
+                @if ($mapImage)
+                    <div class="mb-2">
+                        <img src="{{ $mapImage->temporaryUrl() }}" alt="Map preview"
+                            class="max-h-40 w-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+                    </div>
+                @endif
+
+                <flux:input type="file" wire:model="mapImage" />
             </div>
 
             <div class="flex justify-end gap-2">

@@ -152,6 +152,27 @@
                         <span class="text-sm font-mono text-zinc-500">{{ $color ?? '#000000' }}</span>
                     </div>
                 </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Parking Map</label>
+                    <p class="text-xs text-zinc-500">Shown on the back of printed tickets. JPG or PNG, max 3MB.</p>
+
+                    @if ($existingMapImage && !$mapImage)
+                        <div class="mb-2">
+                            <img src="{{ $existingMapImage }}" alt="Current parking map"
+                                class="max-h-40 w-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+                        </div>
+                    @endif
+
+                    @if ($mapImage)
+                        <div class="mb-2">
+                            <img src="{{ $mapImage->temporaryUrl() }}" alt="Map preview"
+                                class="max-h-40 w-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
+                        </div>
+                    @endif
+
+                    <flux:input type="file" wire:model="mapImage" />
+                </div>
             </div>
 
             <div class="flex justify-end gap-2">

@@ -27,7 +27,7 @@ class MasterPassZipService
 
         if (! extension_loaded('gd')) {
             throw new \RuntimeException(
-                'The PHP GD extension is required to generate PDFs with images (e.g. QR codes). ' .
+                'The PHP GD extension is required to generate PDFs with images (e.g. QR codes). '.
                 'Install it and restart your web server — e.g. on Ubuntu/Debian: sudo apt install php-gd'
             );
         }
@@ -42,7 +42,7 @@ class MasterPassZipService
             throw new \RuntimeException('No registrations found for the given IDs.');
         }
 
-        $zipPath = storage_path('app/temp/master-passes-' . Str::random(16) . '.zip');
+        $zipPath = storage_path('app/temp/master-passes-'.Str::random(16).'.zip');
         $dir = dirname($zipPath);
         if (! is_dir($dir)) {
             if (! @mkdir($dir, 0755, true)) {
@@ -50,7 +50,7 @@ class MasterPassZipService
             }
         }
 
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
         if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
             throw new \RuntimeException('Could not create ZIP file.');
         }
@@ -79,7 +79,7 @@ class MasterPassZipService
             $zip->close();
         }
 
-        $downloadName = 'master-passes-' . now()->format('Y-m-d-His') . '.zip';
+        $downloadName = 'master-passes-'.now()->format('Y-m-d-His').'.zip';
 
         return [$zipPath, $downloadName];
     }
@@ -96,7 +96,7 @@ class MasterPassZipService
         ])->render();
 
         return Pdf::loadHTML($html)
-            ->setPaper('a4', 'portrait')
+            ->setPaper('a4', 'landscape')
             ->setWarnings(false)
             ->setOption('enable_remote', true)
             ->output();
@@ -111,6 +111,6 @@ class MasterPassZipService
         $base = preg_replace('/[^A-Za-z0-9\-_]/', '-', $base) ?: 'pass';
         $base = Str::limit($base, 120);
 
-        return $base . '.pdf';
+        return $base.'.pdf';
     }
 }

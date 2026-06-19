@@ -29,7 +29,8 @@
             margin: 0;
             padding: 0;
             width: 100%;
-            height: 100%;
+            min-height: 100%;
+            height: auto;
             font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
             -webkit-font-smoothing: antialiased;
         }
@@ -73,16 +74,22 @@
 
         .pass-outer {
             width: 100%;
-            height: 100vh;
             min-height: 100vh;
+            height: auto;
             padding: 4mm;
             display: flex;
             page-break-inside: avoid;
-            page-break-after: avoid;
+            break-inside: avoid;
+        }
+
+        .pass-outer--front {
+            page-break-after: always;
+            break-after: page;
         }
 
         .pass {
             width: 100%;
+            min-height: calc(100vh - 8mm);
             height: 100%;
             display: flex;
             flex-direction: row;
@@ -90,7 +97,7 @@
             overflow: hidden;
             background: #fff;
             page-break-inside: avoid;
-            page-break-after: avoid;
+            break-inside: avoid;
             box-shadow:
                 0 0 0 3px var(--pass-park),
                 0 20px 50px rgb(0 0 0 / 0.22);
@@ -341,13 +348,13 @@
         }
 
         .pass-scan {
-            flex: 0 0 min(34%, 52mm);
+            flex: 0 0 min(44%, 82mm);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 2.5mm;
-            padding: 5mm 4mm;
+            gap: 3mm;
+            padding: 6mm 5mm;
             background: var(--pass-ink);
             color: #fff;
         }
@@ -362,10 +369,16 @@
 
         .pass-qr-frame {
             position: relative;
-            padding: 2.5mm;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: fit-content;
+            max-width: 100%;
+            padding: 3mm;
             background: #fff;
             border-radius: 3mm;
             box-shadow: 0 0 0 2px var(--pass-park), 0 8px 20px rgb(0 0 0 / 0.35);
+            line-height: 0;
         }
 
         .pass-qr-frame::before,
@@ -393,10 +406,11 @@
 
         .pass-qr {
             display: block;
-            width: min(100%, 34mm);
-            height: auto;
-            aspect-ratio: 1;
+            width: 52mm;
+            height: 52mm;
+            max-width: 100%;
             object-fit: contain;
+            vertical-align: top;
         }
 
         .pass-scan-id-label {
@@ -461,6 +475,174 @@
             text-align: center;
         }
 
+        .pass-back-outer {
+            width: 100%;
+            min-height: 100vh;
+            height: auto;
+            padding: 4mm;
+            display: flex;
+            page-break-before: always;
+            break-before: page;
+            page-break-inside: avoid;
+            break-inside: avoid;
+        }
+
+        .pass-back {
+            width: 100%;
+            min-height: calc(100vh - 8mm);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: 6mm;
+            overflow: hidden;
+            background: #fff;
+            box-shadow:
+                0 0 0 3px var(--pass-park),
+                0 20px 50px rgb(0 0 0 / 0.22);
+        }
+
+        .pass-back-header {
+            flex-shrink: 0;
+            padding: 4mm 7mm;
+            background: linear-gradient(118deg, var(--pass-park) 0%, var(--pass-park-dark) 72%);
+            color: var(--pass-park-text);
+        }
+
+        .pass-back-heading {
+            font-size: clamp(1rem, 2.5vw, 1.35rem);
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .pass-back-subheading {
+            margin-top: 1mm;
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+            font-weight: 600;
+            opacity: 0.92;
+        }
+
+        .pass-back-zone {
+            margin-top: 2mm;
+            font-size: clamp(0.85rem, 2vw, 1.1rem);
+            font-weight: 700;
+        }
+
+        .pass-back-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            padding: 5mm 7mm;
+            gap: 4mm;
+        }
+
+        .pass-back-map {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #e7e5e4;
+            border-radius: 3mm;
+            background: #fafaf9;
+            overflow: hidden;
+        }
+
+        .pass-back-map img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .pass-back-map-placeholder {
+            padding: 6mm;
+            text-align: center;
+            color: #57534e;
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+            line-height: 1.45;
+            font-weight: 600;
+        }
+
+        .pass-back-map-location {
+            margin-top: 2mm;
+            font-weight: 700;
+            color: #292524;
+        }
+
+        .pass-back-notes {
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5mm;
+            font-size: clamp(0.65rem, 1.3vw, 0.78rem);
+            line-height: 1.4;
+            color: #44403c;
+        }
+
+        .pass-back-contact {
+            padding: 3mm 4mm;
+            background: #f5f5f4;
+            border-radius: 2mm;
+            border: 1px solid #e7e5e4;
+        }
+
+        .pass-back-contact-row {
+            display: flex;
+            gap: 2mm;
+            margin-bottom: 1mm;
+        }
+
+        .pass-back-contact-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .pass-back-contact-label {
+            flex: 0 0 auto;
+            font-weight: 700;
+            color: #292524;
+        }
+
+        .pass-back-contact-value {
+            font-weight: 600;
+        }
+
+        .pass-back-note {
+            font-weight: 500;
+        }
+
+        .pass-back-footer {
+            flex-shrink: 0;
+            padding: 4mm 7mm;
+            background: var(--pass-ink);
+            color: #fff;
+            text-align: center;
+        }
+
+        .pass-back-scripture-ref {
+            font-size: clamp(0.7rem, 1.4vw, 0.82rem);
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            opacity: 0.85;
+        }
+
+        .pass-back-scripture-text {
+            margin-top: 1.5mm;
+            font-size: clamp(0.85rem, 1.8vw, 1rem);
+            font-weight: 700;
+            font-style: italic;
+            line-height: 1.35;
+        }
+
+        .pass-back-closing {
+            margin-top: 2.5mm;
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            font-weight: 800;
+        }
+
         @media print {
             @page {
                 margin: 0;
@@ -473,18 +655,42 @@
 
             html,
             body {
-                overflow: hidden;
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
                 background: #fff !important;
             }
 
-            .pass-outer {
-                height: 100vh;
+            .pass-outer,
+            .pass-back-outer {
+                width: 100%;
+                height: 210mm;
+                min-height: 210mm;
+                max-height: 210mm;
                 padding: 3mm;
+                box-sizing: border-box;
             }
 
-            .pass {
+            .pass-outer--front {
+                page-break-after: always;
+                break-after: page;
+            }
+
+            .pass-back-outer {
+                page-break-before: always;
+                break-before: page;
+                page-break-after: auto;
+                break-after: auto;
+            }
+
+            .pass,
+            .pass-back {
+                height: 100%;
+                min-height: 0;
                 border-radius: 4mm;
                 box-shadow: none;
+                page-break-after: auto;
+                break-after: auto;
             }
 
             .pass-spine {
@@ -547,8 +753,14 @@
                 font-size: 5.5mm;
             }
 
+            .pass-scan {
+                flex: 0 0 82mm;
+                padding: 5mm 4mm;
+            }
+
             .pass-qr {
-                width: 32mm;
+                width: 50mm;
+                height: 50mm;
             }
 
             .pass-scan-label {
@@ -576,10 +788,17 @@
         @media screen {
             body {
                 background: linear-gradient(145deg, #44403c, #1c1917);
+                overflow-y: auto;
             }
 
-            .pass-outer {
+            .pass-outer,
+            .pass-back-outer {
+                min-height: 100vh;
                 padding-top: 4.5rem;
+            }
+
+            .pass-back-outer {
+                padding-top: 2rem;
             }
         }
     </style>
@@ -587,9 +806,11 @@
     <style>
         @page { margin: 0; size: A4 landscape; }
         .no-print { display: none !important; }
-        html, body { overflow: hidden; }
-        .pass-outer { height: 100vh; padding: 3mm; }
-        .pass { border-radius: 4mm; box-shadow: none; }
+        html, body { height: auto !important; overflow: visible !important; }
+        .pass-outer, .pass-back-outer { width: 100%; height: 210mm; min-height: 210mm; max-height: 210mm; padding: 3mm; box-sizing: border-box; }
+        .pass-outer--front { page-break-after: always; break-after: page; }
+        .pass-back-outer { page-break-before: always; break-before: page; }
+        .pass, .pass-back { height: 100%; min-height: 0; border-radius: 4mm; box-shadow: none; page-break-after: auto; break-after: auto; }
         .pass-spine { flex-basis: 8mm; }
         .pass-top { padding: 3.5mm 7mm; }
         .pass-top-org { font-size: 3.5mm; }
@@ -605,7 +826,8 @@
         .pass-number-label { font-size: 3mm; }
         .pass-number-value { font-size: 12mm; }
         .pass-alert { font-size: 5.5mm; }
-        .pass-qr { width: 32mm; }
+        .pass-scan { flex: 0 0 82mm; padding: 5mm 4mm; }
+        .pass-qr { width: 50mm; height: 50mm; }
         .pass-scan-label { font-size: 2.5mm; }
         .pass-scan-id-label { font-size: 2.2mm; }
         .pass-scan-id { font-size: 2mm; }
@@ -664,7 +886,7 @@
     </div>
     @endif
 
-    <div class="pass-outer">
+    <div class="pass-outer pass-outer--front">
         <article class="pass print-color-exact"
             style="--pass-park: {{ $carParkColor }}; --pass-park-dark: {{ $parkDark }}; --pass-park-text: {{ $heroTextColor }};">
             <div class="pass-spine print-color-exact"></div>
@@ -728,9 +950,9 @@
                                     $scanUrl = isset($registration)
                                         ? route('attendant.scan.ticket', $registration)
                                         : route('attendant.scan', ['code' => $congregation->uuid]);
-                                    $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=' . urlencode($scanUrl);
+                                    $qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=2&data=' . urlencode($scanUrl);
                                 @endphp
-                                <img src="{{ $qrUrl }}" alt="QR Code" class="pass-qr" width="250" height="250">
+                                <img src="{{ $qrUrl }}" alt="QR Code" class="pass-qr" width="400" height="400">
                             </div>
                             @if(isset($registration))
                                 <div class="pass-scan-id-label">{{ __('print_pass.ticket_number') }}</div>
@@ -754,6 +976,69 @@
                     </div>
                 @endif
             </div>
+        </article>
+    </div>
+
+    @php
+        $mapImagePath = $carPark?->map_image_path;
+        $mapImageSrc = $mapImagePath
+            ? (($forPdf ?? false) ? url(asset($mapImagePath)) : asset($mapImagePath))
+            : null;
+    @endphp
+
+    <div class="pass-back-outer">
+        <article class="pass-back print-color-exact"
+            style="--pass-park: {{ $carParkColor }}; --pass-park-dark: {{ $parkDark }}; --pass-park-text: {{ $heroTextColor }};">
+            <header class="pass-back-header print-color-exact"
+                style="background: linear-gradient(118deg, {{ $heroBackground }} 0%, {{ $parkDark }} 72%); color: {{ $heroTextColor }};">
+                <div class="pass-back-heading">{{ __('print_pass.back_heading') }}</div>
+                <div class="pass-back-subheading">{{ __('print_pass.organization') }} — {{ $convLoc }} {{ $convYear }}</div>
+                <div class="pass-back-zone">{{ $zoneName }}</div>
+            </header>
+
+            <div class="pass-back-body">
+                <div class="pass-back-map">
+                    @if($mapImageSrc)
+                        <img src="{{ $mapImageSrc }}" alt="{{ __('print_pass.back_heading') }} — {{ $zoneName }}">
+                    @else
+                        <div class="pass-back-map-placeholder">
+                            <div>{{ __('print_pass.map_unavailable') }}</div>
+                            @if($carPark?->location)
+                                <div class="pass-back-map-location">{{ $carPark->location }}</div>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+
+                <div class="pass-back-notes">
+                    @if(isset($registration))
+                        <div class="pass-back-contact">
+                            <div class="pass-back-contact-row">
+                                <span class="pass-back-contact-label">{{ __('print_pass.registrant_name') }}:</span>
+                                <span class="pass-back-contact-value">{{ $registration->name }}</span>
+                            </div>
+                            @if($registration->contact_number)
+                                <div class="pass-back-contact-row">
+                                    <span class="pass-back-contact-label">{{ __('print_pass.contact_number') }}:</span>
+                                    <span class="pass-back-contact-value">{{ $registration->contact_number }}</span>
+                                </div>
+                                <p class="pass-back-note">{{ __('print_pass.emergency_contact_note') }}</p>
+                            @endif
+                        </div>
+                    @elseif(isset($congregation))
+                        <p class="pass-back-note">{{ __('print_pass.congregation_pass_note') }}</p>
+                    @endif
+
+                    <p class="pass-back-note">{{ __('print_pass.footwear_note') }}</p>
+                    <p class="pass-back-note">{{ __('print_pass.water_note') }}</p>
+                </div>
+            </div>
+
+            <footer class="pass-back-footer print-color-exact">
+                <div class="pass-back-scripture-ref">{{ __('print_pass.scripture_reference') }}</div>
+                <div class="pass-back-scripture-text">{{ __('print_pass.scripture_text') }}</div>
+                <div class="pass-back-closing">{{ __('print_pass.closing') }}</div>
+            </footer>
         </article>
     </div>
 </body>
