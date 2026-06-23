@@ -7,8 +7,9 @@ use App\Models\ParkingRegistration;
 use App\Services\CongregationNumbersReportMetrics;
 use App\Services\ParkingRegistrationAttendanceByDayMetrics;
 use App\Services\ParkingRegistrationDuplicateSignals;
+use App\Services\ParkingRegistrationListQuery;
+use App\Support\ParkingRegistrationListFilters;
 use Flux\Flux;
-use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -18,11 +19,6 @@ use Livewire\WithPagination;
 class Registrations extends Component
 {
     use WithPagination;
-
-    private const CIRCUIT_OVERSEER_CONGREGATION_LABELS = [
-        'Circuit Overseer',
-        'Circuit Overseers',
-    ];
 
     public $search = '';
 
@@ -201,6 +197,12 @@ class Registrations extends Component
         return $n;
     }
 
+    #[Computed]
+    public function exportUrl(): string
+    {
+        return route('admin.registrations.export', ParkingRegistrationListFilters::fromLivewire($this)->toQueryArray());
+    }
+
     /** @return list<string> */
     #[Computed]
     public function congregationsFilterOptions(): array
@@ -208,7 +210,7 @@ class Registrations extends Component
         $names = Congregation::query()->orderBy('name')->pluck('name')->all();
         $names = array_values(array_filter(
             $names,
-            fn (string $name): bool => ! in_array($name, self::CIRCUIT_OVERSEER_CONGREGATION_LABELS, true)
+            fn (string $name): bool => ! in_array($name, ParkingRegistrationListQuery::CIRCUIT_OVERSEER_CONGREGATION_LABELS, true)
         ));
         $names[] = 'Circuit Overseer';
         sort($names, SORT_NATURAL | SORT_FLAG_CASE);
@@ -440,92 +442,12 @@ class Registrations extends Component
         }
     }
 
-    protected function applyCongregationFilter($query): void
-    {
-        $selectedCircuitOverseer = array_values(array_intersect(
-            $this->filterCongregations,
-            self::CIRCUIT_OVERSEER_CONGREGATION_LABELS
-        ));
-        $selectedCongregations = array_values(array_diff(
-            $this->filterCongregations,
-            self::CIRCUIT_OVERSEER_CONGREGATION_LABELS
-        ));
-
-        $query->where(function ($outer) use ($selectedCongregations, $selectedCircuitOverseer): void {
-            if ($selectedCongregations !== []) {
-                $outer->whereIn('congregation', $selectedCongregations);
-            }
-
-            if ($selectedCircuitOverseer !== []) {
-                if ($selectedCongregations !== []) {
-                    $outer->orWhere('is_circuit_overseer', true);
-                } else {
-                    $outer->where('is_circuit_overseer', true);
-                }
-            }
-        });
-    }
-
     protected function getRegistrationsQuery()
     {
-        $query = ParkingRegistration::query()
-            ->with('carPark')
-            ->when($this->search, function ($q) {
-                $q->where(function ($q2) {
-                    $q2->where('name', 'like', '%'.$this->search.'%')
-                        ->orWhere('vehicle_registration', 'like', '%'.$this->search.'%')
-                        ->orWhere('congregation', 'like', '%'.$this->search.'%')
-                        ->orWhere('email', 'like', '%'.$this->search.'%');
-                });
-            })
-            ->when(! empty($this->filterCongregations), function ($q) {
-                $this->applyCongregationFilter($q);
-            })
-            ->when(! empty($this->filterCarParks), function ($q) {
-                $q->assignedToAnyCarPark($this->filterCarParks);
-            })
-            ->when($this->filterUnassignedCarPark, function ($q) {
-                $q->withoutEffectiveCarPark();
-            })
-            ->when(! empty($this->filterVehicleType), function ($q) {
-                $q->whereIn('vehicle_type', $this->filterVehicleType);
-            })
-            ->when($this->filterElderlyInfirm !== null, function ($q) {
-                $q->where('elderly_infirm_parking', $this->filterElderlyInfirm);
-            })
-            ->when($this->filterDuplicatesOnly, function ($q) {
-                $signals = app(ParkingRegistrationDuplicateSignals::class);
-                $dupEmails = array_keys($signals->duplicateNormalizedEmailKeys());
-                $dupRegs = array_keys($signals->duplicateNormalizedVehicleRegKeys());
-
-                if ($dupEmails === [] && $dupRegs === []) {
-                    $q->whereRaw('1 = 0');
-
-                    return;
-                }
-
-                $q->where(function ($q2) use ($dupEmails, $dupRegs) {
-                    if ($dupEmails !== [] && $dupRegs !== []) {
-                        $q2->whereIn(DB::raw('LOWER(TRIM(email))'), $dupEmails)
-                            ->orWhereIn('vehicle_registration', $dupRegs);
-                    } elseif ($dupEmails !== []) {
-                        $q2->whereIn(DB::raw('LOWER(TRIM(email))'), $dupEmails);
-                    } else {
-                        $q2->whereIn('vehicle_registration', $dupRegs);
-                    }
-                });
-            });
-
-        $sortColumn = match ($this->sortBy) {
-            'name' => 'name',
-            'congregation' => 'congregation',
-            'created_at' => 'created_at',
-            'vehicle_registration' => 'vehicle_registration',
-            default => 'created_at',
-        };
-        $query->orderBy($sortColumn, $this->sortDir === 'desc' ? 'desc' : 'asc');
-
-        return $query;
+        return app(ParkingRegistrationListQuery::class)->apply(
+            ParkingRegistration::query()->with('carPark'),
+            ParkingRegistrationListFilters::fromLivewire($this)
+        );
     }
 
     public function save()

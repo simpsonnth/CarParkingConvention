@@ -188,11 +188,13 @@ Route::middleware(['auth'])->group(function () {
         })
             ->middleware('permission:registrations.print')
             ->name('registrations.download-passes-zip');
-        Route::get('/registrations/export', function () {
-            $filename = 'parking-registrations-'.now()->format('Y-m-d-His').'.xlsx';
+        Route::get('/registrations/export', function (\App\Http\Requests\Admin\ExportParkingRegistrationsRequest $request) {
+            $filters = $request->filters();
+            $suffix = $filters->hasActiveConstraints() ? 'filtered' : 'all';
+            $filename = 'parking-registrations-'.$suffix.'-'.now()->format('Y-m-d-His').'.xlsx';
 
             return \Maatwebsite\Excel\Facades\Excel::download(
-                new \App\Exports\ParkingRegistrationsExport,
+                new \App\Exports\ParkingRegistrationsExport($filters),
                 $filename,
                 \Maatwebsite\Excel\Excel::XLSX
             );

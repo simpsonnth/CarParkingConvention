@@ -11,9 +11,9 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
-            <a href="{{ route('admin.registrations.export') }}" class="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700" download>
+            <a href="{{ $this->exportUrl }}" class="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700" download>
                 <flux:icon name="arrow-down-tray" class="size-4" />
-                {{ __('registrations.export_excel') }}
+                {{ ($this->getAppliedFiltersCount() > 0 || $search !== '') ? __('registrations.export_excel_filtered') : __('registrations.export_excel') }}
             </a>
             <a href="{{ route('admin.registrations.trash') }}" wire:navigate class="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700">
                 <flux:icon name="trash" class="size-4" />

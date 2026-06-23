@@ -6,6 +6,7 @@ return [
     'search' => 'Buscar...',
     'recycle_bin' => 'Papelera',
     'export_excel' => 'Exportar a Excel',
+    'export_excel_filtered' => 'Exportar filtrado a Excel',
     'language' => 'Idioma',
     'date' => 'Fecha',
     'name' => 'Nombre',

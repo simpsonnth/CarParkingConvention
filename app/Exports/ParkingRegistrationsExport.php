@@ -6,6 +6,8 @@ namespace App\Exports;
 
 use App\Models\Congregation;
 use App\Models\ParkingRegistration;
+use App\Services\ParkingRegistrationListQuery;
+use App\Support\ParkingRegistrationListFilters;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -14,6 +16,10 @@ class ParkingRegistrationsExport implements FromQuery, WithHeadings, WithMapping
 {
     /** @var array<string, \App\Models\CarPark|null> */
     private array $congregationCarParkByName = [];
+
+    public function __construct(
+        private readonly ParkingRegistrationListFilters $filters = new ParkingRegistrationListFilters,
+    ) {}
 
     public function query()
     {
@@ -24,9 +30,10 @@ class ParkingRegistrationsExport implements FromQuery, WithHeadings, WithMapping
             ->mapWithKeys(fn (Congregation $congregation) => [trim($congregation->name) => $congregation->carPark])
             ->all();
 
-        return ParkingRegistration::query()
-            ->with('carPark')
-            ->orderBy('created_at', 'desc');
+        return app(ParkingRegistrationListQuery::class)->apply(
+            ParkingRegistration::query()->with('carPark'),
+            $this->filters
+        );
     }
 
     public function headings(): array
