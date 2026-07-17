@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire\Admin;
 
+use App\Actions\CarParks\CarParkMapImageStorage;
 use App\Models\CarPark;
 use App\Models\ParkingPass;
 use Flux\Flux;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -17,17 +19,19 @@ class CarParkDetail extends Component
 
     public CarPark $carPark;
 
-    public $name = '';
+    public string $name = '';
 
-    public $capacity = '';
+    public string $capacity = '';
 
-    public $location = '';
+    public string $location = '';
 
-    public $color = '';
+    public string $color = '';
+
+    public string $travelDirections = '';
 
     public $mapImage = null;
 
-    public $existingMapImage = '';
+    public string $existingMapImage = '';
 
     public bool $modalOpen = false;
 
@@ -35,55 +39,63 @@ class CarParkDetail extends Component
 
     public bool $detailsModalOpen = false;
 
-    public function viewDetails($passId)
+    public function viewDetails($passId): void
     {
         $this->viewingPass = ParkingPass::with('congregation')->find($passId);
         $this->detailsModalOpen = true;
     }
 
-    public function edit()
+    public function edit(): void
     {
+        $this->authorizeManage();
         $this->name = $this->carPark->name;
-        $this->capacity = $this->carPark->capacity;
-        $this->location = $this->carPark->location;
-        $this->color = $this->carPark->color;
+        $this->capacity = (string) $this->carPark->capacity;
+        $this->location = (string) ($this->carPark->location ?? '');
+        $this->color = (string) ($this->carPark->color ?? '');
+        $this->travelDirections = (string) ($this->carPark->travel_directions ?? '');
         $this->existingMapImage = $this->carPark->map_image_path ?? '';
         $this->mapImage = null;
         $this->modalOpen = true;
     }
 
-    public function save()
+    public function save(CarParkMapImageStorage $mapImages): void
     {
+        $this->authorizeManage();
+
         $this->validate([
             'name' => 'required|string|max:255',
             'capacity' => 'required|integer|min:1',
             'location' => 'nullable|string',
             'color' => 'nullable|string|max:50',
-            'mapImage' => 'nullable|image|max:3072',
+            'travelDirections' => 'nullable|string|max:2000',
+            'mapImage' => 'nullable|image|max:10240',
         ]);
 
         $data = [
             'name' => $this->name,
             'capacity' => $this->capacity,
-            'location' => $this->location,
-            'color' => $this->color,
+            'location' => $this->location !== '' ? $this->location : null,
+            'color' => $this->color !== '' ? $this->color : null,
+            'travel_directions' => $this->normalizedTravelDirections(),
         ];
 
+        $this->carPark->update($data);
+
         if ($this->mapImage) {
-            $this->deleteMapImage($this->carPark->map_image_path);
-            $path = $this->mapImage->store('car-park-maps', 'public');
-            $data['map_image_path'] = '/storage/'.$path;
+            $mapImages->replace($this->carPark, $this->mapImage);
         }
 
-        $this->carPark->update($data);
         $this->carPark->refresh();
+        $this->existingMapImage = $this->carPark->map_image_path ?? '';
+        $this->reset('mapImage');
 
         $this->modalOpen = false;
         Flux::toast('Car Park details updated successfully.');
     }
 
-    public function checkout($passId)
+    public function checkout($passId): void
     {
+        $this->authorizeManage();
         $pass = ParkingPass::findOrFail($passId);
         $pass->update([
             'status' => 'left',
@@ -92,8 +104,9 @@ class CarParkDetail extends Component
         Flux::toast('Vehicle checked out.');
     }
 
-    public function checkoutAll()
+    public function checkoutAll(): void
     {
+        $this->authorizeManage();
         ParkingPass::parkedAtCarPark($this->carPark->id)->update([
             'status' => 'left',
             'left_at' => now(),
@@ -102,7 +115,7 @@ class CarParkDetail extends Component
         Flux::toast('All vehicles checked out.');
     }
 
-    public function mount(CarPark $carPark)
+    public function mount(CarPark $carPark): void
     {
         $this->carPark = $carPark;
     }
@@ -157,12 +170,15 @@ class CarParkDetail extends Component
         ]);
     }
 
-    protected function deleteMapImage(?string $mapImagePath): void
+    protected function authorizeManage(): void
     {
-        if (! $mapImagePath) {
-            return;
-        }
+        abort_unless(auth()->user()?->can('car-parks.manage'), 403);
+    }
 
-        Storage::disk('public')->delete(str_replace('/storage/', '', $mapImagePath));
+    protected function normalizedTravelDirections(): ?string
+    {
+        $directions = trim($this->travelDirections);
+
+        return $directions !== '' ? $directions : null;
     }
 }

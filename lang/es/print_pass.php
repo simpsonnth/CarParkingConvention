@@ -18,6 +18,7 @@ return [
     'car_park_pass' => 'Pase de aparcamiento',
     'parking_zone' => 'Zona de aparcamiento',
     'back_heading' => 'Indicaciones para su zona de aparcamiento',
+    'travel_directions' => 'Indicaciones de viaje',
     'map_unavailable' => 'Aún no hay un mapa disponible para esta zona de aparcamiento. Siga las indicaciones de los encargados del aparcamiento.',
     'registrant_name' => 'Nombre',
     'contact_number' => 'Número de contacto',

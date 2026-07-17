@@ -18,6 +18,7 @@ return [
     'car_park_pass' => 'Car Park Pass',
     'parking_zone' => 'Parking zone',
     'back_heading' => 'Directions to your parking area',
+    'travel_directions' => 'Travel directions',
     'map_unavailable' => 'A map for this parking area is not yet available. Please follow the directions given by the parking attendants.',
     'registrant_name' => 'Name',
     'contact_number' => 'Contact number',

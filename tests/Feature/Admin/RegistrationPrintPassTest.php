@@ -225,3 +225,187 @@ test('registration print page shows car park map image on back when uploaded', f
         ->assertSee('/storage/'.$storedPath)
         ->assertDontSee(__('print_pass.map_unavailable'));
 });
+
+test('registration print page shows travel directions beside the map', function () {
+    $admin = User::factory()->admin()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Directions Map Park',
+        'capacity' => 20,
+        'location' => 'North entrance',
+        'color' => '#dc2626',
+        'map_image_path' => '/storage/car-park-maps/directions-map.jpg',
+        'travel_directions' => "Enter via Gate B.\nFollow the blue signs to Zone West.",
+    ]);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Directions Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $park->id,
+    ]);
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Directions Driver',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700000111',
+        'email' => 'directions@hall.test',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'DR12ECT',
+        'days' => ['Friday'],
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.registrations.print', $registration))
+        ->assertOk()
+        ->assertSeeHtml('class="pass-back-map-row"')
+        ->assertDontSeeHtml('class="pass-back-map-row pass-back-map-row--map-only"')
+        ->assertDontSeeHtml('class="pass-back-map-row pass-back-map-row--directions-only"')
+        ->assertSeeHtml('class="pass-back-directions"')
+        ->assertSee(__('print_pass.travel_directions'))
+        ->assertSee('Enter via Gate B.')
+        ->assertSee('Follow the blue signs to Zone West.')
+        ->assertSee('/storage/car-park-maps/directions-map.jpg');
+});
+
+test('registration print page renders safe travel direction headings and bold text', function () {
+    $admin = User::factory()->admin()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Formatted Directions Park',
+        'capacity' => 20,
+        'location' => 'South entrance',
+        'color' => '#4338ca',
+        'travel_directions' => "## Arrival\nEnter through **Gate B**.",
+    ]);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Formatted Directions Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $park->id,
+    ]);
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Formatted Directions Driver',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700000115',
+        'email' => 'formatted-directions@hall.test',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'FD12MAP',
+        'days' => ['Friday'],
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.registrations.print', $registration))
+        ->assertOk()
+        ->assertSeeHtml('<h2>Arrival</h2>')
+        ->assertSeeHtml('<strong>Gate B</strong>')
+        ->assertDontSee('## Arrival')
+        ->assertDontSee('**Gate B**');
+});
+
+test('registration print page uses override park travel directions', function () {
+    $admin = User::factory()->admin()->create();
+
+    $defaultPark = CarPark::query()->create([
+        'name' => 'Default Directions Park',
+        'capacity' => 20,
+        'location' => 'Default',
+        'color' => '#22c55e',
+        'travel_directions' => 'Default park directions only',
+    ]);
+
+    $overridePark = CarPark::query()->create([
+        'name' => 'Override Directions Park',
+        'capacity' => 10,
+        'location' => 'Override',
+        'color' => '#2563eb',
+        'travel_directions' => 'Override park directions only',
+    ]);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Override Directions Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $defaultPark->id,
+    ]);
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Override Directions Driver',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700000112',
+        'email' => 'override-directions@hall.test',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'OV12RID',
+        'days' => ['Saturday'],
+        'car_park_id' => $overridePark->id,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.registrations.print', $registration))
+        ->assertOk()
+        ->assertSee('Override park directions only')
+        ->assertDontSee('Default park directions only');
+});
+
+test('registration print page escapes travel directions and omits directions panel when empty', function () {
+    $admin = User::factory()->admin()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Escaped Directions Park',
+        'capacity' => 20,
+        'location' => 'West',
+        'color' => '#0ea5e9',
+        'travel_directions' => '<script>alert("xss")</script>',
+    ]);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Escaped Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $park->id,
+    ]);
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Escaped Driver',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700000113',
+        'email' => 'escaped@hall.test',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'ES12CAP',
+        'days' => ['Sunday'],
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.registrations.print', $registration))
+        ->assertOk()
+        ->assertSee('&lt;script&gt;alert("xss")&lt;/script&gt;', false)
+        ->assertDontSee('<script>alert("xss")</script>', false);
+
+    $emptyPark = CarPark::query()->create([
+        'name' => 'No Directions Park',
+        'capacity' => 20,
+        'location' => 'East',
+        'color' => '#64748b',
+        'map_image_path' => '/storage/car-park-maps/no-directions.jpg',
+    ]);
+
+    $emptyCongregation = Congregation::query()->create([
+        'name' => 'No Directions Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $emptyPark->id,
+    ]);
+
+    $emptyRegistration = ParkingRegistration::query()->create([
+        'name' => 'No Directions Driver',
+        'congregation' => $emptyCongregation->name,
+        'contact_number' => '07700000114',
+        'email' => 'nodirections@hall.test',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'ND12MAP',
+        'days' => ['Friday'],
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.registrations.print', $emptyRegistration))
+        ->assertOk()
+        ->assertSeeHtml('class="pass-back-map-row pass-back-map-row--map-only"')
+        ->assertDontSeeHtml('class="pass-back-directions"');
+});

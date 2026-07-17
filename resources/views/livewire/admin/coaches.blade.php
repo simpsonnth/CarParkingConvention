@@ -14,6 +14,31 @@
         </div>
     </div>
 
+    <div class="grid gap-4 sm:grid-cols-2">
+        <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+            <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                {{ __('coaches.stat_registrations_total') }}
+            </p>
+            <p class="mt-2 text-3xl font-bold tabular-nums text-zinc-900 dark:text-white">
+                {{ number_format($coachMetrics['registrations_total']) }}
+            </p>
+            <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+                {{ __('coaches.stat_registrations_total_hint') }}
+            </p>
+        </div>
+        <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+            <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                {{ __('coaches.stat_unique_coaches') }}
+            </p>
+            <p class="mt-2 text-3xl font-bold tabular-nums text-zinc-900 dark:text-white">
+                {{ number_format($coachMetrics['unique_coaches']) }}
+            </p>
+            <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+                {{ __('coaches.stat_unique_coaches_hint') }}
+            </p>
+        </div>
+    </div>
+
     <div class="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-center">
         <flux:input wire:model.live.debounce.300ms="search" icon="magnifying-glass"
             placeholder="{{ __('coaches.search_placeholder') }}" class="w-full min-w-0 sm:max-w-xs" />

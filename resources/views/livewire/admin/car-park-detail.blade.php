@@ -17,9 +17,11 @@
             </div>
             <flux:subheading>{{ $carPark->location ?? 'No location specified' }}</flux:subheading>
         </div>
-        <div class="shrink-0">
-            <flux:button variant="ghost" icon="pencil" wire:click="edit" class="w-full sm:w-auto">Edit Details</flux:button>
-        </div>
+        @can('car-parks.manage')
+            <div class="shrink-0">
+                <flux:button variant="ghost" icon="pencil" wire:click="edit" class="w-full sm:w-auto">Edit Details</flux:button>
+            </div>
+        @endcan
     </div>
 
     @if ($carPark->map_image_path)
@@ -223,9 +225,11 @@
                 </div>
             </div>
 
+            <x-travel-directions-editor id="car-park-detail-travel-directions" />
+
             <div class="space-y-2">
                 <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Parking Map</label>
-                <p class="text-xs text-zinc-500">Shown on the back of printed tickets. JPG or PNG, max 3MB.</p>
+                <p class="text-xs text-zinc-500">Shown on the back of printed tickets. JPG or PNG, max 10MB.</p>
 
                 @if ($existingMapImage && !$mapImage)
                     <div class="mb-2">
@@ -241,12 +245,21 @@
                     </div>
                 @endif
 
-                <flux:input type="file" wire:model="mapImage" />
+                <flux:input type="file" wire:model="mapImage" accept="image/*" />
+                <div wire:loading wire:target="mapImage" class="text-xs text-zinc-500">
+                    Uploading map image…
+                </div>
+                @error('mapImage')
+                    <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
             </div>
 
             <div class="flex justify-end gap-2">
                 <flux:button variant="ghost" wire:click="$set('modalOpen', false)">Cancel</flux:button>
-                <flux:button variant="primary" wire:click="save">Save Changes</flux:button>
+                <flux:button variant="primary" wire:click="save" wire:loading.attr="disabled" wire:target="mapImage,save">
+                    <span wire:loading.remove wire:target="mapImage">Save Changes</span>
+                    <span wire:loading wire:target="mapImage">Uploading…</span>
+                </flux:button>
             </div>
         </div>
     </flux:modal>

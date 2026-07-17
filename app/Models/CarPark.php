@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
@@ -7,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class CarPark extends Model
 {
-    protected $fillable = ['name', 'capacity', 'location', 'map_image_path', 'color'];
+    protected $fillable = ['name', 'capacity', 'location', 'map_image_path', 'travel_directions', 'color'];
 
     public function mapImageUrl(): ?string
     {

@@ -1,7 +1,9 @@
 <div class="space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <flux:heading size="xl">Car Parks</flux:heading>
-        <flux:button variant="primary" wire:click="create" class="w-full sm:w-auto">Add Car Park</flux:button>
+        @can('car-parks.manage')
+            <flux:button variant="primary" wire:click="create" class="w-full sm:w-auto">Add Car Park</flux:button>
+        @endcan
     </div>
 
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -93,9 +95,11 @@
                                 <flux:menu>
                                     <flux:menu.item href="{{ route('admin.car-parks.show', $park) }}" icon="eye">View
                                         Details</flux:menu.item>
-                                    <flux:menu.item wire:click="edit({{ $park->id }})" icon="pencil">Edit</flux:menu.item>
-                                    <flux:menu.item wire:click="delete({{ $park->id }})" icon="trash" variant="danger">
-                                        Delete</flux:menu.item>
+                                    @can('car-parks.manage')
+                                        <flux:menu.item wire:click="edit({{ $park->id }})" icon="pencil">Edit</flux:menu.item>
+                                        <flux:menu.item wire:click="delete({{ $park->id }})" icon="trash" variant="danger">
+                                            Delete</flux:menu.item>
+                                    @endcan
                                 </flux:menu>
                             </flux:dropdown>
                         </td>
@@ -153,9 +157,11 @@
                     </div>
                 </div>
 
+                <x-travel-directions-editor id="car-park-travel-directions" />
+
                 <div class="space-y-2">
                     <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Parking Map</label>
-                    <p class="text-xs text-zinc-500">Shown on the back of printed tickets. JPG or PNG, max 3MB.</p>
+                    <p class="text-xs text-zinc-500">Shown on the back of printed tickets. JPG or PNG, max 10MB.</p>
 
                     @if ($existingMapImage && !$mapImage)
                         <div class="mb-2">
@@ -171,13 +177,22 @@
                         </div>
                     @endif
 
-                    <flux:input type="file" wire:model="mapImage" />
+                    <flux:input type="file" wire:model="mapImage" accept="image/*" />
+                    <div wire:loading wire:target="mapImage" class="text-xs text-zinc-500">
+                        Uploading map image…
+                    </div>
+                    @error('mapImage')
+                        <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
                 </div>
             </div>
 
             <div class="flex justify-end gap-2">
                 <flux:button variant="ghost" wire:click="$set('modalOpen', false)">Cancel</flux:button>
-                <flux:button variant="primary" wire:click="save">Save</flux:button>
+                <flux:button variant="primary" wire:click="save" wire:loading.attr="disabled" wire:target="mapImage,save">
+                    <span wire:loading.remove wire:target="mapImage">Save</span>
+                    <span wire:loading wire:target="mapImage">Uploading…</span>
+                </flux:button>
             </div>
         </div>
     </flux:modal>

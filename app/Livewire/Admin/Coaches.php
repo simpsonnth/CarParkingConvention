@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\Congregation;
 use App\Models\CongregationNumbersResponse;
 use App\Models\ParkingRegistration;
+use App\Services\CoachRegistrationMetrics;
 use Flux\Flux;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -217,10 +218,11 @@ class Coaches extends Component
         return $query->orderBy($sortColumn, $this->sortDir === 'desc' ? 'desc' : 'asc');
     }
 
-    public function render()
+    public function render(CoachRegistrationMetrics $metrics)
     {
         return view('livewire.admin.coaches', [
             'coaches' => $this->coachesQuery()->paginate($this->perPage),
+            'coachMetrics' => $metrics->summarize(),
         ]);
     }
 }

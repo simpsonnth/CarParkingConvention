@@ -185,3 +185,127 @@ test('admin can export coaches spreadsheet', function () {
         ->assertSuccessful()
         ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
 });
+
+test('coaches page shows total registrations and unique coaches after mutual survey sharing', function () {
+    $admin = User::factory()->admin()->create();
+
+    $halls = collect([
+        'Share Alpha',
+        'Share Beta',
+        'Share Gamma',
+        'Share Delta',
+        'Share Echo',
+        'Solo Foxtrot',
+    ])->map(fn (string $name) => \App\Models\Congregation::query()->create([
+        'name' => $name,
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+    ]));
+
+    [$alpha, $beta, $gamma, $delta, $echo, $foxtrot] = $halls->all();
+
+    $sharedIds = $halls->take(5)->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+    foreach ($halls->take(5) as $congregation) {
+        \App\Models\CongregationNumbersResponse::query()->create([
+            'congregation_id' => $congregation->id,
+            'car_park_tickets_count' => 0,
+            'organizes_coach' => true,
+            'sharing_coach_with_others' => true,
+            'shared_with_congregation_ids' => array_values(array_filter(
+                $sharedIds,
+                fn (int $id): bool => $id !== (int) $congregation->id
+            )),
+            'coach_size' => \App\Models\CongregationNumbersResponse::COACH_SIZE_LARGE,
+            'disabled_parking_required' => false,
+        ]);
+
+        ParkingRegistration::query()->create([
+            'name' => 'Shared Captain '.$congregation->name,
+            'congregation' => $congregation->name,
+            'contact_number' => '07700000100',
+            'email' => 'shared@'.$congregation->id.'.test',
+            'vehicle_type' => 'coach',
+            'sharing_with_other_congregations' => true,
+            'days' => ['Friday'],
+        ]);
+    }
+
+    \App\Models\CongregationNumbersResponse::query()->create([
+        'congregation_id' => $foxtrot->id,
+        'car_park_tickets_count' => 0,
+        'organizes_coach' => true,
+        'sharing_coach_with_others' => false,
+        'shared_with_congregation_ids' => [],
+        'coach_size' => \App\Models\CongregationNumbersResponse::COACH_SIZE_SMALL,
+        'disabled_parking_required' => false,
+    ]);
+
+    ParkingRegistration::query()->create([
+        'name' => 'Solo Captain',
+        'congregation' => $foxtrot->name,
+        'contact_number' => '07700000101',
+        'email' => 'solo@foxtrot.test',
+        'vehicle_type' => 'coach',
+        'sharing_with_other_congregations' => false,
+        'days' => ['Saturday'],
+    ]);
+
+    $metrics = app(\App\Services\CoachRegistrationMetrics::class)->summarize();
+
+    expect($metrics['registrations_total'])->toBe(6);
+    expect($metrics['unique_coaches'])->toBe(2);
+
+    Livewire::actingAs($admin)
+        ->test(Coaches::class)
+        ->assertSee(__('coaches.stat_registrations_total'))
+        ->assertSee(__('coaches.stat_unique_coaches'))
+        ->assertSee('6')
+        ->assertSee('2');
+});
+
+test('one-sided survey sharing does not merge unique coach counts', function () {
+    $a = \App\Models\Congregation::query()->create([
+        'name' => 'One Side A',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+    ]);
+    $b = \App\Models\Congregation::query()->create([
+        'name' => 'One Side B',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+    ]);
+
+    \App\Models\CongregationNumbersResponse::query()->create([
+        'congregation_id' => $a->id,
+        'car_park_tickets_count' => 0,
+        'organizes_coach' => true,
+        'sharing_coach_with_others' => true,
+        'shared_with_congregation_ids' => [(int) $b->id],
+        'coach_size' => \App\Models\CongregationNumbersResponse::COACH_SIZE_LARGE,
+        'disabled_parking_required' => false,
+    ]);
+
+    \App\Models\CongregationNumbersResponse::query()->create([
+        'congregation_id' => $b->id,
+        'car_park_tickets_count' => 0,
+        'organizes_coach' => true,
+        'sharing_coach_with_others' => false,
+        'shared_with_congregation_ids' => [],
+        'coach_size' => \App\Models\CongregationNumbersResponse::COACH_SIZE_LARGE,
+        'disabled_parking_required' => false,
+    ]);
+
+    foreach ([$a, $b] as $congregation) {
+        ParkingRegistration::query()->create([
+            'name' => 'Captain '.$congregation->name,
+            'congregation' => $congregation->name,
+            'contact_number' => '07700000200',
+            'email' => 'side@'.$congregation->id.'.test',
+            'vehicle_type' => 'coach',
+            'days' => ['Friday'],
+        ]);
+    }
+
+    $metrics = app(\App\Services\CoachRegistrationMetrics::class)->summarize();
+
+    expect($metrics['registrations_total'])->toBe(2);
+    expect($metrics['unique_coaches'])->toBe(2);
+});

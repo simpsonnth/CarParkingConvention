@@ -573,8 +573,24 @@
             gap: 4mm;
         }
 
-        .pass-back-map {
+        .pass-back-map-row {
             flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: row;
+            align-items: stretch;
+            gap: 4mm;
+        }
+
+        .pass-back-map-row--map-only .pass-back-map,
+        .pass-back-map-row--directions-only .pass-back-directions {
+            flex: 1 1 100%;
+            max-width: 100%;
+        }
+
+        .pass-back-map {
+            flex: 1 1 52%;
+            min-width: 0;
             min-height: 0;
             display: flex;
             align-items: center;
@@ -606,6 +622,80 @@
             margin-top: 2mm;
             font-weight: 700;
             color: #292524;
+        }
+
+        .pass-back-directions {
+            flex: 1 1 48%;
+            min-width: 0;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5mm;
+            padding: 2.5mm 3mm;
+            border: 2px solid #e7e5e4;
+            border-radius: 3mm;
+            background: #fafaf9;
+            overflow: hidden;
+        }
+
+        .pass-back-directions-heading {
+            flex-shrink: 0;
+            font-size: clamp(0.65rem, 1.3vw, 0.78rem);
+            font-weight: 800;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            color: #292524;
+        }
+
+        .pass-back-directions-text {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+            font-size: clamp(0.72rem, 1.4vw, 0.9rem);
+            font-weight: 500;
+            line-height: 1.35;
+            color: #44403c;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .pass-back-directions-text--medium {
+            font-size: clamp(0.65rem, 1.25vw, 0.8rem);
+            line-height: 1.3;
+        }
+
+        .pass-back-directions-text--long {
+            font-size: clamp(0.58rem, 1.1vw, 0.72rem);
+            line-height: 1.22;
+        }
+
+        .pass-back-directions-text h2,
+        .pass-back-directions-text h3 {
+            margin: 0 0 1mm;
+            color: #292524;
+            font-weight: 800;
+            line-height: 1.15;
+        }
+
+        .pass-back-directions-text h2 {
+            font-size: 1.12em;
+        }
+
+        .pass-back-directions-text h3 {
+            font-size: 1.05em;
+        }
+
+        .pass-back-directions-text p {
+            margin: 0 0 1.2mm;
+        }
+
+        .pass-back-directions-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        .pass-back-directions-text strong {
+            color: #292524;
+            font-weight: 800;
         }
 
         .pass-back-notes {
@@ -705,6 +795,7 @@
                 max-height: 210mm;
                 padding: 3mm;
                 box-sizing: border-box;
+                overflow: hidden;
             }
 
             .pass-outer--front {
@@ -722,11 +813,131 @@
             .pass,
             .pass-back {
                 height: 100%;
+                max-height: 100%;
                 min-height: 0;
                 border-radius: 4mm;
                 box-shadow: none;
                 page-break-after: auto;
                 break-after: auto;
+                page-break-inside: avoid;
+                break-inside: avoid;
+                overflow: hidden;
+            }
+
+            .pass-back-header {
+                padding: 2.5mm 5mm;
+            }
+
+            .pass-back-heading {
+                font-size: 4mm;
+            }
+
+            .pass-back-subheading {
+                font-size: 2.6mm;
+            }
+
+            .pass-back-zone {
+                margin-top: 1mm;
+                font-size: 3.2mm;
+            }
+
+            .pass-back-body {
+                padding: 3mm 5mm;
+                gap: 2.5mm;
+                overflow: hidden;
+            }
+
+            .pass-back-map-row {
+                flex: 1 1 auto;
+                min-height: 0;
+                overflow: hidden;
+            }
+
+            .pass-back-map {
+                flex: 1 1 52%;
+            }
+
+            .pass-back-directions {
+                flex: 1 1 48%;
+                padding: 2mm 2.5mm;
+                gap: 1mm;
+            }
+
+            .pass-back-directions-heading {
+                font-size: 2.6mm;
+            }
+
+            .pass-back-directions-text {
+                font-size: 3.2mm;
+                line-height: 1.35;
+            }
+
+            .pass-back-directions-text--medium {
+                font-size: 2.75mm;
+                line-height: 1.28;
+            }
+
+            .pass-back-directions-text--long {
+                font-size: 2.35mm;
+                line-height: 1.2;
+            }
+
+            .pass-back-directions-text h2 {
+                font-size: 3.7mm;
+                margin: 0 0 0.7mm;
+            }
+
+            .pass-back-directions-text h3 {
+                font-size: 3.35mm;
+                margin: 0 0 0.6mm;
+            }
+
+            .pass-back-directions-text--medium h2 {
+                font-size: 3.15mm;
+            }
+
+            .pass-back-directions-text--medium h3 {
+                font-size: 2.95mm;
+            }
+
+            .pass-back-directions-text--long h2 {
+                font-size: 2.7mm;
+            }
+
+            .pass-back-directions-text--long h3 {
+                font-size: 2.5mm;
+            }
+
+            .pass-back-directions-text p {
+                margin: 0 0 0.9mm;
+            }
+
+            .pass-back-notes {
+                gap: 1.4mm;
+                font-size: 2.4mm;
+                line-height: 1.25;
+            }
+
+            .pass-back-contact {
+                padding: 1.8mm 2.2mm;
+            }
+
+            .pass-back-footer {
+                padding: 2.5mm 5mm;
+            }
+
+            .pass-back-scripture-ref {
+                font-size: 2.4mm;
+            }
+
+            .pass-back-scripture-text {
+                margin-top: 1mm;
+                font-size: 3mm;
+            }
+
+            .pass-back-closing {
+                margin-top: 1.5mm;
+                font-size: 3.2mm;
             }
 
             .pass-spine {
@@ -860,10 +1071,10 @@
         @page { margin: 0; size: A4 landscape; }
         .no-print { display: none !important; }
         html, body { height: auto !important; overflow: visible !important; }
-        .pass-outer, .pass-back-outer { width: 100%; height: 210mm; min-height: 210mm; max-height: 210mm; padding: 3mm; box-sizing: border-box; }
+        .pass-outer, .pass-back-outer { width: 100%; height: 210mm; min-height: 210mm; max-height: 210mm; padding: 3mm; box-sizing: border-box; overflow: hidden; }
         .pass-outer--front { page-break-after: always; break-after: page; }
         .pass-back-outer { page-break-before: always; break-before: page; }
-        .pass, .pass-back { height: 100%; min-height: 0; border-radius: 4mm; box-shadow: none; page-break-after: auto; break-after: auto; }
+        .pass, .pass-back { height: 100%; max-height: 100%; min-height: 0; border-radius: 4mm; box-shadow: none; page-break-after: auto; break-after: auto; page-break-inside: avoid; break-inside: avoid; overflow: hidden; }
         .pass-spine { flex-basis: 8mm; }
         .pass-top { padding: 3.5mm 7mm; }
         .pass-top-org { font-size: 3.5mm; }
@@ -889,6 +1100,31 @@
         .pass-scan-staff-hint { font-size: 1.9mm; }
         .pass-ribbon { font-size: 5.5mm; padding: 4mm 7mm; }
         .pass-fine-print { font-size: 3.5mm; }
+        .pass-back-header { padding: 2.5mm 5mm; }
+        .pass-back-heading { font-size: 4mm; }
+        .pass-back-subheading { font-size: 2.6mm; }
+        .pass-back-zone { margin-top: 1mm; font-size: 3.2mm; }
+        .pass-back-body { padding: 3mm 5mm; gap: 2.5mm; overflow: hidden; }
+        .pass-back-map-row { flex: 1 1 auto; min-height: 0; overflow: hidden; }
+        .pass-back-map { flex: 1 1 52%; }
+        .pass-back-directions { flex: 1 1 48%; padding: 2mm 2.5mm; gap: 1mm; overflow: hidden; }
+        .pass-back-directions-heading { font-size: 2.6mm; }
+        .pass-back-directions-text { font-size: 3.2mm; line-height: 1.35; overflow: hidden; }
+        .pass-back-directions-text--medium { font-size: 2.75mm; line-height: 1.28; }
+        .pass-back-directions-text--long { font-size: 2.35mm; line-height: 1.2; }
+        .pass-back-directions-text h2 { font-size: 3.7mm; margin: 0 0 0.7mm; }
+        .pass-back-directions-text h3 { font-size: 3.35mm; margin: 0 0 0.6mm; }
+        .pass-back-directions-text--medium h2 { font-size: 3.15mm; }
+        .pass-back-directions-text--medium h3 { font-size: 2.95mm; }
+        .pass-back-directions-text--long h2 { font-size: 2.7mm; }
+        .pass-back-directions-text--long h3 { font-size: 2.5mm; }
+        .pass-back-directions-text p { margin: 0 0 0.9mm; }
+        .pass-back-notes { gap: 1.4mm; font-size: 2.4mm; line-height: 1.25; }
+        .pass-back-contact { padding: 1.8mm 2.2mm; }
+        .pass-back-footer { padding: 2.5mm 5mm; }
+        .pass-back-scripture-ref { font-size: 2.4mm; }
+        .pass-back-scripture-text { margin-top: 1mm; font-size: 3mm; }
+        .pass-back-closing { margin-top: 1.5mm; font-size: 3.2mm; }
     </style>
     @endif
 </head>
@@ -1049,6 +1285,32 @@
         $mapImageSrc = $mapImagePath
             ? (($forPdf ?? false) ? url(asset($mapImagePath)) : asset($mapImagePath))
             : null;
+        $travelDirections = filled($carPark?->travel_directions)
+            ? (string) $carPark->travel_directions
+            : null;
+        $travelDirectionsHtml = $travelDirections
+            ? \Illuminate\Support\Str::markdown($travelDirections, [
+                'html_input' => 'escape',
+                'allow_unsafe_links' => false,
+                'renderer' => [
+                    'soft_break' => "<br>\n",
+                ],
+            ])
+            : null;
+        $travelDirectionsLength = $travelDirections
+            ? mb_strlen(preg_replace('/\s+/', ' ', $travelDirections))
+            : 0;
+        $travelDirectionsTextClass = match (true) {
+            $travelDirectionsLength > 900 => 'pass-back-directions-text pass-back-directions-text--long',
+            $travelDirectionsLength > 450 => 'pass-back-directions-text pass-back-directions-text--medium',
+            default => 'pass-back-directions-text',
+        };
+        $mapRowClass = 'pass-back-map-row';
+        if ($mapImageSrc && ! $travelDirections) {
+            $mapRowClass .= ' pass-back-map-row--map-only';
+        } elseif (! $mapImageSrc && $travelDirections) {
+            $mapRowClass .= ' pass-back-map-row--directions-only';
+        }
     @endphp
 
     <div class="pass-back-outer">
@@ -1062,16 +1324,27 @@
             </header>
 
             <div class="pass-back-body">
-                <div class="pass-back-map">
-                    @if($mapImageSrc)
-                        <img src="{{ $mapImageSrc }}" alt="{{ __('print_pass.back_heading') }} — {{ $zoneName }}">
-                    @else
-                        <div class="pass-back-map-placeholder">
-                            <div>{{ __('print_pass.map_unavailable') }}</div>
-                            @if($carPark?->location)
-                                <div class="pass-back-map-location">{{ $carPark->location }}</div>
+                <div class="{{ $mapRowClass }}">
+                    @if($mapImageSrc || ! $travelDirections)
+                        <div class="pass-back-map">
+                            @if($mapImageSrc)
+                                <img src="{{ $mapImageSrc }}" alt="{{ __('print_pass.back_heading') }} — {{ $zoneName }}">
+                            @else
+                                <div class="pass-back-map-placeholder">
+                                    <div>{{ __('print_pass.map_unavailable') }}</div>
+                                    @if($carPark?->location)
+                                        <div class="pass-back-map-location">{{ $carPark->location }}</div>
+                                    @endif
+                                </div>
                             @endif
                         </div>
+                    @endif
+
+                    @if($travelDirections)
+                        <aside class="pass-back-directions">
+                            <div class="pass-back-directions-heading">{{ __('print_pass.travel_directions') }}</div>
+                            <div class="{{ $travelDirectionsTextClass }}">{!! $travelDirectionsHtml !!}</div>
+                        </aside>
                     @endif
                 </div>
 

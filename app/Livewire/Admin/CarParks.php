@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire\Admin;
 
+use App\Actions\CarParks\CarParkMapImageStorage;
 use App\Models\CarPark;
 use App\Models\ParkingPass;
 use App\Models\ParkingRegistration;
 use Flux\Flux;
-use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -16,25 +18,27 @@ class CarParks extends Component
     use WithFileUploads;
     use WithPagination;
 
-    public $name = '';
+    public string $name = '';
 
-    public $capacity = '';
+    public string $capacity = '';
 
-    public $location = '';
+    public string $location = '';
 
-    public $color = '';
+    public string $color = '';
 
-    public $carParkId = null;
+    public string $travelDirections = '';
+
+    public ?int $carParkId = null;
 
     public $mapImage = null;
 
-    public $existingMapImage = '';
+    public string $existingMapImage = '';
 
     public bool $modalOpen = false;
 
-    public $search = '';
+    public string $search = '';
 
-    public function updatedSearch()
+    public function updatedSearch(): void
     {
         $this->resetPage();
     }
@@ -73,78 +77,96 @@ class CarParks extends Component
         ]);
     }
 
-    public function create()
+    public function create(): void
     {
-        $this->reset('name', 'capacity', 'location', 'color', 'carParkId', 'mapImage', 'existingMapImage');
+        $this->authorizeManage();
+        $this->reset('name', 'capacity', 'location', 'color', 'travelDirections', 'carParkId', 'mapImage', 'existingMapImage');
         $this->modalOpen = true;
     }
 
-    public function edit(CarPark $carPark)
+    public function edit(CarPark $carPark): void
     {
+        $this->authorizeManage();
         $this->carParkId = $carPark->id;
         $this->name = $carPark->name;
-        $this->capacity = $carPark->capacity;
-        $this->location = $carPark->location;
-        $this->color = $carPark->color;
+        $this->capacity = (string) $carPark->capacity;
+        $this->location = (string) ($carPark->location ?? '');
+        $this->color = (string) ($carPark->color ?? '');
+        $this->travelDirections = (string) ($carPark->travel_directions ?? '');
         $this->existingMapImage = $carPark->map_image_path ?? '';
         $this->mapImage = null;
         $this->modalOpen = true;
     }
 
-    public function save()
+    public function save(CarParkMapImageStorage $mapImages): void
     {
+        $this->authorizeManage();
+
         $this->validate([
             'name' => 'required|string|max:255',
             'capacity' => 'required|integer|min:1',
             'location' => 'nullable|string',
             'color' => 'nullable|string|max:50',
-            'mapImage' => 'nullable|image|max:3072',
+            'travelDirections' => 'nullable|string|max:2000',
+            'mapImage' => 'nullable|image|max:10240',
         ]);
 
         $data = [
             'name' => $this->name,
             'capacity' => $this->capacity,
-            'location' => $this->location,
-            'color' => $this->color,
+            'location' => $this->location !== '' ? $this->location : null,
+            'color' => $this->color !== '' ? $this->color : null,
+            'travel_directions' => $this->normalizedTravelDirections(),
         ];
 
         if ($this->carParkId) {
             $carPark = CarPark::findOrFail($this->carParkId);
-
-            if ($this->mapImage) {
-                $this->deleteMapImage($carPark->map_image_path);
-                $path = $this->mapImage->store('car-park-maps', 'public');
-                $data['map_image_path'] = '/storage/'.$path;
-            }
-
             $carPark->update($data);
-        } else {
-            if ($this->mapImage) {
-                $path = $this->mapImage->store('car-park-maps', 'public');
-                $data['map_image_path'] = '/storage/'.$path;
-            }
 
-            CarPark::create($data);
+            if ($this->mapImage) {
+                $mapImages->replace($carPark, $this->mapImage);
+            }
+        } else {
+            $storedPath = null;
+
+            try {
+                if ($this->mapImage) {
+                    $storedPath = $mapImages->store($this->mapImage);
+                    $data['map_image_path'] = $storedPath;
+                }
+
+                CarPark::create($data);
+            } catch (\Throwable $exception) {
+                if ($storedPath !== null) {
+                    $mapImages->delete($storedPath);
+                }
+
+                throw $exception;
+            }
         }
 
         $this->modalOpen = false;
         Flux::toast($this->carParkId ? 'Car Park updated successfully.' : 'Car Park created successfully.');
-        $this->reset('name', 'capacity', 'location', 'color', 'carParkId', 'mapImage', 'existingMapImage');
+        $this->reset('name', 'capacity', 'location', 'color', 'travelDirections', 'carParkId', 'mapImage', 'existingMapImage');
     }
 
-    public function delete(CarPark $carPark)
+    public function delete(CarPark $carPark, CarParkMapImageStorage $mapImages): void
     {
-        $this->deleteMapImage($carPark->map_image_path);
+        $this->authorizeManage();
+        $mapImages->delete($carPark->map_image_path);
         $carPark->delete();
         Flux::toast('Car Park deleted successfully.');
     }
 
-    protected function deleteMapImage(?string $mapImagePath): void
+    protected function authorizeManage(): void
     {
-        if (! $mapImagePath) {
-            return;
-        }
+        abort_unless(auth()->user()?->can('car-parks.manage'), 403);
+    }
 
-        Storage::disk('public')->delete(str_replace('/storage/', '', $mapImagePath));
+    protected function normalizedTravelDirections(): ?string
+    {
+        $directions = trim($this->travelDirections);
+
+        return $directions !== '' ? $directions : null;
     }
 }

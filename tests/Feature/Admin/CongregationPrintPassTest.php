@@ -13,6 +13,7 @@ test('congregation print page includes back page with map and congregation note 
         'location' => 'Main entrance',
         'color' => '#7c3aed',
         'map_image_path' => '/storage/car-park-maps/cong-map.jpg',
+        'travel_directions' => 'Congregation park travel directions',
     ]);
 
     $congregation = Congregation::query()->create([
@@ -31,6 +32,8 @@ test('congregation print page includes back page with map and congregation note 
         ->assertSee(__('print_pass.scripture_text'))
         ->assertSee(__('print_pass.closing'))
         ->assertSee('/storage/car-park-maps/cong-map.jpg')
+        ->assertSee(__('print_pass.travel_directions'))
+        ->assertSee('Congregation park travel directions')
         ->assertDontSee(__('print_pass.emergency_contact_note'))
         ->assertDontSee(__('print_pass.registrant_name').':');
 });
