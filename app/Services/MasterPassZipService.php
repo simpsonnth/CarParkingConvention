@@ -1,15 +1,19 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
-use App\Models\Congregation;
 use App\Models\ParkingRegistration;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Str;
 use ZipArchive;
 
 class MasterPassZipService
 {
+    public function __construct(
+        protected MasterPassPdfGenerator $pdfGenerator,
+    ) {}
+
     /**
      * Build a ZIP file containing one PDF master pass per selected registration.
      * Returns the path to the temporary ZIP file (caller must delete after sending).
@@ -25,13 +29,6 @@ class MasterPassZipService
             throw new \InvalidArgumentException('At least one registration ID is required.');
         }
 
-        if (! extension_loaded('gd')) {
-            throw new \RuntimeException(
-                'The PHP GD extension is required to generate PDFs with images (e.g. QR codes). '.
-                'Install it and restart your web server — e.g. on Ubuntu/Debian: sudo apt install php-gd'
-            );
-        }
-
         $registrations = ParkingRegistration::query()
             ->with('carPark')
             ->whereIn('id', $registrationIds)
@@ -41,6 +38,8 @@ class MasterPassZipService
         if ($registrations->isEmpty()) {
             throw new \RuntimeException('No registrations found for the given IDs.');
         }
+
+        $attachments = $this->pdfGenerator->generateForRegistrations($registrations);
 
         $zipPath = storage_path('app/temp/master-passes-'.Str::random(16).'.zip');
         $dir = dirname($zipPath);
@@ -56,24 +55,8 @@ class MasterPassZipService
         }
 
         try {
-            foreach ($registrations as $registration) {
-                $congregation = Congregation::query()
-                    ->with('carPark')
-                    ->where('name', $registration->congregation)
-                    ->first();
-                if (! $congregation) {
-                    continue;
-                }
-
-                $pdfContent = $this->generatePdfForRegistration($registration, $congregation);
-                $filename = $this->safePdfFilename($registration, $congregation);
-                $zip->addFromString($filename, $pdfContent);
-            }
-
-            if ($zip->numFiles === 0) {
-                $zip->close();
-                @unlink($zipPath);
-                throw new \RuntimeException('No valid passes could be generated (congregation not found for all selected).');
+            foreach ($attachments as $attachment) {
+                $zip->addFromString($attachment['filename'], $attachment['content']);
             }
         } finally {
             $zip->close();
@@ -82,35 +65,5 @@ class MasterPassZipService
         $downloadName = 'master-passes-'.now()->format('Y-m-d-His').'.zip';
 
         return [$zipPath, $downloadName];
-    }
-
-    protected function generatePdfForRegistration(ParkingRegistration $registration, Congregation $congregation): string
-    {
-        $effectiveCarPark = $registration->carPark ?? $congregation->carPark;
-
-        $html = view('admin.print-pass', [
-            'congregation' => $congregation,
-            'registration' => $registration,
-            'effectiveCarPark' => $effectiveCarPark,
-            'forPdf' => true,
-        ])->render();
-
-        return Pdf::loadHTML($html)
-            ->setPaper('a4', 'landscape')
-            ->setWarnings(false)
-            ->setOption('enable_remote', true)
-            ->output();
-    }
-
-    /** Build a safe, unique PDF filename for the ZIP entry. */
-    protected function safePdfFilename(ParkingRegistration $registration, Congregation $congregation): string
-    {
-        $congSlug = Str::slug($congregation->name, '-');
-        $nameSlug = Str::slug($registration->name, '-');
-        $base = "Master-Pass-{$registration->id}-{$congSlug}-{$nameSlug}";
-        $base = preg_replace('/[^A-Za-z0-9\-_]/', '-', $base) ?: 'pass';
-        $base = Str::limit($base, 120);
-
-        return $base.'.pdf';
     }
 }

@@ -8,9 +8,14 @@
         Print Pass -
         {{ isset($registration) && ($registration->is_circuit_overseer ?? false) ? __('print_pass.circuit_overseer') : ($congregation->name ?? __('print_pass.circuit_overseer')) }}
     </title>
-    @unless($forPdf ?? false)
+    @unless(($forPdf ?? false) || ($forChromePdf ?? false))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     @endunless
+    @if($forChromePdf ?? false)
+        <style>
+            .no-print { display: none !important; }
+        </style>
+    @endif
     <style>
         :root {
             --pass-park: #4338ca;
@@ -1171,7 +1176,7 @@
         $showElderlyAlert = isset($registration) && ($registration->elderly_infirm_parking ?? false);
     @endphp
 
-    @if(!($forPdf ?? false))
+    @if(!($forPdf ?? false) && !($forChromePdf ?? false))
     <div class="no-print">
         <button type="button" onclick="window.print()">Print Pass</button>
         <button type="button" onclick="window.close()">Close</button>

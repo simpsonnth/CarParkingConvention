@@ -200,6 +200,13 @@
                     <flux:icon name="arrow-down-tray" class="size-4" />
                     {{ __('registrations.download_master_passes_zip') }}
                 </button>
+                @can('registrations.print')
+                    <button type="button" wire:click="openSendTicketsModal"
+                        class="inline-flex items-center gap-2 rounded-lg bg-sky-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-sky-700">
+                        <flux:icon name="envelope" class="size-4" />
+                        {{ __('registrations.send_car_park_tickets') }}
+                    </button>
+                @endcan
                 <span class="text-zinc-300 dark:text-zinc-600 mx-1">|</span>
                 <button type="button" wire:click="bulkDelete" wire:confirm="{{ __('registrations.bulk_delete_confirm') }}"
                     class="inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700">
@@ -637,6 +644,60 @@
             <div class="flex justify-end gap-2">
                 <flux:button variant="ghost" wire:click="$set('bulkAssignCarParkModalOpen', false)">{{ __('registrations.cancel') }}</flux:button>
                 <flux:button variant="primary" wire:click="bulkAssignCongregationToCarPark">{{ __('registrations.save_changes') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Send car park tickets email modal --}}
+    <flux:modal wire:model="sendTicketsModalOpen" class="w-[calc(100vw-2rem)] max-w-md">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ __('registrations.send_car_park_tickets') }}</flux:heading>
+                <flux:subheading>{{ __('registrations.send_car_park_tickets_help', ['count' => count($selectedIds)]) }}</flux:subheading>
+            </div>
+            <div class="space-y-2">
+                {{-- type=text + autofill ignores: Bitwarden/1Password break type=email inside Flux modals --}}
+                <flux:input
+                    wire:model="ticketEmailTo"
+                    id="ticketEmailTo"
+                    type="text"
+                    inputmode="email"
+                    label="{{ __('registrations.ticket_email_to') }}"
+                    placeholder="congregation@example.com"
+                    autocomplete="off"
+                    data-1p-ignore
+                    data-lpignore="true"
+                    data-bwignore
+                    data-form-type="other"
+                />
+                @error('ticketEmailTo')
+                    <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+                <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('registrations.ticket_email_cc_hint') }}</p>
+            </div>
+            <div class="flex justify-end gap-2">
+                <flux:button variant="ghost" wire:click="$set('sendTicketsModalOpen', false)" wire:loading.attr="disabled">{{ __('registrations.cancel') }}</flux:button>
+                <flux:button variant="primary" wire:click="sendCarParkTickets" wire:loading.attr="disabled" wire:target="sendCarParkTickets">
+                    <span wire:loading.remove wire:target="sendCarParkTickets">{{ __('registrations.send_tickets_button') }}</span>
+                    <span wire:loading wire:target="sendCarParkTickets">{{ __('registrations.sending_tickets') }}</span>
+                </flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    <flux:modal wire:model="ticketsSentSuccessOpen" class="w-[calc(100vw-2rem)] max-w-md">
+        <div class="space-y-6">
+            <div class="flex items-start gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                    <flux:icon name="check" class="size-5" />
+                </div>
+                <div>
+                    <flux:heading size="lg">{{ __('registrations.tickets_sent_success_title') }}</flux:heading>
+                    <flux:subheading>{{ $ticketsSentSuccessMessage }}</flux:subheading>
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <flux:button variant="primary" wire:click="$set('ticketsSentSuccessOpen', false)">{{ __('registrations.ok') }}</flux:button>
             </div>
         </div>
     </flux:modal>

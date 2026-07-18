@@ -16,6 +16,35 @@
             </div>
 
             <div class="space-y-3 border-t border-zinc-200 dark:border-zinc-700 pt-6">
+                <flux:heading size="sm">Ticket email CC recipients</flux:heading>
+                <flux:textarea wire:model="ticketEmailCcs" label="CC addresses"
+                    placeholder="nathan-simpson@outlook.com" rows="3" />
+                <p class="text-xs text-zinc-500">One email per line (or comma-separated). These addresses are CC’d when car park tickets are emailed from Registrations. Default includes nathan-simpson@outlook.com.</p>
+                @error('ticketEmailCcs')
+                    <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="space-y-3 border-t border-zinc-200 dark:border-zinc-700 pt-6">
+                <flux:heading size="sm">Ticket email message</flux:heading>
+                <flux:textarea wire:model="ticketEmailBody" label="Email body"
+                    rows="8" />
+                <p class="text-xs text-zinc-500">
+                    Plain text sent in the car park tickets email.
+                    @verbatim
+                        Use <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-700">{{count}}</code>
+                        for the number of PDFs and
+                        <code class="rounded bg-zinc-100 px-1 dark:bg-zinc-700">{{congregation}}</code>
+                        for the congregation name.
+                    @endverbatim
+                    Blank lines start a new paragraph.
+                </p>
+                @error('ticketEmailBody')
+                    <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="space-y-3 border-t border-zinc-200 dark:border-zinc-700 pt-6">
                 <flux:heading size="sm">{{ __('congregation_portal.settings_portal_password') }}</flux:heading>
                 <flux:input wire:model="congregationPortalPassword" type="password"
                     :label="__('congregation_portal.settings_portal_password')"

@@ -1,9 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire\Admin;
 
 use App\Models\Setting;
 use App\Services\CongregationPortalAuth;
+use App\Support\TicketEmailBody;
+use App\Support\TicketEmailCcList;
 use Flux\Flux;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -26,6 +30,10 @@ class Settings extends Component
 
     public bool $congregationPortalPasswordConfigured = false;
 
+    public string $ticketEmailCcs = '';
+
+    public string $ticketEmailBody = '';
+
     public function mount()
     {
         $this->conventionName = Setting::get('convention_name', "Convention of Jehovah's Witness");
@@ -33,6 +41,11 @@ class Settings extends Component
         $this->conventionLocation = Setting::get('convention_location', 'Twickenham');
         $this->existingLogo = Setting::get('ticket_logo', '');
         $this->congregationPortalPasswordConfigured = app(CongregationPortalAuth::class)->passwordIsConfigured();
+        $storedCcs = Setting::get(TicketEmailCcList::SETTING_KEY);
+        $this->ticketEmailCcs = $storedCcs !== null && trim((string) $storedCcs) !== ''
+            ? (string) $storedCcs
+            : TicketEmailCcList::DEFAULT_CC;
+        $this->ticketEmailBody = TicketEmailBody::template();
     }
 
     public function save()
@@ -43,6 +56,8 @@ class Settings extends Component
             'conventionLocation' => 'required|string|max:255',
             'ticketLogo' => 'nullable|image|max:1024', // 1MB Max
             'congregationPortalPassword' => 'nullable|string|min:4|max:255',
+            'ticketEmailCcs' => 'nullable|string|max:2000',
+            'ticketEmailBody' => 'required|string|max:5000',
         ];
 
         if (! $this->congregationPortalPasswordConfigured) {
@@ -51,9 +66,24 @@ class Settings extends Component
 
         $this->validate($rules);
 
+        $parsedCcs = TicketEmailCcList::parse($this->ticketEmailCcs);
+        if ($this->ticketEmailCcs !== '' && $parsedCcs === []) {
+            $this->addError('ticketEmailCcs', 'Enter at least one valid email address, or leave blank for the default.');
+
+            return;
+        }
+
         Setting::set('convention_name', $this->conventionName);
         Setting::set('convention_year', $this->conventionYear);
         Setting::set('convention_location', $this->conventionLocation);
+        Setting::set(
+            TicketEmailCcList::SETTING_KEY,
+            $parsedCcs === [] ? TicketEmailCcList::DEFAULT_CC : TicketEmailCcList::toStorageString($this->ticketEmailCcs),
+        );
+        $this->ticketEmailCcs = Setting::get(TicketEmailCcList::SETTING_KEY, TicketEmailCcList::DEFAULT_CC);
+
+        Setting::set(TicketEmailBody::SETTING_KEY, trim($this->ticketEmailBody));
+        $this->ticketEmailBody = TicketEmailBody::template();
 
         if ($this->ticketLogo) {
             $path = $this->ticketLogo->store('logos', 'public');

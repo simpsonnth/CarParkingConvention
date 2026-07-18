@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Actions\Registrations\SendCarParkTicketsEmail;
 use App\Models\Congregation;
 use App\Models\ParkingRegistration;
 use App\Services\CongregationNumbersReportMetrics;
@@ -14,6 +15,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Throwable;
 
 #[Layout('components.layouts.app')]
 class Registrations extends Component
@@ -70,6 +72,16 @@ class Registrations extends Component
     public bool $modalOpen = false;
 
     public bool $bulkAssignCarParkModalOpen = false;
+
+    public bool $sendTicketsModalOpen = false;
+
+    public string $ticketEmailTo = '';
+
+    public bool $sendingTickets = false;
+
+    public bool $ticketsSentSuccessOpen = false;
+
+    public string $ticketsSentSuccessMessage = '';
 
     public ?ParkingRegistration $editingRegistration = null;
 
@@ -434,11 +446,67 @@ class Registrations extends Component
 
         try {
             return $this->redirect(route('admin.registrations.download-passes-zip', ['token' => $token]), navigate: false);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             cache()->forget('master-passes-zip:'.$token);
             Flux::toast($e->getMessage(), variant: 'danger');
 
             return null;
+        }
+    }
+
+    public function openSendTicketsModal(): void
+    {
+        abort_unless(auth()->user()?->can('registrations.print'), 403);
+
+        if (empty($this->selectedIds)) {
+            Flux::toast(__('registrations.select_items'), variant: 'warning');
+
+            return;
+        }
+
+        $this->ticketEmailTo = '';
+        $this->resetErrorBag('ticketEmailTo');
+        $this->sendTicketsModalOpen = true;
+    }
+
+    public function sendCarParkTickets(SendCarParkTicketsEmail $sender): void
+    {
+        abort_unless(auth()->user()?->can('registrations.print'), 403);
+
+        if (empty($this->selectedIds)) {
+            Flux::toast(__('registrations.select_items'), variant: 'warning');
+            $this->sendTicketsModalOpen = false;
+
+            return;
+        }
+
+        $this->validate([
+            'ticketEmailTo' => 'required|email|max:255',
+        ]);
+
+        $this->sendingTickets = true;
+
+        try {
+            $result = $sender->execute(
+                array_values(array_map('intval', $this->selectedIds)),
+                $this->ticketEmailTo,
+            );
+
+            $this->sendTicketsModalOpen = false;
+            $this->ticketEmailTo = '';
+            $this->selectedIds = [];
+
+            $this->ticketsSentSuccessMessage = __('registrations.tickets_email_sent', [
+                'count' => $result['sent'],
+                'email' => $result['to'],
+            ]);
+            $this->ticketsSentSuccessOpen = true;
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e;
+        } catch (Throwable $e) {
+            Flux::toast($e->getMessage(), variant: 'danger');
+        } finally {
+            $this->sendingTickets = false;
         }
     }
 
