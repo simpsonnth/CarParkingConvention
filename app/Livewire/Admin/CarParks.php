@@ -6,8 +6,7 @@ namespace App\Livewire\Admin;
 
 use App\Actions\CarParks\CarParkMapImageStorage;
 use App\Models\CarPark;
-use App\Models\ParkingPass;
-use App\Models\ParkingRegistration;
+use App\Services\CarParkDayCapacityMetrics;
 use Flux\Flux;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -20,7 +19,11 @@ class CarParks extends Component
 
     public string $name = '';
 
-    public string $capacity = '';
+    public string $capacityFriday = '';
+
+    public string $capacitySaturday = '';
+
+    public string $capacitySunday = '';
 
     public string $location = '';
 
@@ -43,29 +46,9 @@ class CarParks extends Component
         $this->resetPage();
     }
 
-    public function render()
+    public function render(CarParkDayCapacityMetrics $dayCapacityMetrics)
     {
-        $query = CarPark::addSelect([
-            'current_occupancy' => ParkingPass::query()->selectRaw('count(*)')
-                ->leftJoin('congregations', 'congregations.id', '=', 'parking_passes.congregation_id')
-                ->where('parking_passes.status', 'parked')
-                ->where(function ($q) {
-                    $q->whereColumn('parking_passes.car_park_id', 'car_parks.id')
-                        ->orWhere(function ($q2) {
-                            $q2->whereNull('parking_passes.car_park_id')
-                                ->whereColumn('congregations.car_park_id', 'car_parks.id');
-                        });
-                }),
-            'assigned_count' => ParkingRegistration::query()->selectRaw('count(*)')
-                ->leftJoin('congregations', fn ($join) => $join->whereRaw('TRIM(congregations.name) = TRIM(parking_registrations.congregation)'))
-                ->where(function ($q) {
-                    $q->whereColumn('parking_registrations.car_park_id', 'car_parks.id')
-                        ->orWhere(function ($q2) {
-                            $q2->whereNull('parking_registrations.car_park_id')
-                                ->whereColumn('congregations.car_park_id', 'car_parks.id');
-                        });
-                }),
-        ]);
+        $query = CarPark::addSelect($dayCapacityMetrics->listSelectSubqueries());
 
         if ($this->search) {
             $query->where('name', 'like', '%'.$this->search.'%')
@@ -80,7 +63,18 @@ class CarParks extends Component
     public function create(): void
     {
         $this->authorizeManage();
-        $this->reset('name', 'capacity', 'location', 'color', 'travelDirections', 'carParkId', 'mapImage', 'existingMapImage');
+        $this->reset(
+            'name',
+            'capacityFriday',
+            'capacitySaturday',
+            'capacitySunday',
+            'location',
+            'color',
+            'travelDirections',
+            'carParkId',
+            'mapImage',
+            'existingMapImage',
+        );
         $this->modalOpen = true;
     }
 
@@ -89,7 +83,9 @@ class CarParks extends Component
         $this->authorizeManage();
         $this->carParkId = $carPark->id;
         $this->name = $carPark->name;
-        $this->capacity = (string) $carPark->capacity;
+        $this->capacityFriday = (string) $carPark->capacity_friday;
+        $this->capacitySaturday = (string) $carPark->capacity_saturday;
+        $this->capacitySunday = (string) $carPark->capacity_sunday;
         $this->location = (string) ($carPark->location ?? '');
         $this->color = (string) ($carPark->color ?? '');
         $this->travelDirections = (string) ($carPark->travel_directions ?? '');
@@ -104,7 +100,9 @@ class CarParks extends Component
 
         $this->validate([
             'name' => 'required|string|max:255',
-            'capacity' => 'required|integer|min:1',
+            'capacityFriday' => 'required|integer|min:1',
+            'capacitySaturday' => 'required|integer|min:1',
+            'capacitySunday' => 'required|integer|min:1',
             'location' => 'nullable|string',
             'color' => 'nullable|string|max:50',
             'travelDirections' => 'nullable|string|max:2000',
@@ -113,7 +111,9 @@ class CarParks extends Component
 
         $data = [
             'name' => $this->name,
-            'capacity' => $this->capacity,
+            'capacity_friday' => (int) $this->capacityFriday,
+            'capacity_saturday' => (int) $this->capacitySaturday,
+            'capacity_sunday' => (int) $this->capacitySunday,
             'location' => $this->location !== '' ? $this->location : null,
             'color' => $this->color !== '' ? $this->color : null,
             'travel_directions' => $this->normalizedTravelDirections(),
@@ -147,7 +147,18 @@ class CarParks extends Component
 
         $this->modalOpen = false;
         Flux::toast($this->carParkId ? 'Car Park updated successfully.' : 'Car Park created successfully.');
-        $this->reset('name', 'capacity', 'location', 'color', 'travelDirections', 'carParkId', 'mapImage', 'existingMapImage');
+        $this->reset(
+            'name',
+            'capacityFriday',
+            'capacitySaturday',
+            'capacitySunday',
+            'location',
+            'color',
+            'travelDirections',
+            'carParkId',
+            'mapImage',
+            'existingMapImage',
+        );
     }
 
     public function delete(CarPark $carPark, CarParkMapImageStorage $mapImages): void

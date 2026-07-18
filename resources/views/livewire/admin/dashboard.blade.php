@@ -77,7 +77,8 @@
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             @foreach ($carParks as $park)
                 @php
-                    $percentage = $park->capacity > 0 ? ($park->current_occupancy / $park->capacity) * 100 : 0;
+                    $todayCapacity = $park->capacityForToday();
+                    $percentage = $todayCapacity > 0 ? ($park->current_occupancy / $todayCapacity) * 100 : 0;
                     $color = $percentage > 90 ? 'red' : ($percentage > 75 ? 'yellow' : 'green');
                     $barColor = match ($color) {
                         'red' => 'bg-red-500',
@@ -95,7 +96,7 @@
                                 <span>{{ $park->location ?? 'No location' }}</span>
                             </div>
                         </div>
-                        <flux:badge color="{{ $color }}">{{ $park->current_occupancy }} / {{ $park->capacity }}</flux:badge>
+                        <flux:badge color="{{ $color }}">{{ $park->current_occupancy }} / {{ $todayCapacity }}</flux:badge>
                     </div>
 
                     <div class="space-y-2 pt-2">
@@ -105,7 +106,7 @@
                         </div>
                         <div class="h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700">
                             <div class="h-full rounded-full transition-all duration-500 {{ $barColor }}"
-                                style="width: {{ $percentage }}%">
+                                style="width: {{ min(100, $percentage) }}%">
                             </div>
                         </div>
                     </div>

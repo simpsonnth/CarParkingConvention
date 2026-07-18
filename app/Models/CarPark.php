@@ -4,12 +4,33 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\ConventionDay;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class CarPark extends Model
 {
-    protected $fillable = ['name', 'capacity', 'location', 'map_image_path', 'travel_directions', 'color'];
+    protected $fillable = [
+        'name',
+        'capacity',
+        'capacity_friday',
+        'capacity_saturday',
+        'capacity_sunday',
+        'location',
+        'map_image_path',
+        'travel_directions',
+        'color',
+    ];
+
+    protected static function booted(): void
+    {
+        static::saving(function (CarPark $carPark): void {
+            $carPark->syncDayCapacitiesFromLegacy();
+            $carPark->syncLegacyCapacityFromDays();
+        });
+    }
 
     public function mapImageUrl(): ?string
     {
@@ -21,9 +42,33 @@ class CarPark extends Model
         return $this->hasMany(Congregation::class);
     }
 
-    public function parkingPasses(): \Illuminate\Database\Eloquent\Relations\HasManyThrough
+    public function parkingPasses(): HasManyThrough
     {
         return $this->hasManyThrough(ParkingPass::class, Congregation::class);
+    }
+
+    public function capacityForDay(string $day): int
+    {
+        return match ($day) {
+            ConventionDay::FRIDAY => (int) ($this->capacity_friday ?? $this->capacity),
+            ConventionDay::SATURDAY => (int) ($this->capacity_saturday ?? $this->capacity),
+            ConventionDay::SUNDAY => (int) ($this->capacity_sunday ?? $this->capacity),
+            default => (int) $this->capacity,
+        };
+    }
+
+    public function capacityForToday(?CarbonInterface $now = null): int
+    {
+        $now ??= now();
+
+        $day = match ($now->dayOfWeek) {
+            CarbonInterface::FRIDAY => ConventionDay::FRIDAY,
+            CarbonInterface::SATURDAY => ConventionDay::SATURDAY,
+            CarbonInterface::SUNDAY => ConventionDay::SUNDAY,
+            default => null,
+        };
+
+        return $day === null ? (int) $this->capacity : $this->capacityForDay($day);
     }
 
     public function contrastingTextColor(): string
@@ -49,5 +94,43 @@ class CarPark extends Model
         $luminance = 0.2126 * $r + 0.7152 * $g + 0.0722 * $b;
 
         return $luminance > 0.5 ? '#18181b' : '#ffffff';
+    }
+
+    protected function syncDayCapacitiesFromLegacy(): void
+    {
+        if ($this->capacity === null || $this->capacity === '') {
+            return;
+        }
+
+        $legacy = (int) $this->capacity;
+
+        if ($this->capacity_friday === null) {
+            $this->capacity_friday = $legacy;
+        }
+
+        if ($this->capacity_saturday === null) {
+            $this->capacity_saturday = $legacy;
+        }
+
+        if ($this->capacity_sunday === null) {
+            $this->capacity_sunday = $legacy;
+        }
+    }
+
+    protected function syncLegacyCapacityFromDays(): void
+    {
+        $friday = $this->capacity_friday;
+        $saturday = $this->capacity_saturday;
+        $sunday = $this->capacity_sunday;
+
+        if ($friday === null && $saturday === null && $sunday === null) {
+            return;
+        }
+
+        $this->capacity = max(
+            (int) ($friday ?? 0),
+            (int) ($saturday ?? 0),
+            (int) ($sunday ?? 0),
+        );
     }
 }

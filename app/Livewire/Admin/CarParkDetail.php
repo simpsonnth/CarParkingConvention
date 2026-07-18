@@ -7,6 +7,7 @@ namespace App\Livewire\Admin;
 use App\Actions\CarParks\CarParkMapImageStorage;
 use App\Models\CarPark;
 use App\Models\ParkingPass;
+use App\Services\CarParkDayCapacityMetrics;
 use Flux\Flux;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -21,7 +22,11 @@ class CarParkDetail extends Component
 
     public string $name = '';
 
-    public string $capacity = '';
+    public string $capacityFriday = '';
+
+    public string $capacitySaturday = '';
+
+    public string $capacitySunday = '';
 
     public string $location = '';
 
@@ -49,7 +54,9 @@ class CarParkDetail extends Component
     {
         $this->authorizeManage();
         $this->name = $this->carPark->name;
-        $this->capacity = (string) $this->carPark->capacity;
+        $this->capacityFriday = (string) $this->carPark->capacity_friday;
+        $this->capacitySaturday = (string) $this->carPark->capacity_saturday;
+        $this->capacitySunday = (string) $this->carPark->capacity_sunday;
         $this->location = (string) ($this->carPark->location ?? '');
         $this->color = (string) ($this->carPark->color ?? '');
         $this->travelDirections = (string) ($this->carPark->travel_directions ?? '');
@@ -64,7 +71,9 @@ class CarParkDetail extends Component
 
         $this->validate([
             'name' => 'required|string|max:255',
-            'capacity' => 'required|integer|min:1',
+            'capacityFriday' => 'required|integer|min:1',
+            'capacitySaturday' => 'required|integer|min:1',
+            'capacitySunday' => 'required|integer|min:1',
             'location' => 'nullable|string',
             'color' => 'nullable|string|max:50',
             'travelDirections' => 'nullable|string|max:2000',
@@ -73,7 +82,9 @@ class CarParkDetail extends Component
 
         $data = [
             'name' => $this->name,
-            'capacity' => $this->capacity,
+            'capacity_friday' => (int) $this->capacityFriday,
+            'capacity_saturday' => (int) $this->capacitySaturday,
+            'capacity_sunday' => (int) $this->capacitySunday,
             'location' => $this->location !== '' ? $this->location : null,
             'color' => $this->color !== '' ? $this->color : null,
             'travel_directions' => $this->normalizedTravelDirections(),
@@ -120,10 +131,9 @@ class CarParkDetail extends Component
         $this->carPark = $carPark;
     }
 
-    public function render()
+    public function render(CarParkDayCapacityMetrics $dayCapacityMetrics)
     {
-        // Calculate stats
-        $capacity = $this->carPark->capacity;
+        $capacity = $this->carPark->capacityForToday();
 
         $occupancyQuery = ParkingPass::parkedAtCarPark($this->carPark->id);
 
@@ -131,7 +141,6 @@ class CarParkDetail extends Component
 
         $percentage = $capacity > 0 ? ($occupancy / $capacity) * 100 : 0;
 
-        // Get parked cars
         $parkedCars = $occupancyQuery->with(['congregation', 'scannedBy'])
             ->latest('scanned_at')
             ->paginate(15, pageName: 'parked_page');
@@ -161,12 +170,16 @@ class CarParkDetail extends Component
             ->orderByDesc('parked_count')
             ->get();
 
+        $dayAssigned = $dayCapacityMetrics->assignedCountsForPark($this->carPark->id);
+
         return view('livewire.admin.car-park-detail', [
             'occupancy' => $occupancy,
+            'capacity' => $capacity,
             'percentage' => $percentage,
             'parkedCars' => $parkedCars,
             'history' => $history,
             'congregationBreakdown' => $congregationBreakdown,
+            'dayAssigned' => $dayAssigned,
         ]);
     }
 

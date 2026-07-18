@@ -14,22 +14,27 @@
     <p class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
         <span class="inline-flex items-center gap-1.5">
             <span class="h-2 w-2 shrink-0 rounded-full bg-green-500" aria-hidden="true"></span>
-            Clocked in
+            Clocked in (live)
         </span>
         <span class="inline-flex items-center gap-1.5">
             <span class="h-2 w-2 shrink-0 rounded-full bg-yellow-400 dark:bg-yellow-500" aria-hidden="true"></span>
-            Registered &amp; assigned, not yet arrived
+            Registered for that day
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-red-500" aria-hidden="true"></span>
+            Over capacity
         </span>
     </p>
 
     <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700 -mx-4 sm:mx-0">
-        <table class="w-full min-w-[640px] text-left text-sm text-zinc-500 dark:text-zinc-400">
+        <table class="w-full min-w-[720px] text-left text-sm text-zinc-500 dark:text-zinc-400">
             <thead class="bg-zinc-50 text-xs uppercase text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                 <tr>
                     <th class="px-6 py-3">Name</th>
-                    <th class="px-6 py-3">Capacity</th>
-                    <th class="px-6 py-3">Occupancy</th>
-                    <th class="px-6 py-3">Utilization</th>
+                    <th class="px-4 py-3">Live</th>
+                    <th class="px-4 py-3">Fri</th>
+                    <th class="px-4 py-3">Sat</th>
+                    <th class="px-4 py-3">Sun</th>
                     <th class="px-6 py-3 text-end">Actions</th>
                 </tr>
             </thead>
@@ -37,15 +42,17 @@
                 @forelse ($carParks as $park)
                     @php
                         $parked = (int) $park->current_occupancy;
-                        $assigned = (int) $park->assigned_count;
-                        $capacity = (int) $park->capacity;
-                        $parkedPct = $capacity > 0 ? min(100, 100 * $parked / $capacity) : 0;
-                        $assignedPct = $capacity > 0 ? min(100, 100 * $assigned / $capacity) : 0;
-                        $pendingPct = max(0, $assignedPct - $parkedPct);
-                        $pending = max(0, $assigned - $parked);
-                        $available = max(0, $capacity - max($parked, $assigned));
-                        $overCapacity = $parked > $capacity || $assigned > $capacity;
-                        $utilizationTooltip = "{$parked} clocked in · {$pending} not yet arrived · {$available} spaces free";
+                        $liveCapacity = $park->capacityForToday();
+                        $livePct = $liveCapacity > 0 ? min(100, 100 * $parked / $liveCapacity) : 0;
+                        $liveOver = $parked > $liveCapacity;
+                        $liveFree = max(0, $liveCapacity - $parked);
+                        $liveTooltip = "{$parked} clocked in · {$liveFree} spaces free (today's limit {$liveCapacity})";
+
+                        $dayColumns = [
+                            'friday' => ['label' => 'Friday', 'assigned' => (int) $park->assigned_friday, 'capacity' => (int) $park->capacity_friday],
+                            'saturday' => ['label' => 'Saturday', 'assigned' => (int) $park->assigned_saturday, 'capacity' => (int) $park->capacity_saturday],
+                            'sunday' => ['label' => 'Sunday', 'assigned' => (int) $park->assigned_sunday, 'capacity' => (int) $park->capacity_sunday],
+                        ];
                     @endphp
                     <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
                         <td class="px-6 py-4">
@@ -61,33 +68,55 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-6 py-4 text-zinc-600 dark:text-zinc-400">{{ $park->capacity }}</td>
-                        <td class="px-6 py-4">
-                            <flux:badge color="{{ $overCapacity ? 'red' : 'zinc' }}">
-                                {{ $parked }} in · {{ $assigned }} assigned / {{ $capacity }}
-                            </flux:badge>
-                            @if ($overCapacity)
-                                <span class="mt-1 block text-xs font-medium text-red-600 dark:text-red-400">Over capacity</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 w-48">
-                            <flux:tooltip :content="$utilizationTooltip" position="top">
-                                <div class="flex cursor-help items-center gap-2">
-                                    <div class="flex h-2 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700"
+                        <td class="px-4 py-4">
+                            <flux:tooltip :content="$liveTooltip" position="top">
+                                <div class="cursor-help space-y-1.5">
+                                    <flux:badge color="{{ $liveOver ? 'red' : 'zinc' }}">
+                                        {{ $parked }} in / {{ $liveCapacity }}
+                                    </flux:badge>
+                                    <div class="flex h-1.5 w-28 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700"
                                         role="progressbar"
-                                        aria-valuenow="{{ (int) max($parkedPct, $assignedPct) }}"
+                                        aria-valuenow="{{ (int) $livePct }}"
                                         aria-valuemin="0"
                                         aria-valuemax="100"
-                                        aria-label="{{ $park->name }} utilization: {{ $utilizationTooltip }}">
+                                        aria-label="{{ $park->name }} live occupancy: {{ $liveTooltip }}">
                                         <div class="h-full bg-green-500 transition-all duration-500"
-                                            style="width: {{ $parkedPct }}%"></div>
-                                        <div class="h-full bg-yellow-400 transition-all duration-500 dark:bg-yellow-500"
-                                            style="width: {{ $pendingPct }}%"></div>
+                                            style="width: {{ $livePct }}%"></div>
                                     </div>
-                                    <span class="text-xs font-medium tabular-nums text-zinc-500">{{ number_format(max($parkedPct, $assignedPct), 0) }}%</span>
                                 </div>
                             </flux:tooltip>
                         </td>
+                        @foreach ($dayColumns as $day)
+                            @php
+                                $assigned = $day['assigned'];
+                                $dayCapacity = $day['capacity'];
+                                $dayPct = $dayCapacity > 0 ? min(100, 100 * $assigned / $dayCapacity) : 0;
+                                $dayOver = $assigned > $dayCapacity;
+                                $dayFree = max(0, $dayCapacity - $assigned);
+                                $dayTooltip = "{$assigned} registered for {$day['label']} · {$dayFree} spaces free";
+                            @endphp
+                            <td class="px-4 py-4">
+                                <flux:tooltip :content="$dayTooltip" position="top">
+                                    <div class="cursor-help space-y-1.5">
+                                        <flux:badge color="{{ $dayOver ? 'red' : 'zinc' }}">
+                                            {{ $assigned }} / {{ $dayCapacity }}
+                                        </flux:badge>
+                                        @if ($dayOver)
+                                            <span class="block text-xs font-medium text-red-600 dark:text-red-400">Over</span>
+                                        @endif
+                                        <div class="flex h-1.5 w-28 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700"
+                                            role="progressbar"
+                                            aria-valuenow="{{ (int) $dayPct }}"
+                                            aria-valuemin="0"
+                                            aria-valuemax="100"
+                                            aria-label="{{ $park->name }} {{ $day['label'] }} demand: {{ $dayTooltip }}">
+                                            <div class="h-full bg-yellow-400 transition-all duration-500 dark:bg-yellow-500"
+                                                style="width: {{ $dayPct }}%"></div>
+                                        </div>
+                                    </div>
+                                </flux:tooltip>
+                            </td>
+                        @endforeach
                         <td class="px-6 py-4 text-end">
                             <flux:dropdown>
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" />
@@ -106,7 +135,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-8 text-center text-zinc-500">
+                        <td colspan="6" class="px-6 py-8 text-center text-zinc-500">
                             No car parks found.
                         </td>
                     </tr>
@@ -123,7 +152,7 @@
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">{{ $carParkId ? 'Edit Car Park' : 'Create Car Park' }}</flux:heading>
-                <flux:subheading>Manage car park details and capacity.</flux:subheading>
+                <flux:subheading>Manage car park details and per-day capacity.</flux:subheading>
             </div>
 
             <div class="space-y-4">
@@ -133,11 +162,34 @@
                         class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" />
                 </div>
 
-                <div class="space-y-2">
-                    <label for="capacity"
-                        class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Capacity</label>
-                    <input type="number" wire:model="capacity" id="capacity" placeholder="500"
-                        class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" />
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div class="space-y-2">
+                        <label for="capacityFriday"
+                            class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Friday capacity</label>
+                        <input type="number" wire:model="capacityFriday" id="capacityFriday" placeholder="200" min="1"
+                            class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" />
+                        @error('capacityFriday')
+                            <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="space-y-2">
+                        <label for="capacitySaturday"
+                            class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Saturday capacity</label>
+                        <input type="number" wire:model="capacitySaturday" id="capacitySaturday" placeholder="200" min="1"
+                            class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" />
+                        @error('capacitySaturday')
+                            <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="space-y-2">
+                        <label for="capacitySunday"
+                            class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Sunday capacity</label>
+                        <input type="number" wire:model="capacitySunday" id="capacitySunday" placeholder="200" min="1"
+                            class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" />
+                        @error('capacitySunday')
+                            <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
 
                 <div class="space-y-2">

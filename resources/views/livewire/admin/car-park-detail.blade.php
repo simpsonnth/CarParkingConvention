@@ -38,8 +38,9 @@
             <div class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Current Occupancy</div>
             <div class="mt-2 flex items-baseline gap-2">
                 <span class="text-3xl font-bold text-zinc-900 dark:text-white">{{ $occupancy }}</span>
-                <span class="text-sm text-zinc-500">/ {{ $carPark->capacity }}</span>
+                <span class="text-sm text-zinc-500">/ {{ $capacity }}</span>
             </div>
+            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Today's capacity limit</p>
         </div>
 
         <div class="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
@@ -53,16 +54,50 @@
                     $color = $percentage > 90 ? 'bg-red-500' : ($percentage > 75 ? 'bg-yellow-500' : 'bg-green-500');
                 @endphp
                 <div class="h-full rounded-full transition-all duration-500 {{ $color }}"
-                    style="width: {{ $percentage }}%"></div>
+                    style="width: {{ min(100, $percentage) }}%"></div>
             </div>
         </div>
 
         <div class="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
             <div class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Available Spaces</div>
             <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-white">
-                {{ max(0, $carPark->capacity - $occupancy) }}
+                {{ max(0, $capacity - $occupancy) }}
             </div>
         </div>
+    </div>
+
+    {{-- Per-day planning --}}
+    <div class="grid gap-4 sm:grid-cols-3">
+        @foreach ([
+            'friday' => ['label' => 'Friday', 'capacity' => (int) $carPark->capacity_friday],
+            'saturday' => ['label' => 'Saturday', 'capacity' => (int) $carPark->capacity_saturday],
+            'sunday' => ['label' => 'Sunday', 'capacity' => (int) $carPark->capacity_sunday],
+        ] as $dayKey => $dayMeta)
+            @php
+                $assigned = (int) ($dayAssigned[$dayKey] ?? 0);
+                $dayCapacity = $dayMeta['capacity'];
+                $dayPct = $dayCapacity > 0 ? min(100, 100 * $assigned / $dayCapacity) : 0;
+                $dayOver = $assigned > $dayCapacity;
+            @endphp
+            <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+                <div class="text-sm font-medium text-zinc-500 dark:text-zinc-400">{{ $dayMeta['label'] }} demand</div>
+                <div class="mt-2 flex items-baseline gap-2">
+                    <span @class([
+                        'text-2xl font-bold',
+                        'text-red-600 dark:text-red-400' => $dayOver,
+                        'text-zinc-900 dark:text-white' => ! $dayOver,
+                    ])>{{ $assigned }}</span>
+                    <span class="text-sm text-zinc-500">/ {{ $dayCapacity }}</span>
+                </div>
+                @if ($dayOver)
+                    <p class="mt-1 text-xs font-medium text-red-600 dark:text-red-400">Over capacity</p>
+                @endif
+                <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700">
+                    <div class="h-full rounded-full bg-yellow-400 transition-all duration-500 dark:bg-yellow-500"
+                        style="width: {{ $dayPct }}%"></div>
+                </div>
+            </div>
+        @endforeach
     </div>
 
     <flux:separator />
@@ -212,7 +247,11 @@
 
             <flux:input wire:model="name" label="Name" placeholder="e.g. North Car Park" />
 
-            <flux:input wire:model="capacity" label="Capacity" type="number" placeholder="e.g. 150" />
+            <div class="grid gap-4 sm:grid-cols-3">
+                <flux:input wire:model="capacityFriday" label="Friday capacity" type="number" placeholder="e.g. 150" />
+                <flux:input wire:model="capacitySaturday" label="Saturday capacity" type="number" placeholder="e.g. 150" />
+                <flux:input wire:model="capacitySunday" label="Sunday capacity" type="number" placeholder="e.g. 150" />
+            </div>
 
             <flux:input wire:model="location" label="Location" placeholder="e.g. Behind Main Hall" />
 

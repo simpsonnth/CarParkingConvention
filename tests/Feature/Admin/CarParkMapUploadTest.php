@@ -17,7 +17,7 @@ test('car park save persists uploaded map image path', function () {
 
     Livewire::test(CarParks::class)
         ->set('name', 'South Car Park')
-        ->set('capacity', 50)
+        ->set('capacityFriday', 50)->set('capacitySaturday', 50)->set('capacitySunday', 50)
         ->set('location', 'Behind main hall')
         ->set('color', '#22c55e')
         ->set('mapImage', UploadedFile::fake()->image('parking-map.jpg'))
@@ -39,7 +39,7 @@ test('car park create persists travel directions', function () {
 
     Livewire::test(CarParks::class)
         ->set('name', 'Directions Park')
-        ->set('capacity', 40)
+        ->set('capacityFriday', 40)->set('capacitySaturday', 40)->set('capacitySunday', 40)
         ->set('location', 'West')
         ->set('color', '#2563eb')
         ->set('travelDirections', "Enter via Gate B.\nFollow blue signs.")
@@ -225,7 +225,7 @@ test('travel directions longer than 2000 characters fail validation', function (
 
     Livewire::test(CarParks::class)
         ->set('name', 'Long Directions Park')
-        ->set('capacity', 10)
+        ->set('capacityFriday', 10)->set('capacitySaturday', 10)->set('capacitySunday', 10)
         ->set('travelDirections', str_repeat('a', 2001))
         ->call('save')
         ->assertHasErrors(['travelDirections' => 'max']);
@@ -250,7 +250,7 @@ test('user with only car parks view cannot mutate parks', function () {
 
     Livewire::test(CarParks::class)
         ->set('name', 'Hacked Park')
-        ->set('capacity', 99)
+        ->set('capacityFriday', 99)->set('capacitySaturday', 99)->set('capacitySunday', 99)
         ->call('save')
         ->assertForbidden();
 
@@ -269,7 +269,7 @@ test('car park map image accepts files up to 10MB', function () {
 
     Livewire::test(CarParks::class)
         ->set('name', 'Large Map Park')
-        ->set('capacity', 40)
+        ->set('capacityFriday', 40)->set('capacitySaturday', 40)->set('capacitySunday', 40)
         ->set('mapImage', UploadedFile::fake()->image('large-map.jpg')->size(10240))
         ->call('save')
         ->assertHasNoErrors();
@@ -285,7 +285,7 @@ test('car park map image rejects files over 10MB', function () {
 
     Livewire::test(CarParks::class)
         ->set('name', 'Too Large Map Park')
-        ->set('capacity', 40)
+        ->set('capacityFriday', 40)->set('capacitySaturday', 40)->set('capacitySunday', 40)
         ->set('mapImage', UploadedFile::fake()->image('too-large.jpg')->size(10241))
         ->call('save')
         ->assertHasErrors(['mapImage' => 'max']);

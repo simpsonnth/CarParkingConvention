@@ -1,23 +1,28 @@
 <?php
 
 use App\Livewire\Admin\CarParks;
+use App\Livewire\Attendant\Scan;
 use App\Models\CarPark;
 use App\Models\Congregation;
 use App\Models\ParkingPass;
 use App\Models\ParkingRegistration;
 use App\Models\User;
+use Carbon\Carbon;
 use Livewire\Livewire;
 
 test('guest cannot access car parks page', function () {
     $this->get(route('admin.car-parks'))->assertRedirect();
 });
 
-test('car parks page shows assigned registrations and stacked utilization bar', function () {
+test('car parks page shows per-day assigned demand against day capacity', function () {
     $admin = User::factory()->admin()->create();
 
     $park = CarPark::query()->create([
         'name' => 'North Car Park',
         'capacity' => 10,
+        'capacity_friday' => 3,
+        'capacity_saturday' => 10,
+        'capacity_sunday' => 10,
         'location' => 'North side',
         'color' => '#22c55e',
     ]);
@@ -43,15 +48,14 @@ test('car parks page shows assigned registrations and stacked utilization bar', 
     Livewire::actingAs($admin)
         ->test(CarParks::class)
         ->assertSee('North Car Park')
-        ->assertSee('0 in · 4 assigned / 10')
-        ->assertSee('Clocked in')
-        ->assertSee('Registered & assigned, not yet arrived')
-        ->assertSee('0 clocked in · 4 not yet arrived · 6 spaces free')
-        ->assertSeeHtml('width: 0%')
-        ->assertSeeHtml('width: 40%');
+        ->assertSee('4 / 3')
+        ->assertSee('0 / 10')
+        ->assertSee('Over')
+        ->assertSee('Clocked in (live)')
+        ->assertSee('Registered for that day');
 });
 
-test('car parks page shows green segment for clocked in vehicles', function () {
+test('car parks page shows green live segment for clocked in vehicles', function () {
     $admin = User::factory()->admin()->create();
 
     $park = CarPark::query()->create([
@@ -90,8 +94,8 @@ test('car parks page shows green segment for clocked in vehicles', function () {
 
     Livewire::actingAs($admin)
         ->test(CarParks::class)
-        ->assertSee('2 in · 4 assigned / 10')
-        ->assertSeeHtml('width: 20%');
+        ->assertSee('2 in / 10')
+        ->assertSee('4 / 10');
 });
 
 test('individual registration car park override counts toward override park not congregation default', function () {
@@ -136,14 +140,9 @@ test('individual registration car park override counts toward override park not 
         'days' => ['Friday'],
     ]);
 
-    Livewire::actingAs($admin)
-        ->test(CarParks::class)
-        ->assertSee('Default Park')
-        ->assertSee('Override Park');
-
     $html = Livewire::actingAs($admin)->test(CarParks::class)->html();
 
-    expect(substr_count($html, '0 in · 1 assigned / 10'))->toBe(2);
+    expect(substr_count($html, '1 / 10'))->toBeGreaterThanOrEqual(2);
 });
 
 test('parked pass with scan car park id counts toward occupancy even when congregation assigned elsewhere', function () {
@@ -178,9 +177,9 @@ test('parked pass with scan car park id counts toward occupancy even when congre
     Livewire::actingAs($admin)
         ->test(CarParks::class)
         ->assertSee('Scan Park')
-        ->assertSee('1 in · 0 assigned / 10')
+        ->assertSee('1 in / 10')
         ->assertSee('Congregation Park')
-        ->assertSee('0 in · 0 assigned / 10');
+        ->assertSee('0 in / 10');
 });
 
 test('assigned to car park scope respects effective park resolution', function () {
@@ -225,4 +224,70 @@ test('assigned to car park scope respects effective park resolution', function (
 
     expect(ParkingRegistration::query()->assignedToCarPark($park->id)->count())->toBe(1);
     expect(ParkingRegistration::query()->assignedToCarPark($otherPark->id)->count())->toBe(1);
+});
+
+test('saving car park persists day capacities and syncs legacy capacity to max', function () {
+    $admin = User::factory()->admin()->create();
+
+    Livewire::actingAs($admin)
+        ->test(CarParks::class)
+        ->set('name', 'Day Cap Park')
+        ->set('capacityFriday', 5)
+        ->set('capacitySaturday', 12)
+        ->set('capacitySunday', 8)
+        ->set('color', '#0ea5e9')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    $park = CarPark::query()->where('name', 'Day Cap Park')->first();
+
+    expect($park)->not->toBeNull()
+        ->and($park->capacity_friday)->toBe(5)
+        ->and($park->capacity_saturday)->toBe(12)
+        ->and($park->capacity_sunday)->toBe(8)
+        ->and($park->capacity)->toBe(12);
+});
+
+test('walk-in scan blocks when today day capacity is full', function () {
+    Carbon::setTestNow(Carbon::parse('2026-07-17 10:00:00')); // Friday
+
+    $attendant = User::factory()->attendant()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Tight Friday Park',
+        'capacity_friday' => 1,
+        'capacity_saturday' => 50,
+        'capacity_sunday' => 50,
+        'color' => '#dc2626',
+    ]);
+
+    expect($park->fresh()->capacity)->toBe(50);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Tight Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $park->id,
+    ]);
+
+    ParkingPass::query()->create([
+        'congregation_id' => $congregation->id,
+        'car_park_id' => $park->id,
+        'status' => 'parked',
+        'vehicle_reg' => 'FULL001',
+        'scanned_at' => now(),
+    ]);
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class)
+        ->set('walkInMode', true)
+        ->set('step', 'confirm')
+        ->set('selectedCongregationId', $congregation->id)
+        ->set('vehicleReg', 'FULL002')
+        ->set('contactNumber', '07700999888')
+        ->set('name', 'Second Driver')
+        ->call('confirm')
+        ->assertSet('lastScanResult', 'error')
+        ->assertSee('CAR PARK FULL');
+
+    Carbon::setTestNow();
 });

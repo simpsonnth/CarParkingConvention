@@ -311,13 +311,15 @@ class Scan extends Component
             })
             ->count();
 
-        if ($currentOccupancy >= $carPark->capacity) {
-            $this->setResult('error', 'CAR PARK FULL', 'The '.$carPark->name.' is at capacity ('.$carPark->capacity.').');
+        $todayCapacity = $carPark->capacityForToday();
+
+        if ($currentOccupancy >= $todayCapacity) {
+            $this->setResult('error', 'CAR PARK FULL', 'The '.$carPark->name.' is at capacity ('.$todayCapacity.').');
 
             return;
         }
 
-        if ($currentOccupancy >= ($carPark->capacity * 0.9)) {
+        if ($currentOccupancy >= ($todayCapacity * 0.9)) {
             Flux::toast('Warning: '.$carPark->name.' is almost full!', variant: 'warning');
         }
 
