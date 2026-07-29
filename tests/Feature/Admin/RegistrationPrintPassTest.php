@@ -179,12 +179,90 @@ test('registration print page includes back page with registrant details, notes,
         ->assertSee('Back Page Driver')
         ->assertSee('07700000099')
         ->assertSee(__('print_pass.emergency_contact_note'))
+        ->assertSee(__('print_pass.requested_days'))
+        ->assertSee(trans_choice('print_pass.requested_days_value', 1, [
+            'count' => 1,
+            'days' => 'Friday',
+        ]))
+        ->assertSee(__('print_pass.requested_days_incorrect_note'))
+        ->assertSee(__('print_pass.ticket_unique_note'))
+        ->assertSee(__('print_pass.ticket_unused_note'))
+        ->assertSee(__('print_pass.parking_attendants_patience_note'))
         ->assertSee(__('print_pass.footwear_note'))
         ->assertSee(__('print_pass.water_note'))
         ->assertSee(__('print_pass.scripture_reference'))
         ->assertSee(__('print_pass.scripture_text'))
         ->assertSee(__('print_pass.closing'))
         ->assertSee(__('print_pass.map_unavailable'));
+});
+
+test('registration print page shows multi-day requested days count and names', function () {
+    $admin = User::factory()->admin()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Multi Day Park',
+        'capacity' => 20,
+        'location' => 'East gate',
+        'color' => '#dc2626',
+    ]);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Multi Day Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $park->id,
+    ]);
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Multi Day Driver',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700000088',
+        'email' => 'multiday@hall.test',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'MD12DAY',
+        'days' => ['Sunday', 'Friday'],
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.registrations.print', $registration))
+        ->assertOk()
+        ->assertSee(trans_choice('print_pass.requested_days_value', 2, [
+            'count' => 2,
+            'days' => 'Friday, Sunday',
+        ]))
+        ->assertSee(__('print_pass.requested_days_incorrect_note'));
+});
+
+test('registration print page shows none recorded when days are empty', function () {
+    $admin = User::factory()->admin()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Empty Days Park',
+        'capacity' => 20,
+        'location' => 'West gate',
+        'color' => '#dc2626',
+    ]);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Empty Days Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $park->id,
+    ]);
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Empty Days Driver',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700000077',
+        'email' => 'emptydays@hall.test',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'ED12DAY',
+        'days' => [],
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.registrations.print', $registration))
+        ->assertOk()
+        ->assertSee(__('print_pass.requested_days_none'))
+        ->assertSee(__('print_pass.requested_days_incorrect_note'));
 });
 
 test('registration print page shows car park map image on back when uploaded', function () {

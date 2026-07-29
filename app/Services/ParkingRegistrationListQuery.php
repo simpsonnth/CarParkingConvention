@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\ParkingRegistration;
+use App\Support\ConventionDay;
 use App\Support\ParkingRegistrationListFilters;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +44,9 @@ class ParkingRegistrationListQuery
             ->when($filters->vehicleTypes !== [], function ($q) use ($filters): void {
                 $q->whereIn('vehicle_type', $filters->vehicleTypes);
             })
+            ->when($filters->days !== [], function ($q) use ($filters): void {
+                $this->applyExactDaysFilter($q, $filters->days);
+            })
             ->when($filters->elderlyInfirm !== null, function ($q) use ($filters): void {
                 $q->where('elderly_infirm_parking', $filters->elderlyInfirm);
             })
@@ -79,6 +83,29 @@ class ParkingRegistrationListQuery
         $query->orderBy($sortColumn, $filters->sortDir === 'desc' ? 'desc' : 'asc');
 
         return $query;
+    }
+
+    /**
+     * Match registrations whose `days` JSON set equals the selected days (order-independent).
+     *
+     * @param  Builder<ParkingRegistration>  $query
+     * @param  list<string>  $days
+     */
+    protected function applyExactDaysFilter(Builder $query, array $days): void
+    {
+        $normalized = ParkingRegistrationListFilters::normalizeDays($days);
+        if ($normalized === []) {
+            return;
+        }
+
+        foreach ($normalized as $day) {
+            if (! in_array($day, ConventionDay::singleDayKeys(), true)) {
+                continue;
+            }
+            $query->whereJsonContains('days', $day);
+        }
+
+        $query->whereJsonLength('days', count($normalized));
     }
 
     /**

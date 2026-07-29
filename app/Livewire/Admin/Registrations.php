@@ -44,6 +44,8 @@ class Registrations extends Component
 
     public array $filterVehicleType = [];
 
+    public array $filterDays = [];
+
     /** @var bool|null true = yes, false = no, null = any */
     public $filterElderlyInfirm = null;
 
@@ -53,6 +55,8 @@ class Registrations extends Component
     public array $filterDraftCarParks = [];
 
     public array $filterDraftVehicleType = [];
+
+    public array $filterDraftDays = [];
 
     /** @var string|null 'any' | '1' | '0' for draft panel */
     public $filterDraftElderlyInfirm = 'any';
@@ -142,6 +146,7 @@ class Registrations extends Component
         $this->filterDraftCongregations = $this->filterCongregations;
         $this->filterDraftCarParks = $this->filterCarParks;
         $this->filterDraftVehicleType = $this->filterVehicleType;
+        $this->filterDraftDays = $this->filterDays;
         $this->filterDraftElderlyInfirm = $this->filterElderlyInfirm === null ? 'any' : ($this->filterElderlyInfirm ? '1' : '0');
         $this->filterDraftDuplicatesOnly = $this->filterDuplicatesOnly;
         $this->filterDraftUnassignedCarPark = $this->filterUnassignedCarPark;
@@ -153,6 +158,7 @@ class Registrations extends Component
         $this->filterCongregations = $this->filterDraftCongregations;
         $this->filterCarParks = array_map('intval', $this->filterDraftCarParks);
         $this->filterVehicleType = $this->filterDraftVehicleType;
+        $this->filterDays = ParkingRegistrationListFilters::normalizeDays($this->filterDraftDays);
         $draft = $this->filterDraftElderlyInfirm;
         $this->filterElderlyInfirm = ($draft === 'any' || $draft === '' || $draft === null) ? null : (bool) (int) $draft;
         $this->filterDuplicatesOnly = $this->filterDraftDuplicatesOnly;
@@ -171,10 +177,12 @@ class Registrations extends Component
         $this->filterCongregations = [];
         $this->filterCarParks = [];
         $this->filterVehicleType = [];
+        $this->filterDays = [];
         $this->filterElderlyInfirm = null;
         $this->filterDraftCongregations = [];
         $this->filterDraftCarParks = [];
         $this->filterDraftVehicleType = [];
+        $this->filterDraftDays = [];
         $this->filterDraftElderlyInfirm = 'any';
         $this->filterDraftCongregationSearch = '';
         $this->filterDuplicatesOnly = false;
@@ -195,6 +203,9 @@ class Registrations extends Component
         }
         if (! empty($this->filterVehicleType)) {
             $n += count($this->filterVehicleType);
+        }
+        if (! empty($this->filterDays)) {
+            $n += count($this->filterDays);
         }
         if ($this->filterElderlyInfirm !== null) {
             $n += 1;

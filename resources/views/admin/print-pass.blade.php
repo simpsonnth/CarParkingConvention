@@ -707,9 +707,9 @@
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
-            gap: 2.5mm;
+            gap: 2mm;
             font-size: clamp(0.65rem, 1.3vw, 0.78rem);
-            line-height: 1.4;
+            line-height: 1.35;
             color: #44403c;
         }
 
@@ -918,9 +918,9 @@
             }
 
             .pass-back-notes {
-                gap: 1.4mm;
-                font-size: 2.4mm;
-                line-height: 1.25;
+                gap: 1.1mm;
+                font-size: 2.25mm;
+                line-height: 1.22;
             }
 
             .pass-back-contact {
@@ -1124,7 +1124,7 @@
         .pass-back-directions-text--long h2 { font-size: 2.7mm; }
         .pass-back-directions-text--long h3 { font-size: 2.5mm; }
         .pass-back-directions-text p { margin: 0 0 0.9mm; }
-        .pass-back-notes { gap: 1.4mm; font-size: 2.4mm; line-height: 1.25; }
+        .pass-back-notes { gap: 1.1mm; font-size: 2.25mm; line-height: 1.22; }
         .pass-back-contact { padding: 1.8mm 2.2mm; }
         .pass-back-footer { padding: 2.5mm 5mm; }
         .pass-back-scripture-ref { font-size: 2.4mm; }
@@ -1316,6 +1316,23 @@
         } elseif (! $mapImageSrc && $travelDirections) {
             $mapRowClass .= ' pass-back-map-row--directions-only';
         }
+
+        $requestedDaysDisplay = null;
+        if (isset($registration)) {
+            $canonicalDays = \App\Support\ConventionDay::singleDayKeys();
+            $rawDays = is_array($registration->days) ? $registration->days : [];
+            $orderedDays = array_values(array_filter(
+                $canonicalDays,
+                static fn (string $day): bool => in_array($day, $rawDays, true)
+            ));
+            $dayCount = count($orderedDays);
+            $requestedDaysDisplay = $dayCount === 0
+                ? __('print_pass.requested_days_none')
+                : trans_choice('print_pass.requested_days_value', $dayCount, [
+                    'count' => $dayCount,
+                    'days' => implode(', ', $orderedDays),
+                ]);
+        }
     @endphp
 
     <div class="pass-back-outer">
@@ -1367,7 +1384,16 @@
                                 </div>
                                 <p class="pass-back-note">{{ __('print_pass.emergency_contact_note') }}</p>
                             @endif
+                            <div class="pass-back-contact-row">
+                                <span class="pass-back-contact-label">{{ __('print_pass.requested_days') }}:</span>
+                                <span class="pass-back-contact-value">{{ $requestedDaysDisplay }}</span>
+                            </div>
+                            <p class="pass-back-note">{{ __('print_pass.requested_days_incorrect_note') }}</p>
                         </div>
+
+                        <p class="pass-back-note">{{ __('print_pass.ticket_unique_note') }}</p>
+                        <p class="pass-back-note">{{ __('print_pass.ticket_unused_note') }}</p>
+                        <p class="pass-back-note">{{ __('print_pass.parking_attendants_patience_note') }}</p>
                     @elseif(isset($congregation))
                         <p class="pass-back-note">{{ __('print_pass.congregation_pass_note') }}</p>
                     @endif

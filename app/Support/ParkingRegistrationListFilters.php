@@ -12,12 +12,14 @@ final readonly class ParkingRegistrationListFilters
      * @param  list<string>  $congregations
      * @param  list<int>  $carParkIds
      * @param  list<string>  $vehicleTypes
+     * @param  list<string>  $days
      */
     public function __construct(
         public string $search = '',
         public array $congregations = [],
         public array $carParkIds = [],
         public array $vehicleTypes = [],
+        public array $days = [],
         public ?bool $elderlyInfirm = null,
         public bool $duplicatesOnly = false,
         public bool $unassignedCarPark = false,
@@ -32,6 +34,7 @@ final readonly class ParkingRegistrationListFilters
             congregations: $component->filterCongregations,
             carParkIds: array_map('intval', $component->filterCarParks),
             vehicleTypes: $component->filterVehicleType,
+            days: self::normalizeDays($component->filterDays),
             elderlyInfirm: $component->filterElderlyInfirm,
             duplicatesOnly: $component->filterDuplicatesOnly,
             unassignedCarPark: $component->filterUnassignedCarPark,
@@ -55,6 +58,7 @@ final readonly class ParkingRegistrationListFilters
             congregations: array_values(array_map('strval', (array) ($data['congregations'] ?? []))),
             carParkIds: array_map('intval', (array) ($data['car_parks'] ?? [])),
             vehicleTypes: array_values(array_map('strval', (array) ($data['vehicle_type'] ?? []))),
+            days: self::normalizeDays((array) ($data['days'] ?? [])),
             elderlyInfirm: $elderlyInfirm,
             duplicatesOnly: filter_var($data['duplicates_only'] ?? false, FILTER_VALIDATE_BOOLEAN),
             unassignedCarPark: filter_var($data['unassigned_car_park'] ?? false, FILTER_VALIDATE_BOOLEAN),
@@ -69,6 +73,7 @@ final readonly class ParkingRegistrationListFilters
             || $this->congregations !== []
             || $this->carParkIds !== []
             || $this->vehicleTypes !== []
+            || $this->days !== []
             || $this->elderlyInfirm !== null
             || $this->duplicatesOnly
             || $this->unassignedCarPark;
@@ -93,6 +98,9 @@ final readonly class ParkingRegistrationListFilters
         if ($this->vehicleTypes !== []) {
             $params['vehicle_type'] = $this->vehicleTypes;
         }
+        if ($this->days !== []) {
+            $params['days'] = $this->days;
+        }
         if ($this->elderlyInfirm !== null) {
             $params['elderly_infirm'] = $this->elderlyInfirm ? '1' : '0';
         }
@@ -110,5 +118,19 @@ final readonly class ParkingRegistrationListFilters
         }
 
         return $params;
+    }
+
+    /**
+     * @param  array<int, mixed>  $days
+     * @return list<string>
+     */
+    public static function normalizeDays(array $days): array
+    {
+        $allowed = ConventionDay::singleDayKeys();
+
+        return array_values(array_filter(
+            $allowed,
+            static fn (string $day): bool => in_array($day, $days, true)
+        ));
     }
 }

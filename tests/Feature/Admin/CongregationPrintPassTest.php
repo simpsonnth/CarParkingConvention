@@ -35,5 +35,10 @@ test('congregation print page includes back page with map and congregation note 
         ->assertSee(__('print_pass.travel_directions'))
         ->assertSee('Congregation park travel directions')
         ->assertDontSee(__('print_pass.emergency_contact_note'))
-        ->assertDontSee(__('print_pass.registrant_name').':');
+        ->assertDontSee(__('print_pass.registrant_name').':')
+        ->assertDontSee(__('print_pass.requested_days').':')
+        ->assertDontSee(__('print_pass.requested_days_incorrect_note'))
+        ->assertDontSee(__('print_pass.ticket_unique_note'))
+        ->assertDontSee(__('print_pass.ticket_unused_note'))
+        ->assertDontSee(__('print_pass.parking_attendants_patience_note'));
 });

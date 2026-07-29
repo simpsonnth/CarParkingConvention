@@ -38,6 +38,7 @@ return [
     'filter_duplicates_hint' => 'Includes every row that shares an email or vehicle registration with at least one other registration.',
     'filter_unassigned_car_park_only' => 'Show unassigned car park only',
     'filter_unassigned_car_park_hint' => 'No individual car park and no congregation default car park.',
+    'filter_days_hint' => 'Shows only registrations whose selected days match exactly (e.g. Friday alone excludes Friday + Saturday).',
     'apply_filters' => 'Apply Filters',
     'apply' => 'Apply',
     'close' => 'Close',

@@ -292,6 +292,19 @@
                         </div>
                     </div>
                     <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-2">{{ __('registrations.days') }}</p>
+                        <div class="space-y-2">
+                            @foreach(\App\Support\ConventionDay::singleDayKeys() as $day)
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" wire:model="filterDraftDays" value="{{ $day }}"
+                                        class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                                    <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ $day }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">{{ __('registrations.filter_days_hint') }}</p>
+                    </div>
+                    <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-2">{{ __('registrations.elderly_infirm') }}</p>
                         <div class="space-y-2">
                             <label class="flex items-center gap-2 cursor-pointer">

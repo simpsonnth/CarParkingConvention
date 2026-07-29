@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Admin;
 
+use App\Support\ConventionDay;
 use App\Support\ParkingRegistrationListFilters;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ExportParkingRegistrationsRequest extends FormRequest
 {
@@ -27,6 +29,8 @@ class ExportParkingRegistrationsRequest extends FormRequest
             'car_parks.*' => ['integer', 'exists:car_parks,id'],
             'vehicle_type' => ['nullable', 'array'],
             'vehicle_type.*' => ['string', 'in:car,coach'],
+            'days' => ['nullable', 'array'],
+            'days.*' => ['string', Rule::in(ConventionDay::singleDayKeys()), 'distinct'],
             'elderly_infirm' => ['nullable', 'in:0,1'],
             'duplicates_only' => ['nullable', 'boolean'],
             'unassigned_car_park' => ['nullable', 'boolean'],

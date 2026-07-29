@@ -29,6 +29,7 @@ return [
     'filter_duplicates_hint' => 'Inclui todas as linhas que partilham um e-mail ou matrícula com pelo menos outra inscrição.',
     'filter_unassigned_car_park_only' => 'Mostrar apenas sem parque atribuído',
     'filter_unassigned_car_park_hint' => 'Sem parque individual nem parque predefinido da congregação.',
+    'filter_days_hint' => 'Mostra apenas inscrições cujos dias selecionados coincidem exatamente (p. ex. só sexta exclui sexta + sábado).',
     'apply_filters' => 'Aplicar filtros',
     'apply' => 'Aplicar',
     'close' => 'Fechar',
