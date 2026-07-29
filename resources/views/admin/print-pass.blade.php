@@ -346,6 +346,18 @@
             border-left-color: #f59e0b;
         }
 
+        .pass-alert--coach-staying {
+            background: linear-gradient(90deg, #dcfce7, #f0fdf4);
+            color: #166534;
+            border-left-color: #22c55e;
+        }
+
+        .pass-alert--coach-drop-off {
+            background: linear-gradient(90deg, #ffedd5, #fff7ed);
+            color: #9a3412;
+            border-left-color: #ea580c;
+        }
+
         .pass-alert--elderly {
             background: linear-gradient(90deg, #eef2ff, #f5f3ff);
             color: #3730a3;
@@ -1174,6 +1186,11 @@
         $heroNameLong = $heroName && strlen($heroName) > 40;
         $showCoachAlert = isset($registration) && (($registration->vehicle_type ?? 'car') === 'coach');
         $showElderlyAlert = isset($registration) && ($registration->elderly_infirm_parking ?? false);
+        $coachStayingOnSite = $showCoachAlert
+            ? $registration->coach_staying_on_site
+            : null;
+        $showCoachStayingAlert = $coachStayingOnSite === true;
+        $showCoachDropOffAlert = $coachStayingOnSite === false;
     @endphp
 
     @if(!($forPdf ?? false) && !($forChromePdf ?? false))
@@ -1227,10 +1244,16 @@
                             </div>
                         @endif
 
-                        @if($showCoachAlert || $showElderlyAlert)
+                        @if($showCoachAlert || $showElderlyAlert || $showCoachStayingAlert || $showCoachDropOffAlert)
                             <div class="pass-alerts">
                                 @if($showCoachAlert)
                                     <div class="pass-alert pass-alert--coach">{{ __('print_pass.ticket_for_coach_space') }}</div>
+                                @endif
+                                @if($showCoachStayingAlert)
+                                    <div class="pass-alert pass-alert--coach-staying">{{ __('print_pass.ticket_for_coach_staying') }}</div>
+                                @endif
+                                @if($showCoachDropOffAlert)
+                                    <div class="pass-alert pass-alert--coach-drop-off">{{ __('print_pass.ticket_for_coach_drop_off') }}</div>
                                 @endif
                                 @if($showElderlyAlert)
                                     <div class="pass-alert pass-alert--elderly">{{ __('print_pass.ticket_for_elderly_infirm_space') }}</div>
@@ -1389,6 +1412,16 @@
                                 <span class="pass-back-contact-value">{{ $requestedDaysDisplay }}</span>
                             </div>
                             <p class="pass-back-note">{{ __('print_pass.requested_days_incorrect_note') }}</p>
+                            @if($showCoachStayingAlert || $showCoachDropOffAlert)
+                                <div class="pass-back-contact-row">
+                                    <span class="pass-back-contact-label">{{ __('print_pass.coach_arrangement') }}:</span>
+                                    <span class="pass-back-contact-value">
+                                        {{ $showCoachStayingAlert
+                                            ? __('print_pass.coach_arrangement_staying')
+                                            : __('print_pass.coach_arrangement_drop_off') }}
+                                    </span>
+                                </div>
+                            @endif
                         </div>
 
                         <p class="pass-back-note">{{ __('print_pass.ticket_unique_note') }}</p>

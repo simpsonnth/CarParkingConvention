@@ -3,6 +3,11 @@
 return [
     'congregation' => 'Congregation name',
     'ticket_for_coach_space' => 'This ticket is for a coach space',
+    'ticket_for_coach_staying' => 'Coach staying on site',
+    'ticket_for_coach_drop_off' => 'Coach drop-off only',
+    'coach_arrangement' => 'Coach arrangement',
+    'coach_arrangement_staying' => 'Staying on site',
+    'coach_arrangement_drop_off' => 'Drop-off only',
     'ticket_for_elderly_infirm_space' => 'This ticket is for an elderly/infirm space',
     'registration_type' => 'Registration type',
     'circuit_overseer' => 'Circuit Overseer',

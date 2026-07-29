@@ -135,13 +135,91 @@ test('registration print page shows coach alert strip', function () {
         'vehicle_type' => 'coach',
         'vehicle_registration' => 'CO01ACH',
         'days' => ['Friday'],
+        'coach_staying_on_site' => null,
     ]);
 
     $this->actingAs($admin)
         ->get(route('admin.registrations.print', $registration))
         ->assertOk()
         ->assertSeeHtml('class="pass-alert pass-alert--coach"')
-        ->assertSee(__('print_pass.ticket_for_coach_space'));
+        ->assertSee(__('print_pass.ticket_for_coach_space'))
+        ->assertDontSee(__('print_pass.ticket_for_coach_staying'))
+        ->assertDontSee(__('print_pass.ticket_for_coach_drop_off'))
+        ->assertDontSee(__('print_pass.coach_arrangement').':');
+});
+
+test('registration print page shows coach staying on site on front and back', function () {
+    $admin = User::factory()->admin()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Staying Coach Park',
+        'capacity' => 10,
+        'location' => 'South',
+        'color' => '#dc2626',
+    ]);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Staying Coach Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $park->id,
+    ]);
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Staying Coach Driver',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700000004',
+        'email' => 'staying-coach@hall.test',
+        'vehicle_type' => 'coach',
+        'vehicle_registration' => 'CO02STY',
+        'days' => ['Friday'],
+        'coach_staying_on_site' => true,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.registrations.print', $registration))
+        ->assertOk()
+        ->assertSeeHtml('class="pass-alert pass-alert--coach-staying"')
+        ->assertSee(__('print_pass.ticket_for_coach_staying'))
+        ->assertDontSee(__('print_pass.ticket_for_coach_drop_off'))
+        ->assertSee(__('print_pass.coach_arrangement'))
+        ->assertSee(__('print_pass.coach_arrangement_staying'));
+});
+
+test('registration print page shows coach drop-off on front and back', function () {
+    $admin = User::factory()->admin()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Drop Off Coach Park',
+        'capacity' => 10,
+        'location' => 'North',
+        'color' => '#2563eb',
+    ]);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Drop Off Coach Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $park->id,
+    ]);
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Drop Off Coach Driver',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700000005',
+        'email' => 'dropoff-coach@hall.test',
+        'vehicle_type' => 'coach',
+        'vehicle_registration' => 'CO03DRP',
+        'days' => ['Saturday'],
+        'coach_staying_on_site' => false,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.registrations.print', $registration))
+        ->assertOk()
+        ->assertSeeHtml('class="pass-alert pass-alert--coach-drop-off"')
+        ->assertSee(__('print_pass.ticket_for_coach_drop_off'))
+        ->assertDontSee(__('print_pass.ticket_for_coach_staying'))
+        ->assertSee(__('print_pass.coach_arrangement'))
+        ->assertSee(__('print_pass.coach_arrangement_drop_off'));
 });
 
 test('registration print page includes back page with registrant details, notes, and scripture', function () {

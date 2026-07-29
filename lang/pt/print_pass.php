@@ -3,6 +3,11 @@
 return [
     'congregation' => 'Nome da congregação',
     'ticket_for_coach_space' => 'Este bilhete é para um espaço de autocarro',
+    'ticket_for_coach_staying' => 'Autocarro que permanece no local',
+    'ticket_for_coach_drop_off' => 'Autocarro apenas para deixar passageiros',
+    'coach_arrangement' => 'Disposição do autocarro',
+    'coach_arrangement_staying' => 'Permanece no local',
+    'coach_arrangement_drop_off' => 'Apenas deixa passageiros',
     'ticket_for_elderly_infirm_space' => 'Este bilhete é para um espaço idosos/deficientes',
     'registration_type' => 'Tipo de inscrição',
     'circuit_overseer' => 'Superintendente de Circuito',
