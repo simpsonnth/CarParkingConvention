@@ -11,6 +11,9 @@
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
+            <flux:button variant="primary" wire:click="create" icon="plus">
+                {{ __('registrations.add_registration') }}
+            </flux:button>
             <a href="{{ $this->exportUrl }}" class="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700" download>
                 <flux:icon name="arrow-down-tray" class="size-4" />
                 {{ ($this->getAppliedFiltersCount() > 0 || $search !== '') ? __('registrations.export_excel_filtered') : __('registrations.export_excel') }}
@@ -509,12 +512,16 @@
         {{ $registrations->links() }}
     </div>
 
-    {{-- Edit Modal --}}
+    {{-- Create / Edit Modal --}}
     <flux:modal wire:model="modalOpen" class="w-[calc(100vw-2rem)] max-w-lg">
         <div class="space-y-6">
             <div>
-                <flux:heading size="lg">{{ __('registrations.edit_modal_title') }}</flux:heading>
-                <flux:subheading>{{ __('registrations.edit_modal_subtitle') }}</flux:subheading>
+                <flux:heading size="lg">
+                    {{ $editingRegistration ? __('registrations.edit_modal_title') : __('registrations.create_modal_title') }}
+                </flux:heading>
+                <flux:subheading>
+                    {{ $editingRegistration ? __('registrations.edit_modal_subtitle') : __('registrations.create_modal_subtitle') }}
+                </flux:subheading>
             </div>
 
             <flux:input wire:model="name" label="{{ __('registrations.name') }}" placeholder="{{ __('registrations.full_name') }}" />
@@ -632,7 +639,9 @@
 
             <div class="flex justify-end gap-2">
                 <flux:button variant="ghost" wire:click="$set('modalOpen', false)">{{ __('registrations.cancel') }}</flux:button>
-                <flux:button variant="primary" wire:click="save">{{ __('registrations.save_changes') }}</flux:button>
+                <flux:button variant="primary" wire:click="save">
+                    {{ $editingRegistration ? __('registrations.save_changes') : __('registrations.create_button') }}
+                </flux:button>
             </div>
         </div>
     </flux:modal>

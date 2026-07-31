@@ -268,6 +268,25 @@ class Registrations extends Component
         $this->modalOpen = true;
     }
 
+    public function create(): void
+    {
+        $this->resetErrorBag();
+        $this->editingRegistration = null;
+        $this->name = '';
+        $this->congregation = '';
+        $this->carParkId = '';
+        $this->vehicleType = 'car';
+        $this->vehicleReg = '';
+        $this->contactNumber = '';
+        $this->email = '';
+        $this->elderlyInfirmParking = '0';
+        $this->sharingWithOtherCongregations = '0';
+        $this->sharingCongregationsNotes = '';
+        $this->coachCaptainToBeAssigned = false;
+        $this->days = [];
+        $this->modalOpen = true;
+    }
+
     public function delete($id): void
     {
         ParkingRegistration::findOrFail($id)->delete();
@@ -531,6 +550,7 @@ class Registrations extends Component
 
     public function save()
     {
+        $isCreating = $this->editingRegistration === null;
         $isCircuitOverseer = (bool) ($this->editingRegistration?->is_circuit_overseer ?? false);
 
         $rules = [
@@ -540,9 +560,15 @@ class Registrations extends Component
             'contactNumber' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
             'elderlyInfirmParking' => 'in:0,1',
-            'days' => 'nullable|array',
+            'days' => $isCreating ? 'required|array|min:1' : 'nullable|array',
         ];
-        $rules['congregation'] = $isCircuitOverseer ? 'nullable|string|max:255' : 'required|string|max:255';
+        if ($isCreating) {
+            $rules['congregation'] = 'required|string|exists:congregations,name';
+        } elseif ($isCircuitOverseer) {
+            $rules['congregation'] = 'nullable|string|max:255';
+        } else {
+            $rules['congregation'] = 'required|string|max:255';
+        }
         $rules['vehicleReg'] = $this->vehicleType === 'car' ? 'required|string|min:2|max:20' : 'nullable|string|max:20';
         if ($this->vehicleType === 'coach') {
             $rules['sharingWithOtherCongregations'] = 'required|in:0,1';
@@ -563,23 +589,30 @@ class Registrations extends Component
             $congregation = 'Circuit Overseer';
         }
 
+        $payload = [
+            'name' => $this->name,
+            'congregation' => $congregation,
+            'car_park_id' => $carParkId,
+            'vehicle_type' => $this->vehicleType,
+            'vehicle_registration' => $this->vehicleReg ?? null,
+            'contact_number' => $this->contactNumber,
+            'email' => $this->email,
+            'elderly_infirm_parking' => filter_var($this->elderlyInfirmParking, FILTER_VALIDATE_BOOLEAN),
+            'sharing_with_other_congregations' => $this->vehicleType === 'coach' ? filter_var($this->sharingWithOtherCongregations, FILTER_VALIDATE_BOOLEAN) : false,
+            'sharing_congregations_notes' => $sharingNotes,
+            'coach_captain_to_be_assigned' => $this->vehicleType === 'coach' ? $this->coachCaptainToBeAssigned : false,
+            'days' => $this->days,
+        ];
+
         if ($this->editingRegistration) {
-            $this->editingRegistration->update([
-                'name' => $this->name,
-                'congregation' => $congregation,
-                'car_park_id' => $carParkId,
-                'vehicle_type' => $this->vehicleType,
-                'vehicle_registration' => $this->vehicleReg ?? null,
-                'contact_number' => $this->contactNumber,
-                'email' => $this->email,
-                'elderly_infirm_parking' => filter_var($this->elderlyInfirmParking, FILTER_VALIDATE_BOOLEAN),
-                'sharing_with_other_congregations' => $this->vehicleType === 'coach' ? filter_var($this->sharingWithOtherCongregations, FILTER_VALIDATE_BOOLEAN) : false,
-                'sharing_congregations_notes' => $sharingNotes,
-                'coach_captain_to_be_assigned' => $this->vehicleType === 'coach' ? $this->coachCaptainToBeAssigned : false,
-                'days' => $this->days,
-            ]);
+            $this->editingRegistration->update($payload);
 
             Flux::toast(__('registrations.updated'));
+        } else {
+            ParkingRegistration::query()->create($payload);
+
+            Flux::toast(__('registrations.created'));
+            $this->resetPage();
         }
 
         $this->modalOpen = false;
