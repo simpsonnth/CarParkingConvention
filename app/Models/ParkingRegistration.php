@@ -25,6 +25,7 @@ class ParkingRegistration extends Model
         'elderly_infirm_parking',
         'coach_captain_to_be_assigned',
         'coach_staying_on_site',
+        'ticket_sent_at',
     ];
 
     protected $casts = [
@@ -34,6 +35,7 @@ class ParkingRegistration extends Model
         'sharing_with_other_congregations' => 'boolean',
         'coach_captain_to_be_assigned' => 'boolean',
         'coach_staying_on_site' => 'boolean',
+        'ticket_sent_at' => 'datetime',
     ];
 
     public function carPark(): BelongsTo

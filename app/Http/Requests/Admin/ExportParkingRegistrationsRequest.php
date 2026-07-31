@@ -32,6 +32,7 @@ class ExportParkingRegistrationsRequest extends FormRequest
             'days' => ['nullable', 'array'],
             'days.*' => ['string', Rule::in(ConventionDay::singleDayKeys()), 'distinct'],
             'elderly_infirm' => ['nullable', 'in:0,1'],
+            'ticket_sent' => ['nullable', 'in:0,1'],
             'duplicates_only' => ['nullable', 'boolean'],
             'unassigned_car_park' => ['nullable', 'boolean'],
             'sort_by' => ['nullable', 'in:created_at,name,congregation,vehicle_registration'],

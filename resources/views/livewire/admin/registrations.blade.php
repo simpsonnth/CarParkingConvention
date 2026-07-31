@@ -198,10 +198,20 @@
                     Assign Selected
                 </button>
                 <span class="text-zinc-300 dark:text-zinc-600 mx-1">|</span>
-                <button type="button" wire:click="downloadMasterPassesZip"
+                <button type="button" wire:click="openDownloadMasterPassesModal"
                     class="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-emerald-700">
                     <flux:icon name="arrow-down-tray" class="size-4" />
                     {{ __('registrations.download_master_passes_zip') }}
+                </button>
+                <button type="button" wire:click="bulkMarkTicketSent"
+                    class="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-medium text-white shadow-sm hover:bg-teal-700">
+                    <flux:icon name="check" class="size-4" />
+                    {{ __('registrations.mark_ticket_sent') }}
+                </button>
+                <button type="button" wire:click="bulkClearTicketSent"
+                    class="inline-flex items-center gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-600">
+                    <flux:icon name="x-mark" class="size-4" />
+                    {{ __('registrations.clear_ticket_sent') }}
                 </button>
                 @can('registrations.print')
                     <button type="button" wire:click="openSendTicketsModal"
@@ -328,6 +338,26 @@
                         </div>
                     </div>
                     <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-2">{{ __('registrations.ticket_sent') }}</p>
+                        <div class="space-y-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" wire:model="filterDraftTicketSent" value="any"
+                                    class="border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ __('registrations.filter_any') }}</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" wire:model="filterDraftTicketSent" value="1"
+                                    class="border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ __('registrations.ticket_sent_yes') }}</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" wire:model="filterDraftTicketSent" value="0"
+                                    class="border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="text-sm text-zinc-700 dark:text-zinc-300">{{ __('registrations.ticket_sent_no') }}</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
                         <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400 mb-2">{{ __('registrations.filter_duplicates_section') }}</p>
                         <label class="flex items-start gap-2 cursor-pointer">
                             <input type="checkbox" wire:model="filterDraftDuplicatesOnly"
@@ -387,6 +417,7 @@
                     <th class="px-6 py-3">{{ __('registrations.contact') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.elderly_infirm') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.days') }}</th>
+                    <th class="px-6 py-3">{{ __('registrations.ticket_sent') }}</th>
                     <th class="px-6 py-3 text-end">{{ __('registrations.actions') }}</th>
                 </tr>
             </thead>
@@ -480,6 +511,19 @@
                                 @endforeach
                             </div>
                         </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if($reg->ticket_sent_at)
+                                <span class="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400" title="{{ $reg->ticket_sent_at->format('d M Y H:i') }}">
+                                    <flux:icon name="check-circle" class="size-5" />
+                                    <span class="text-xs font-semibold">{{ __('registrations.ticket_sent_yes') }}</span>
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1.5 text-zinc-400 dark:text-zinc-500">
+                                    <span class="text-lg leading-none" aria-hidden="true">—</span>
+                                    <span class="text-xs">{{ __('registrations.ticket_sent_no') }}</span>
+                                </span>
+                            @endif
+                        </td>
                         <td class="px-6 py-4 text-end">
                             <flux:dropdown>
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" />
@@ -496,7 +540,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="12" class="px-6 py-12 text-center text-zinc-500">
+                        <td colspan="13" class="px-6 py-12 text-center text-zinc-500">
                             <div class="flex flex-col items-center justify-center">
                                 <flux:icon name="clipboard-document-list" class="size-10 text-zinc-300 mb-2" />
                                 <p>{{ __('registrations.no_registrations') }}</p>
@@ -666,6 +710,25 @@
             <div class="flex justify-end gap-2">
                 <flux:button variant="ghost" wire:click="$set('bulkAssignCarParkModalOpen', false)">{{ __('registrations.cancel') }}</flux:button>
                 <flux:button variant="primary" wire:click="bulkAssignCongregationToCarPark">{{ __('registrations.save_changes') }}</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Download master passes: confirm whether to mark tickets as sent --}}
+    <flux:modal wire:model="downloadPassesModalOpen" class="w-[calc(100vw-2rem)] max-w-md">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ __('registrations.download_passes_modal_title') }}</flux:heading>
+                <flux:subheading>{{ __('registrations.download_passes_modal_body', ['count' => count($selectedIds)]) }}</flux:subheading>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                <flux:button variant="ghost" wire:click="$set('downloadPassesModalOpen', false)">{{ __('registrations.cancel') }}</flux:button>
+                <flux:button variant="ghost" wire:click="confirmDownloadMasterPassesZip(false)">
+                    {{ __('registrations.download_passes_only') }}
+                </flux:button>
+                <flux:button variant="primary" wire:click="confirmDownloadMasterPassesZip(true)">
+                    {{ __('registrations.download_passes_and_mark_sent') }}
+                </flux:button>
             </div>
         </div>
     </flux:modal>

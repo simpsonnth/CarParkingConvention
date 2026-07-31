@@ -73,11 +73,19 @@ class Registrations extends Component
 
     public bool $filterDraftUnassignedCarPark = false;
 
+    /** @var bool|null true = sent, false = not sent, null = any */
+    public $filterTicketSent = null;
+
+    /** @var string 'any' | '1' | '0' for draft panel */
+    public $filterDraftTicketSent = 'any';
+
     public bool $modalOpen = false;
 
     public bool $bulkAssignCarParkModalOpen = false;
 
     public bool $sendTicketsModalOpen = false;
+
+    public bool $downloadPassesModalOpen = false;
 
     public string $ticketEmailTo = '';
 
@@ -150,6 +158,7 @@ class Registrations extends Component
         $this->filterDraftElderlyInfirm = $this->filterElderlyInfirm === null ? 'any' : ($this->filterElderlyInfirm ? '1' : '0');
         $this->filterDraftDuplicatesOnly = $this->filterDuplicatesOnly;
         $this->filterDraftUnassignedCarPark = $this->filterUnassignedCarPark;
+        $this->filterDraftTicketSent = $this->filterTicketSent === null ? 'any' : ($this->filterTicketSent ? '1' : '0');
         $this->filterOpen = true;
     }
 
@@ -163,6 +172,10 @@ class Registrations extends Component
         $this->filterElderlyInfirm = ($draft === 'any' || $draft === '' || $draft === null) ? null : (bool) (int) $draft;
         $this->filterDuplicatesOnly = $this->filterDraftDuplicatesOnly;
         $this->filterUnassignedCarPark = $this->filterDraftUnassignedCarPark;
+        $ticketSentDraft = $this->filterDraftTicketSent;
+        $this->filterTicketSent = ($ticketSentDraft === 'any' || $ticketSentDraft === '' || $ticketSentDraft === null)
+            ? null
+            : (bool) (int) $ticketSentDraft;
         $this->filterOpen = false;
         $this->resetPage();
     }
@@ -189,6 +202,8 @@ class Registrations extends Component
         $this->filterDraftDuplicatesOnly = false;
         $this->filterUnassignedCarPark = false;
         $this->filterDraftUnassignedCarPark = false;
+        $this->filterTicketSent = null;
+        $this->filterDraftTicketSent = 'any';
         $this->resetPage();
     }
 
@@ -214,6 +229,9 @@ class Registrations extends Component
             $n += 1;
         }
         if ($this->filterUnassignedCarPark) {
+            $n += 1;
+        }
+        if ($this->filterTicketSent !== null) {
             $n += 1;
         }
 
@@ -461,8 +479,8 @@ class Registrations extends Component
         Flux::toast(__('registrations.bulk_deleted_disabled', ['count' => $count]));
     }
 
-    /** Download a ZIP of master pass PDFs for the selected registrations (redirects to download URL). */
-    public function downloadMasterPassesZip()
+    /** Open the confirm modal before downloading master pass PDFs. */
+    public function openDownloadMasterPassesModal(): void
     {
         if (empty($this->selectedIds)) {
             Flux::toast(__('registrations.select_items'), variant: 'warning');
@@ -470,8 +488,32 @@ class Registrations extends Component
             return;
         }
 
-        $token = \Illuminate\Support\Str::random(32);
+        $this->downloadPassesModalOpen = true;
+    }
+
+    /**
+     * Confirm ZIP download. When $markAsSent is true, stamp ticket_sent_at on
+     * selected rows before redirecting so the mark survives even if the ZIP
+     * stream fails after navigation.
+     */
+    public function confirmDownloadMasterPassesZip(bool $markAsSent = false)
+    {
+        if (empty($this->selectedIds)) {
+            Flux::toast(__('registrations.select_items'), variant: 'warning');
+            $this->downloadPassesModalOpen = false;
+
+            return;
+        }
+
         $ids = array_values(array_map('intval', $this->selectedIds));
+
+        if ($markAsSent) {
+            ParkingRegistration::whereIn('id', $ids)->update(['ticket_sent_at' => now()]);
+        }
+
+        $this->downloadPassesModalOpen = false;
+
+        $token = \Illuminate\Support\Str::random(32);
         cache()->put('master-passes-zip:'.$token, $ids, now()->addMinutes(2));
 
         try {
@@ -482,6 +524,42 @@ class Registrations extends Component
 
             return null;
         }
+    }
+
+    /** @deprecated Prefer openDownloadMasterPassesModal + confirmDownloadMasterPassesZip */
+    public function downloadMasterPassesZip()
+    {
+        return $this->openDownloadMasterPassesModal();
+    }
+
+    public function bulkMarkTicketSent(): void
+    {
+        if (empty($this->selectedIds)) {
+            Flux::toast(__('registrations.select_items'), variant: 'warning');
+
+            return;
+        }
+
+        $ids = array_values(array_unique(array_map('intval', $this->selectedIds)));
+        $count = ParkingRegistration::whereIn('id', $ids)->update(['ticket_sent_at' => now()]);
+        $this->selectedIds = [];
+
+        Flux::toast(__('registrations.bulk_marked_ticket_sent', ['count' => $count]));
+    }
+
+    public function bulkClearTicketSent(): void
+    {
+        if (empty($this->selectedIds)) {
+            Flux::toast(__('registrations.select_items'), variant: 'warning');
+
+            return;
+        }
+
+        $ids = array_values(array_unique(array_map('intval', $this->selectedIds)));
+        $count = ParkingRegistration::whereIn('id', $ids)->update(['ticket_sent_at' => null]);
+        $this->selectedIds = [];
+
+        Flux::toast(__('registrations.bulk_cleared_ticket_sent', ['count' => $count]));
     }
 
     public function openSendTicketsModal(): void

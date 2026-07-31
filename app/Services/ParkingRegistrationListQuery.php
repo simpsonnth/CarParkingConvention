@@ -50,6 +50,13 @@ class ParkingRegistrationListQuery
             ->when($filters->elderlyInfirm !== null, function ($q) use ($filters): void {
                 $q->where('elderly_infirm_parking', $filters->elderlyInfirm);
             })
+            ->when($filters->ticketSent !== null, function ($q) use ($filters): void {
+                if ($filters->ticketSent) {
+                    $q->whereNotNull('ticket_sent_at');
+                } else {
+                    $q->whereNull('ticket_sent_at');
+                }
+            })
             ->when($filters->duplicatesOnly, function ($q): void {
                 $signals = app(ParkingRegistrationDuplicateSignals::class);
                 $dupEmails = array_keys($signals->duplicateNormalizedEmailKeys());

@@ -52,6 +52,7 @@ class ParkingRegistrationsExport implements FromQuery, WithHeadings, WithMapping
             __('registrations.export.email'),
             __('registrations.export.elderly_infirm'),
             __('registrations.export.days'),
+            __('registrations.export.ticket_sent'),
         ];
     }
 
@@ -82,6 +83,9 @@ class ParkingRegistrationsExport implements FromQuery, WithHeadings, WithMapping
             $row->email ?? '',
             ($row->elderly_infirm_parking ?? false) ? __('registrations.yes') : __('registrations.no'),
             is_array($row->days) ? implode(', ', $row->days) : '',
+            $row->ticket_sent_at
+                ? $row->ticket_sent_at->format('Y-m-d H:i')
+                : __('registrations.no'),
         ];
     }
 }

@@ -23,6 +23,7 @@ final readonly class ParkingRegistrationListFilters
         public ?bool $elderlyInfirm = null,
         public bool $duplicatesOnly = false,
         public bool $unassignedCarPark = false,
+        public ?bool $ticketSent = null,
         public string $sortBy = 'created_at',
         public string $sortDir = 'desc',
     ) {}
@@ -38,6 +39,7 @@ final readonly class ParkingRegistrationListFilters
             elderlyInfirm: $component->filterElderlyInfirm,
             duplicatesOnly: $component->filterDuplicatesOnly,
             unassignedCarPark: $component->filterUnassignedCarPark,
+            ticketSent: $component->filterTicketSent,
             sortBy: $component->sortBy,
             sortDir: $component->sortDir,
         );
@@ -53,6 +55,11 @@ final readonly class ParkingRegistrationListFilters
             $elderlyInfirm = (bool) (int) $data['elderly_infirm'];
         }
 
+        $ticketSent = null;
+        if (array_key_exists('ticket_sent', $data) && $data['ticket_sent'] !== null && $data['ticket_sent'] !== '') {
+            $ticketSent = (bool) (int) $data['ticket_sent'];
+        }
+
         return new self(
             search: (string) ($data['search'] ?? ''),
             congregations: array_values(array_map('strval', (array) ($data['congregations'] ?? []))),
@@ -62,6 +69,7 @@ final readonly class ParkingRegistrationListFilters
             elderlyInfirm: $elderlyInfirm,
             duplicatesOnly: filter_var($data['duplicates_only'] ?? false, FILTER_VALIDATE_BOOLEAN),
             unassignedCarPark: filter_var($data['unassigned_car_park'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            ticketSent: $ticketSent,
             sortBy: (string) ($data['sort_by'] ?? 'created_at'),
             sortDir: (string) ($data['sort_dir'] ?? 'desc'),
         );
@@ -76,7 +84,8 @@ final readonly class ParkingRegistrationListFilters
             || $this->days !== []
             || $this->elderlyInfirm !== null
             || $this->duplicatesOnly
-            || $this->unassignedCarPark;
+            || $this->unassignedCarPark
+            || $this->ticketSent !== null;
     }
 
     /**
@@ -109,6 +118,9 @@ final readonly class ParkingRegistrationListFilters
         }
         if ($this->unassignedCarPark) {
             $params['unassigned_car_park'] = '1';
+        }
+        if ($this->ticketSent !== null) {
+            $params['ticket_sent'] = $this->ticketSent ? '1' : '0';
         }
         if ($this->sortBy !== 'created_at') {
             $params['sort_by'] = $this->sortBy;
