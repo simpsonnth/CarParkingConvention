@@ -129,3 +129,41 @@ test('legacy congregation uuid scan still uses manual confirm flow', function ()
         ->assertSet('walkInMode', false)
         ->assertSee('Vehicle Plate Number');
 });
+
+test('camera-scanned ticket URL resolves to quick check-in', function () {
+    ['attendant' => $attendant, 'registration' => $registration] = createTicketScanFixtures();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class)
+        ->set('uuid', route('attendant.scan.ticket', $registration))
+        ->call('scan')
+        ->assertSet('quickCheckIn', true)
+        ->assertSet('scannedRegistration.id', $registration->id)
+        ->assertSee('Ticket Verified')
+        ->assertSee('TK12ET');
+});
+
+test('camera-scanned absolute ticket URL resolves to quick check-in', function () {
+    ['attendant' => $attendant, 'registration' => $registration] = createTicketScanFixtures();
+
+    $absoluteUrl = 'https://carpark.jwconv.uk/scan/ticket/'.$registration->id;
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class)
+        ->set('uuid', $absoluteUrl)
+        ->call('scan')
+        ->assertSet('quickCheckIn', true)
+        ->assertSet('scannedRegistration.id', $registration->id);
+});
+
+test('camera-scanned ticket URL with missing registration shows invalid ticket', function () {
+    ['attendant' => $attendant] = createTicketScanFixtures();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class)
+        ->set('uuid', 'https://carpark.jwconv.uk/scan/ticket/999999')
+        ->call('scan')
+        ->assertSet('lastScanResult', 'error')
+        ->assertSet('lastScanMessage', 'INVALID TICKET')
+        ->assertSee('INVALID TICKET');
+});

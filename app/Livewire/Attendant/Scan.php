@@ -127,6 +127,20 @@ class Scan extends Component
                     }
                 }
 
+                if (preg_match('#(?:^|/)scan/ticket/(\d+)(?:/)?$#i', $path, $matches)) {
+                    $registration = ParkingRegistration::query()->find((int) $matches[1]);
+                    if ($registration !== null) {
+                        $this->scanRegistration($registration);
+
+                        return;
+                    }
+
+                    $this->setResult('error', 'INVALID TICKET', 'This ticket was not found.');
+                    $this->reset('uuid');
+
+                    return;
+                }
+
                 $segments = explode('/', trim($path, '/'));
                 $lastSegment = end($segments);
                 if (is_string($lastSegment) && $lastSegment !== '') {
