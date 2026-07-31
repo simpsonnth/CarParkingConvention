@@ -307,9 +307,9 @@ class Scan extends Component
 
         if (strlen($formattedReg) >= 2 && ! str_starts_with($formattedReg, 'COACH')) {
             $alreadyParked = ParkingPass::query()
-                ->where('status', 'parked')
-                ->get()
-                ->contains(fn (ParkingPass $p) => strtoupper(str_replace(' ', '', (string) ($p->vehicle_reg ?? ''))) === $formattedReg);
+                ->parkedToday()
+                ->withNormalizedVehicleReg($formattedReg)
+                ->exists();
 
             if ($alreadyParked) {
                 $this->setResult('error', 'ALREADY PARKED', 'This vehicle is already clocked in and cannot be registered again.');
@@ -319,7 +319,7 @@ class Scan extends Component
         }
 
         $currentOccupancy = ParkingPass::query()
-            ->where('status', 'parked')
+            ->parkedToday()
             ->where(function ($query) use ($carPark) {
                 $query->where('car_park_id', $carPark->id)
                     ->orWhere(function ($q) use ($carPark) {
@@ -552,9 +552,9 @@ class Scan extends Component
 
         $formattedReg = strtoupper(str_replace(' ', '', $this->vehicleReg));
         $this->existingParkedPass = ParkingPass::query()
-            ->where('congregation_id', $this->scannedCongregation->id)
-            ->where('status', 'parked')
-            ->whereRaw('REPLACE(UPPER(vehicle_reg), " ", "") = ?', [$formattedReg])
+            ->parkedToday()
+            ->withNormalizedVehicleReg($formattedReg)
+            ->latest('scanned_at')
             ->first();
     }
 

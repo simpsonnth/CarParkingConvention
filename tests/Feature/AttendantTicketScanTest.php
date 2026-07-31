@@ -95,6 +95,29 @@ test('ticket scan blocks clock in when vehicle already parked', function () {
     expect(ParkingPass::query()->where('status', 'parked')->count())->toBe(1);
 });
 
+test('ticket scan ignores parked passes from a previous day', function () {
+    ['attendant' => $attendant, 'registration' => $registration, 'congregation' => $congregation, 'park' => $park] = createTicketScanFixtures();
+
+    ParkingPass::query()->create([
+        'congregation_id' => $congregation->id,
+        'car_park_id' => $park->id,
+        'status' => 'parked',
+        'vehicle_reg' => 'TK12ET',
+        'contact_number' => '07700111222',
+        'scanned_at' => now()->subDay(),
+    ]);
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class, ['registration' => $registration])
+        ->assertSet('quickCheckIn', true)
+        ->assertSet('existingParkedPass', null)
+        ->assertDontSee('Already parked')
+        ->call('confirm')
+        ->assertSet('lastScanResult', 'success');
+
+    expect(ParkingPass::query()->parkedToday()->where('vehicle_reg', 'TK12ET')->count())->toBe(1);
+});
+
 test('soft-deleted registration ticket scan returns not found', function () {
     ['attendant' => $attendant, 'registration' => $registration] = createTicketScanFixtures();
 

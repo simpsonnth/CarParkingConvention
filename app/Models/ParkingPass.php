@@ -46,6 +46,13 @@ class ParkingPass extends Model
         return $this->belongsTo(User::class, 'scanned_by_user_id');
     }
 
+    /** Scope: actively parked today (ignores stale multi-day leftovers). */
+    public function scopeParkedToday($query)
+    {
+        return $query->where('status', 'parked')
+            ->whereDate('scanned_at', today());
+    }
+
     /** Scope: passes counted as parked at this car park (own car_park_id or legacy congregation assignment). */
     public function scopeParkedAtCarPark($query, int $carParkId)
     {
@@ -57,5 +64,10 @@ class ParkingPass extends Model
                             ->whereHas('congregation', fn ($c) => $c->where('car_park_id', $carParkId));
                     });
             });
+    }
+
+    public function scopeWithNormalizedVehicleReg($query, string $formattedReg)
+    {
+        return $query->whereRaw('REPLACE(UPPER(COALESCE(vehicle_reg, \'\')), \' \', \'\') = ?', [$formattedReg]);
     }
 }
