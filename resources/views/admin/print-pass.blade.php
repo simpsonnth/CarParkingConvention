@@ -324,6 +324,43 @@
             line-height: 1;
         }
 
+        .pass-meta-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: stretch;
+            gap: 3mm;
+        }
+
+        .pass-vehicle-reg {
+            display: inline-flex;
+            flex-direction: column;
+            align-self: flex-start;
+            padding: 3mm 5mm;
+            background: #facc15;
+            color: #0c0a09;
+            border-radius: 3mm;
+            border: 2px solid #0c0a09;
+            box-shadow: 0 4px 14px rgb(0 0 0 / 0.12);
+        }
+
+        .pass-vehicle-reg-label {
+            font-size: clamp(0.55rem, 1.1vw, 0.65rem);
+            font-weight: 800;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #44403c;
+        }
+
+        .pass-vehicle-reg-value {
+            margin-top: 1mm;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: clamp(1.75rem, 5.5vw, 3rem);
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            line-height: 1;
+            text-transform: uppercase;
+        }
+
         .pass-alerts {
             display: flex;
             flex-direction: column;
@@ -1013,6 +1050,14 @@
                 font-size: 12mm;
             }
 
+            .pass-vehicle-reg-label {
+                font-size: 3mm;
+            }
+
+            .pass-vehicle-reg-value {
+                font-size: 12mm;
+            }
+
             .pass-alert {
                 font-size: 5.5mm;
             }
@@ -1106,6 +1151,8 @@
         .pass-identity-registrant { font-size: 8mm; }
         .pass-number-label { font-size: 3mm; }
         .pass-number-value { font-size: 12mm; }
+        .pass-vehicle-reg-label { font-size: 3mm; }
+        .pass-vehicle-reg-value { font-size: 12mm; }
         .pass-alert { font-size: 5.5mm; }
         .pass-scan { flex: 0 0 82mm; padding: 5mm 4mm; }
         .pass-qr { width: 50mm; height: 50mm; }
@@ -1191,6 +1238,9 @@
             : null;
         $showCoachStayingAlert = $coachStayingOnSite === true;
         $showCoachDropOffAlert = $coachStayingOnSite === false;
+        $vehicleRegistration = isset($registration) && filled($registration->vehicle_registration)
+            ? strtoupper(trim((string) $registration->vehicle_registration))
+            : null;
     @endphp
 
     @if(!($forPdf ?? false) && !($forChromePdf ?? false))
@@ -1238,9 +1288,17 @@
                         @endif
 
                         @if(isset($registration))
-                            <div class="pass-number print-color-exact">
-                                <span class="pass-number-label">{{ __('print_pass.ticket_number') }}</span>
-                                <span class="pass-number-value">{{ str_pad((string) $registration->id, 6, '0', STR_PAD_LEFT) }}</span>
+                            <div class="pass-meta-row">
+                                <div class="pass-number print-color-exact">
+                                    <span class="pass-number-label">{{ __('print_pass.ticket_number') }}</span>
+                                    <span class="pass-number-value">{{ str_pad((string) $registration->id, 6, '0', STR_PAD_LEFT) }}</span>
+                                </div>
+                                @if($vehicleRegistration)
+                                    <div class="pass-vehicle-reg print-color-exact">
+                                        <span class="pass-vehicle-reg-label">{{ __('print_pass.vehicle_registration') }}</span>
+                                        <span class="pass-vehicle-reg-value">{{ $vehicleRegistration }}</span>
+                                    </div>
+                                @endif
                             </div>
                         @endif
 

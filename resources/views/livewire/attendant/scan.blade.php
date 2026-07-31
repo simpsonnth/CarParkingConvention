@@ -11,6 +11,13 @@
     };
     start();
     document.addEventListener('attendant-scan:ready', start, { once: true });
+
+    $wire.on('attendant-scan-ready-for-next', () => {
+        document.dispatchEvent(new CustomEvent('attendant-scan:ready-for-next'));
+        if (typeof window.releaseAttendantScanLock === 'function') {
+            window.releaseAttendantScanLock();
+        }
+    });
 </script>
 @endscript
 
@@ -35,21 +42,26 @@
         </p>
     </div>
 
-    @if($step === 'scan')
-        <div class="space-y-6">
-            {{-- Input Card --}}
-            <div class="bg-white dark:bg-zinc-800 p-1 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-xl overflow-hidden">
-                <form wire:submit.prevent="scan" class="flex flex-col">
-                    {{-- Camera View --}}
-                    <div id="reader" wire:ignore class="w-full bg-black rounded-t-xl overflow-hidden" style="min-height: 300px; display: none;"></div>
+    @unless($walkInMode)
+        {{-- Keep camera DOM mounted across scan/confirm so the stream survives Livewire morphs --}}
+        <div class="bg-white dark:bg-zinc-800 p-1 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-xl overflow-hidden">
+            <div id="reader" wire:ignore class="w-full bg-black rounded-t-xl overflow-hidden" style="min-height: 300px; display: none;"></div>
 
-                    <div class="p-6 space-y-4">
-                        <div class="flex flex-col gap-2">
-                            <flux:button type="button" variant="ghost" class="w-full" id="toggle-camera">
-                                <flux:icon name="camera" class="mr-2" /> Scan with Camera
-                            </flux:button>
-                        </div>
-                        
+            <div class="p-6 space-y-4">
+                <div wire:ignore>
+                    <button
+                        type="button"
+                        id="toggle-camera"
+                        data-attendant-scan-toggle
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-sm font-semibold text-zinc-800 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+                    >
+                        <flux:icon name="camera" class="size-5 shrink-0" />
+                        <span data-attendant-scan-label>Scan with Camera</span>
+                    </button>
+                </div>
+
+                @if($step === 'scan')
+                    <form wire:submit.prevent="scan" class="space-y-4">
                         <div class="relative">
                             <div class="absolute inset-0 flex items-center" aria-hidden="true">
                                 <div class="w-full border-t border-zinc-200 dark:border-zinc-700"></div>
@@ -59,20 +71,24 @@
                             </div>
                         </div>
 
-                         <flux:input 
-                            wire:model="uuid" 
-                            placeholder="Type code here..." 
-                            autofocus 
+                        <flux:input
+                            wire:model="uuid"
+                            placeholder="Type code here..."
+                            autofocus
                             autocomplete="off"
-                            class="text-center text-xl h-14 bg-zinc-50 dark:bg-zinc-900 border-none rounded-xl focus:ring-2 focus:ring-indigo-500" 
+                            class="text-center text-xl h-14 bg-zinc-50 dark:bg-zinc-900 border-none rounded-xl focus:ring-2 focus:ring-indigo-500"
                         />
                         <flux:button type="submit" variant="primary" class="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-indigo-500/20">
                             CHECK CODE
                         </flux:button>
-                    </div>
-                </form>
+                    </form>
+                @endif
             </div>
+        </div>
+    @endunless
 
+    @if($step === 'scan')
+        <div class="space-y-6">
             {{-- Result Card --}}
             @if ($lastScanResult)
                 <div @class([

@@ -16,6 +16,7 @@ return [
     'pass_id' => 'Pass ID',
     'display_on_dashboard' => 'Display on dashboard',
     'ticket_number' => 'Ticket No.',
+    'vehicle_registration' => 'Vehicle registration',
     'staff_manual_code_label' => 'Staff — if QR fails, type:',
     'staff_manual_code_hint' => 'Remove the leading zeros from the ticket number above.',
     'safety_notice' => 'For safety reasons please be mindful of your footwear. Please do not give this ticket to anyone else as this has been assigned to yourself.',
