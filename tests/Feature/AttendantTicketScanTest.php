@@ -167,3 +167,15 @@ test('camera-scanned ticket URL with missing registration shows invalid ticket',
         ->assertSet('lastScanMessage', 'INVALID TICKET')
         ->assertSee('INVALID TICKET');
 });
+
+test('scan accepts decoded payload as method argument from camera', function () {
+    ['attendant' => $attendant, 'registration' => $registration] = createTicketScanFixtures();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class)
+        ->call('scan', 'https://carpark.jwconv.uk/scan/ticket/'.$registration->id)
+        ->assertSet('quickCheckIn', true)
+        ->assertSet('step', 'confirm')
+        ->assertSet('scannedRegistration.id', $registration->id)
+        ->assertSee('Ticket Verified');
+});

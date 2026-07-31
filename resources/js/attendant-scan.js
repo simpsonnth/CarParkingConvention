@@ -1,4 +1,4 @@
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 
 let html5QrCode = null;
 let isScanning = false;
@@ -31,11 +31,20 @@ function getReaderDiv() {
     return document.getElementById('reader');
 }
 
+function getReaderShell() {
+    return document.querySelector('[data-attendant-camera-card]')
+        || document.querySelector('[data-attendant-reader-shell]');
+}
+
+/**
+ * html5-qrcode requires qrbox functions to return { width, height }.
+ * Returning a bare number leaves qrDimensions.width/height undefined.
+ */
 function qrboxSize(viewfinderWidth, viewfinderHeight) {
     const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-    const size = Math.floor(minEdge * 0.7);
+    const size = Math.max(180, Math.min(Math.floor(minEdge * 0.85), 360));
 
-    return Math.max(160, Math.min(size, 300));
+    return { width: size, height: size };
 }
 
 function preferBackCameraId(devices) {
@@ -56,6 +65,60 @@ function clearScanMemory() {
     scanBusy = false;
     lastDecodedText = null;
     lastScanAt = 0;
+}
+
+function showReaderShell() {
+    const shell = getReaderShell();
+    if (shell) {
+        shell.style.display = '';
+    }
+
+    const readerDiv = getReaderDiv();
+    if (readerDiv && isScanning) {
+        readerDiv.style.display = 'block';
+    }
+}
+
+function hideReaderShell() {
+    const shell = getReaderShell();
+    if (shell) {
+        shell.style.display = 'none';
+    }
+}
+
+function scrollConfirmIntoView() {
+    window.requestAnimationFrame(() => {
+        const confirm = document.querySelector('[data-attendant-scan-confirm]');
+        if (confirm) {
+            confirm.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+}
+
+async function pauseScannerUi() {
+    hideReaderShell();
+
+    if (html5QrCode && isScanning) {
+        try {
+            await html5QrCode.pause(true);
+        } catch {
+            // Pause is best-effort; stream may already be idle.
+        }
+    }
+
+    scrollConfirmIntoView();
+}
+
+async function resumeScannerUi() {
+    showReaderShell();
+
+    if (html5QrCode && isScanning) {
+        try {
+            await html5QrCode.resume();
+        } catch {
+            // Resume is best-effort after Livewire morphs.
+        }
+    }
 }
 
 async function handleDecodedText(decodedText) {
@@ -86,8 +149,9 @@ async function handleDecodedText(decodedText) {
     }
 
     try {
-        await activeWire.set('uuid', decodedText);
-        await activeWire.scan();
+        // One round-trip: pass the payload directly (avoids set+scan races).
+        await activeWire.call('scan', decodedText);
+        await pauseScannerUi();
     } catch (err) {
         console.error(err);
     } finally {
@@ -105,6 +169,7 @@ function stopScanner() {
         if (readerDiv) {
             readerDiv.style.display = 'none';
         }
+        showReaderShell();
         setToggleLabel(false);
 
         return Promise.resolve();
@@ -116,6 +181,7 @@ function stopScanner() {
         if (readerDiv) {
             readerDiv.style.display = 'none';
         }
+        showReaderShell();
         setToggleLabel(false);
     }).catch((err) => {
         console.error(err);
@@ -124,18 +190,23 @@ function stopScanner() {
         if (readerDiv) {
             readerDiv.style.display = 'none';
         }
+        showReaderShell();
         setToggleLabel(false);
     });
 }
 
 function cameraConfigs(devices) {
-    const configs = [{ facingMode: 'environment' }];
+    const configs = [];
     const backId = preferBackCameraId(devices);
 
+    // Prefer explicit rear deviceId first — facingMode-only often fails or
+    // picks a weak lens on multi-camera phones.
     if (backId) {
         configs.push({ deviceId: { exact: backId } });
         configs.push({ deviceId: backId });
     }
+
+    configs.push({ facingMode: 'environment' });
 
     if (devices[0]?.id && devices[0].id !== backId) {
         configs.push({ deviceId: devices[0].id });
@@ -146,10 +217,19 @@ function cameraConfigs(devices) {
     return configs;
 }
 
+function waitForLayout() {
+    return new Promise((resolve) => {
+        window.requestAnimationFrame(() => {
+            window.setTimeout(resolve, 50);
+        });
+    });
+}
+
 async function startScannerWithFallback(devices) {
-    const readerDiv = getReaderDiv();
     const configs = cameraConfigs(devices);
     let lastError = null;
+
+    await waitForLayout();
 
     for (const config of configs) {
         try {
@@ -162,12 +242,24 @@ async function startScannerWithFallback(devices) {
                 html5QrCode = null;
             }
 
-            html5QrCode = new Html5Qrcode('reader');
+            const readerDiv = getReaderDiv();
+            if (readerDiv) {
+                readerDiv.innerHTML = '';
+                readerDiv.style.display = 'block';
+            }
+
+            html5QrCode = new Html5Qrcode('reader', {
+                formatsToSupport: [Html5QrcodeSupportedFormats.QR_CODE],
+                verbose: false,
+            });
+
             await html5QrCode.start(
                 config,
                 {
-                    fps: 12,
+                    fps: 15,
                     qrbox: qrboxSize,
+                    aspectRatio: 1.333,
+                    disableFlip: false,
                 },
                 (decodedText) => {
                     handleDecodedText(decodedText);
@@ -179,6 +271,7 @@ async function startScannerWithFallback(devices) {
 
             isScanning = true;
             setToggleLabel(true);
+            showReaderShell();
 
             return;
         } catch (err) {
@@ -230,6 +323,7 @@ async function handleToggleCamera() {
         return;
     }
 
+    showReaderShell();
     readerDiv.style.display = 'block';
 
     try {
@@ -276,7 +370,8 @@ export function initAttendantScan(wire) {
 
     if (!readyHandlerAttached) {
         document.addEventListener('attendant-scan:ready-for-next', () => {
-            releaseScanLock();
+            clearScanMemory();
+            resumeScannerUi();
         });
 
         readyHandlerAttached = true;
@@ -288,4 +383,6 @@ export function initAttendantScan(wire) {
 window.initAttendantScan = initAttendantScan;
 window.releaseAttendantScanLock = releaseScanLock;
 window.clearAttendantScanMemory = clearScanMemory;
+window.resumeAttendantScannerUi = resumeScannerUi;
+window.pauseAttendantScannerUi = pauseScannerUi;
 document.dispatchEvent(new CustomEvent('attendant-scan:ready'));

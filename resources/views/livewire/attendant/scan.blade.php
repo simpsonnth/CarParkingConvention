@@ -17,6 +17,12 @@
         if (typeof window.releaseAttendantScanLock === 'function') {
             window.releaseAttendantScanLock();
         }
+        if (typeof window.clearAttendantScanMemory === 'function') {
+            window.clearAttendantScanMemory();
+        }
+        if (typeof window.resumeAttendantScannerUi === 'function') {
+            window.resumeAttendantScannerUi();
+        }
     });
 </script>
 @endscript
@@ -44,8 +50,16 @@
 
     @unless($walkInMode)
         {{-- Keep camera DOM mounted across scan/confirm so the stream survives Livewire morphs --}}
-        <div class="bg-white dark:bg-zinc-800 p-1 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-xl overflow-hidden">
-            <div id="reader" wire:ignore class="w-full bg-black rounded-t-xl overflow-hidden" style="min-height: 300px; display: none;"></div>
+        <div
+            data-attendant-camera-card
+            @class([
+                'bg-white dark:bg-zinc-800 p-1 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-xl overflow-hidden',
+                'hidden' => $step === 'confirm',
+            ])
+        >
+            <div data-attendant-reader-shell>
+                <div id="reader" wire:ignore class="w-full bg-black rounded-t-xl overflow-hidden" style="min-height: 300px; display: none;"></div>
+            </div>
 
             <div class="p-6 space-y-4">
                 <div wire:ignore>
@@ -149,6 +163,7 @@
         </div>
 
     @elseif($step === 'confirm')
+        <div data-attendant-scan-confirm class="space-y-6">
         @if($lastScanResult === 'success' && $lastScanPass)
             <div class="relative overflow-hidden p-6 rounded-2xl border-2 bg-green-500/5 border-green-500/30">
                 <div class="flex items-center gap-4">
@@ -544,5 +559,6 @@
             </form>
         </div>
         @endif
+        </div>
     @endif
 </div>

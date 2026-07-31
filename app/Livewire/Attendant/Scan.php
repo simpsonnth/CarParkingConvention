@@ -107,9 +107,13 @@ class Scan extends Component
         ]);
     }
 
-    public function scan(): void
+    public function scan(?string $code = null): void
     {
-        $this->uuid = trim($this->uuid);
+        if ($code !== null) {
+            $this->uuid = trim($code);
+        } else {
+            $this->uuid = trim($this->uuid);
+        }
 
         if ($this->uuid === '') {
             return;
@@ -431,6 +435,7 @@ class Scan extends Component
             $this->walkInMode = false;
             $this->walkInVehicleType = 'car';
             $this->step = 'scan';
+            $this->dispatch('attendant-scan-ready-for-next');
         }
     }
 
@@ -599,6 +604,7 @@ class Scan extends Component
             $this->walkInMode = false;
             $this->walkInVehicleType = 'car';
             $this->step = 'scan';
+            $this->dispatch('attendant-scan-ready-for-next');
         }
     }
 
