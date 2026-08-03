@@ -71,9 +71,35 @@ test('admin can download congregation emails as plain text', function () {
 
     Livewire::actingAs($admin)
         ->test(Congregations::class)
+        ->call('openDownloadEmailsModal')
+        ->assertSet('downloadEmailsModalOpen', true)
+        ->assertSet('emailExportFormat', 'comma')
         ->call('downloadJwpubEmails')
         ->assertFileDownloaded(
             content: 'CONG0970987@jwpub.org, CONG097956754@jwpub.org',
+            contentType: 'text/plain; charset=UTF-8',
+        );
+});
+
+test('admin can download congregation emails one per line', function () {
+    $admin = User::factory()->admin()->create();
+
+    Congregation::query()->create([
+        'name' => 'Alpha Hall',
+        'uuid' => '0987',
+    ]);
+    Congregation::query()->create([
+        'name' => 'Beta Hall',
+        'uuid' => '956754',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Congregations::class)
+        ->call('openDownloadEmailsModal')
+        ->set('emailExportFormat', 'newline')
+        ->call('downloadJwpubEmails')
+        ->assertFileDownloaded(
+            content: "CONG0970987@jwpub.org\nCONG097956754@jwpub.org",
             contentType: 'text/plain; charset=UTF-8',
         );
 });

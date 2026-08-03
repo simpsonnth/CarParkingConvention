@@ -24,7 +24,7 @@
                     <span x-text="copied ? 'Copied emails' : 'Copy emails for To'"></span>
                 </flux:button>
             </div>
-            <flux:button variant="ghost" wire:click="downloadJwpubEmails" icon="arrow-down-tray">
+            <flux:button variant="ghost" wire:click="openDownloadEmailsModal" icon="arrow-down-tray">
                 Download emails
             </flux:button>
             <flux:button variant="primary" wire:click="create" class="w-full sm:w-auto">Add Congregation</flux:button>
@@ -205,6 +205,47 @@
             <div class="flex justify-end gap-2">
                 <flux:button variant="ghost" wire:click="$set('bulkAssignModalOpen', false)">Cancel</flux:button>
                 <flux:button variant="primary" wire:click="bulkAssignCarPark">Assign</flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    <flux:modal wire:model="downloadEmailsModalOpen" class="w-[calc(100vw-2rem)] max-w-md">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">Download congregation emails</flux:heading>
+                <flux:subheading class="mt-1">
+                    Choose how the email addresses should be formatted in the downloaded file.
+                </flux:subheading>
+            </div>
+
+            <div class="space-y-3">
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50 dark:has-[:checked]:bg-indigo-950/30">
+                    <input type="radio" wire:model="emailExportFormat" value="comma"
+                        class="mt-1 border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                    <span>
+                        <span class="block text-sm font-medium text-zinc-900 dark:text-white">Comma-separated list</span>
+                        <span class="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">
+                            Ready to paste into an email To field (e.g. a@jwpub.org, b@jwpub.org)
+                        </span>
+                    </span>
+                </label>
+                <label class="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700 has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50 dark:has-[:checked]:bg-indigo-950/30">
+                    <input type="radio" wire:model="emailExportFormat" value="newline"
+                        class="mt-1 border-zinc-300 text-indigo-600 focus:ring-indigo-500">
+                    <span>
+                        <span class="block text-sm font-medium text-zinc-900 dark:text-white">One email per line</span>
+                        <span class="mt-0.5 block text-xs text-zinc-500 dark:text-zinc-400">
+                            Useful for spreadsheets or reviewing the list
+                        </span>
+                    </span>
+                </label>
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <flux:button variant="ghost" wire:click="$set('downloadEmailsModalOpen', false)">Cancel</flux:button>
+                <flux:button variant="primary" wire:click="downloadJwpubEmails" icon="arrow-down-tray">
+                    Download
+                </flux:button>
             </div>
         </div>
     </flux:modal>

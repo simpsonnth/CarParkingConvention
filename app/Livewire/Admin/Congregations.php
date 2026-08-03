@@ -35,6 +35,11 @@ class Congregations extends Component
 
     public bool $bulkAssignModalOpen = false;
 
+    public bool $downloadEmailsModalOpen = false;
+
+    /** @var string 'comma' | 'newline' */
+    public string $emailExportFormat = 'comma';
+
     public $search = '';
 
     public $filterCarParkId = '';
@@ -154,9 +159,11 @@ class Congregations extends Component
     }
 
     /**
-     * Comma-separated JW Pub emails for the current filtered congregation set (all pages).
+     * JW Pub emails for the current filtered congregation set (all pages).
+     *
+     * @param  string  $format  'comma' or 'newline'
      */
-    public function getJwpubEmailsList(): string
+    public function getJwpubEmailsList(string $format = 'comma'): string
     {
         $emails = $this->getCongregationsQuery()
             ->orderBy('name')
@@ -166,13 +173,28 @@ class Congregations extends Component
             ->values()
             ->all();
 
-        return implode(', ', $emails);
+        return $format === 'newline'
+            ? implode("\n", $emails)
+            : implode(', ', $emails);
+    }
+
+    public function openDownloadEmailsModal(): void
+    {
+        $this->emailExportFormat = 'comma';
+        $this->downloadEmailsModalOpen = true;
     }
 
     public function downloadJwpubEmails()
     {
-        $content = $this->getJwpubEmailsList();
+        $this->validate([
+            'emailExportFormat' => 'required|in:comma,newline',
+        ]);
+
+        $format = $this->emailExportFormat === 'newline' ? 'newline' : 'comma';
+        $content = $this->getJwpubEmailsList($format);
         $filename = 'congregation-emails-'.now()->format('Y-m-d-His').'.txt';
+
+        $this->downloadEmailsModalOpen = false;
 
         return response()->streamDownload(static function () use ($content): void {
             echo $content;
