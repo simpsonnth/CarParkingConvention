@@ -15,7 +15,7 @@ final class CoachCoverageReport
      * Compare expected spreadsheet congregations against coach parking registrations.
      *
      * An expected congregation is covered when it has its own coach registration,
-     * or when its survey lists a sharing partner that has a coach registration.
+     * or when it mutually shares (survey) with a congregation that has a coach registration.
      *
      * @return array{
      *     expected_total: int,
@@ -138,6 +138,9 @@ final class CoachCoverageReport
     }
 
     /**
+     * Partner congregations that both appear in this congregation's survey sharing
+     * list and mutually list this congregation back, and that hold a coach registration.
+     *
      * @param  Collection<int|string, CongregationNumbersResponse>  $responses
      * @param  array<int, true>  $coachCongregationIds
      * @param  array<int, string>  $idToName
@@ -157,6 +160,15 @@ final class CoachCoverageReport
         $partners = [];
         foreach ($response->normalizedSharedCongregationIds() as $partnerId) {
             if ($partnerId === $congregationId || ! isset($coachCongregationIds[$partnerId])) {
+                continue;
+            }
+
+            $other = $responses->get($partnerId);
+            if ($other === null || ! ($other->sharing_coach_with_others ?? false)) {
+                continue;
+            }
+
+            if (! in_array($congregationId, $other->normalizedSharedCongregationIds(), true)) {
                 continue;
             }
 

@@ -439,7 +439,7 @@ test('coach coverage reports missing and unexpected against expected spreadsheet
         ->assertSee('Unexpected Hall');
 });
 
-test('coach coverage treats survey sharing partners as covered without their own registration', function () {
+test('coach coverage treats mutually confirmed survey sharing partners as covered without their own registration', function () {
     config([
         'expected_coach_congregations' => [
             'Deal',
@@ -462,6 +462,16 @@ test('coach coverage treats survey sharing partners as covered without their own
         'organizes_coach' => true,
         'sharing_coach_with_others' => true,
         'shared_with_congregation_ids' => [(int) $walmer->id],
+        'coach_size' => \App\Models\CongregationNumbersResponse::COACH_SIZE_LARGE,
+        'disabled_parking_required' => false,
+    ]);
+
+    \App\Models\CongregationNumbersResponse::query()->create([
+        'congregation_id' => $walmer->id,
+        'car_park_tickets_count' => 0,
+        'organizes_coach' => true,
+        'sharing_coach_with_others' => true,
+        'shared_with_congregation_ids' => [(int) $deal->id],
         'coach_size' => \App\Models\CongregationNumbersResponse::COACH_SIZE_LARGE,
         'disabled_parking_required' => false,
     ]);
@@ -496,6 +506,58 @@ test('coach coverage treats survey sharing partners as covered without their own
         ->assertSee('Sharing with Walmer')
         ->assertSee('Alton')
         ->assertSee('Walmer');
+});
+
+test('coach coverage ignores one-sided survey sharing when partner has a registration', function () {
+    config([
+        'expected_coach_congregations' => [
+            'Crawley, West',
+        ],
+    ]);
+
+    $west = \App\Models\Congregation::query()->create([
+        'name' => 'Crawley, West',
+        'uuid' => 'crawley-west-uuid',
+    ]);
+    $south = \App\Models\Congregation::query()->create([
+        'name' => 'Crawley, South',
+        'uuid' => 'crawley-south-uuid',
+    ]);
+
+    \App\Models\CongregationNumbersResponse::query()->create([
+        'congregation_id' => $west->id,
+        'car_park_tickets_count' => 0,
+        'organizes_coach' => true,
+        'sharing_coach_with_others' => true,
+        'shared_with_congregation_ids' => [(int) $south->id],
+        'coach_size' => \App\Models\CongregationNumbersResponse::COACH_SIZE_LARGE,
+        'disabled_parking_required' => false,
+    ]);
+
+    \App\Models\CongregationNumbersResponse::query()->create([
+        'congregation_id' => $south->id,
+        'car_park_tickets_count' => 0,
+        'organizes_coach' => true,
+        'sharing_coach_with_others' => false,
+        'shared_with_congregation_ids' => [],
+        'coach_size' => null,
+        'disabled_parking_required' => false,
+    ]);
+
+    ParkingRegistration::query()->create([
+        'name' => 'South Captain',
+        'congregation' => 'Crawley, South',
+        'contact_number' => '07700000330',
+        'email' => 'south@test',
+        'vehicle_type' => 'coach',
+        'days' => ['Friday'],
+    ]);
+
+    $coverage = app(\App\Services\CoachCoverageReport::class)->summarize();
+
+    expect($coverage['missing'])->toBe(['Crawley, West']);
+    expect($coverage['covered_via_sharing'])->toBe([]);
+    expect($coverage['unexpected'])->toBe(['Crawley, South']);
 });
 
 test('coaches page shows survey sharing partner congregation names', function () {
