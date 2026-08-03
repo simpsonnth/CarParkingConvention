@@ -77,3 +77,22 @@ test('admin can download congregation emails as plain text', function () {
             contentType: 'text/plain; charset=UTF-8',
         );
 });
+
+test('admin congregations page can show all rows per page', function () {
+    $admin = User::factory()->admin()->create();
+
+    foreach (range(1, 30) as $i) {
+        Congregation::query()->create([
+            'name' => sprintf('Hall %02d', $i),
+            'uuid' => 'code-'.$i,
+        ]);
+    }
+
+    Livewire::actingAs($admin)
+        ->test(Congregations::class)
+        ->assertSee('Hall 01')
+        ->assertDontSee('Hall 30')
+        ->set('perPage', 'all')
+        ->assertSee('Hall 01')
+        ->assertSee('Hall 30');
+});

@@ -39,8 +39,8 @@ class Congregations extends Component
 
     public $filterCarParkId = '';
 
-    /** @var int Per-page options: 25, 50, 100 */
-    public int $perPage = 25;
+    /** @var int|string Per-page options: 25, 50, 100, or "all" */
+    public int|string $perPage = 25;
 
     /** @var array<int> */
     public array $selectedIds = [];
@@ -76,7 +76,11 @@ class Congregations extends Component
 
     public function toggleSelectAll(): void
     {
-        $ids = $this->getCongregationsQuery()->paginate($this->perPage)->pluck('id')->all();
+        $ids = $this->getCongregationsQuery()
+            ->orderBy('name')
+            ->paginate($this->resolvedPerPage())
+            ->pluck('id')
+            ->all();
         if (count(array_intersect($this->selectedIds, $ids)) === count($ids)) {
             $this->selectedIds = array_values(array_diff($this->selectedIds, $ids));
         } else {
@@ -179,12 +183,26 @@ class Congregations extends Component
 
     public function render()
     {
-        $congregations = $this->getCongregationsQuery()->orderBy('name')->paginate($this->perPage);
+        $congregations = $this->getCongregationsQuery()->orderBy('name')->paginate($this->resolvedPerPage());
 
         return view('livewire.admin.congregations', [
             'congregations' => $congregations,
             'carParks' => CarPark::all(),
         ]);
+    }
+
+    /**
+     * Resolve page size; "all" returns the full filtered count (minimum 1 for paginator).
+     */
+    protected function resolvedPerPage(): int
+    {
+        if ((string) $this->perPage === 'all') {
+            return max(1, (int) $this->getCongregationsQuery()->count());
+        }
+
+        $size = (int) $this->perPage;
+
+        return in_array($size, [25, 50, 100], true) ? $size : 25;
     }
 
     public function create()
