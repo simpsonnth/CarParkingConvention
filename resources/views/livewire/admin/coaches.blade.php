@@ -14,7 +14,7 @@
         </div>
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2">
+    <div class="grid gap-4 sm:grid-cols-3">
         <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
             <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                 {{ __('coaches.stat_registrations_total') }}
@@ -36,6 +36,64 @@
             <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
                 {{ __('coaches.stat_unique_coaches_hint') }}
             </p>
+        </div>
+        <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+            <p class="text-xs font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                {{ __('coaches.stat_coverage') }}
+            </p>
+            <p class="mt-2 text-3xl font-bold tabular-nums text-zinc-900 dark:text-white">
+                {{ number_format($coachCoverage['registered_expected']) }}
+                <span class="text-lg font-semibold text-zinc-400">/ {{ number_format($coachCoverage['expected_total']) }}</span>
+            </p>
+            <p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
+                {{ __('coaches.stat_coverage_hint', [
+                    'registered' => number_format($coachCoverage['registered_expected']),
+                    'expected' => number_format($coachCoverage['expected_total']),
+                ]) }}
+            </p>
+        </div>
+    </div>
+
+    <div class="grid gap-4 lg:grid-cols-2">
+        <div @class([
+            'rounded-xl border p-5 shadow-sm',
+            'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40' => count($coachCoverage['missing']) > 0,
+            'border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-800' => count($coachCoverage['missing']) === 0,
+        ])>
+            <p class="text-sm font-semibold text-zinc-900 dark:text-white">
+                {{ __('coaches.coverage_missing_title') }}
+                @if(count($coachCoverage['missing']) > 0)
+                    <span class="ms-1 tabular-nums text-amber-700 dark:text-amber-300">({{ count($coachCoverage['missing']) }})</span>
+                @endif
+            </p>
+            <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{{ __('coaches.coverage_missing_hint') }}</p>
+            @if(count($coachCoverage['missing']) === 0)
+                <p class="mt-3 text-sm text-emerald-700 dark:text-emerald-400">{{ __('coaches.coverage_missing_none') }}</p>
+            @else
+                <ul class="mt-3 max-h-48 space-y-1 overflow-y-auto text-sm text-zinc-800 dark:text-zinc-200">
+                    @foreach($coachCoverage['missing'] as $name)
+                        <li wire:key="missing-cong-{{ $loop->index }}">{{ $name }}</li>
+                    @endforeach
+                </ul>
+            @endif
+        </div>
+        <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
+            <p class="text-sm font-semibold text-zinc-900 dark:text-white">
+                {{ __('coaches.coverage_unexpected_title') }}
+                @if(count($coachCoverage['unexpected']) > 0)
+                    <span class="ms-1 tabular-nums text-zinc-500">({{ count($coachCoverage['unexpected']) }})</span>
+                @endif
+            </p>
+            <p class="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{{ __('coaches.coverage_unexpected_hint') }}</p>
+            @if(count($coachCoverage['unexpected']) === 0)
+                <p class="mt-3 text-sm text-zinc-500 dark:text-zinc-400">{{ __('coaches.coverage_unexpected_none') }}</p>
+            @else
+                <ul class="mt-3 max-h-48 space-y-1 overflow-y-auto text-sm text-zinc-800 dark:text-zinc-200">
+                    @foreach($coachCoverage['unexpected'] as $name)
+                        <li wire:key="unexpected-cong-{{ $loop->index }}">{{ $name }}</li>
+                    @endforeach
+                </ul>
+            @endif
         </div>
     </div>
 
@@ -110,8 +168,16 @@
                             {{ $survey ? $this->coachSizeLabel($survey->coach_size) : __('coaches.survey_unknown') }}
                         </td>
                         <td class="px-4 py-4 text-xs">
+                            @php
+                                $partnerNames = $this->sharingPartnerNames($survey);
+                            @endphp
                             @if($survey && ($survey->sharing_coach_with_others ?? false))
                                 <span class="text-indigo-600 dark:text-indigo-400">{{ __('registrations.yes') }}</span>
+                                @if(count($partnerNames) > 0)
+                                    <div class="mt-0.5 text-zinc-600 dark:text-zinc-300" title="{{ implode(', ', $partnerNames) }}">
+                                        {{ implode(', ', $partnerNames) }}
+                                    </div>
+                                @endif
                             @elseif($survey)
                                 <span class="text-zinc-400">{{ __('registrations.no') }}</span>
                             @else

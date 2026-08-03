@@ -309,3 +309,84 @@ test('one-sided survey sharing does not merge unique coach counts', function () 
     expect($metrics['registrations_total'])->toBe(2);
     expect($metrics['unique_coaches'])->toBe(2);
 });
+
+test('coach coverage reports missing and unexpected against expected spreadsheet list', function () {
+    config([
+        'expected_coach_congregations' => [
+            'Alton',
+            'Reigate',
+            'Yateley',
+        ],
+    ]);
+
+    ParkingRegistration::query()->create([
+        'name' => 'Alton Captain',
+        'congregation' => 'Alton',
+        'contact_number' => '07700000300',
+        'email' => 'alton@test',
+        'vehicle_type' => 'coach',
+        'days' => ['Friday'],
+    ]);
+
+    ParkingRegistration::query()->create([
+        'name' => 'Extra Captain',
+        'congregation' => 'Unexpected Hall',
+        'contact_number' => '07700000301',
+        'email' => 'extra@test',
+        'vehicle_type' => 'coach',
+        'days' => ['Friday'],
+    ]);
+
+    $coverage = app(\App\Services\CoachCoverageReport::class)->summarize();
+
+    expect($coverage['expected_total'])->toBe(3);
+    expect($coverage['registered_expected'])->toBe(1);
+    expect($coverage['missing'])->toBe(['Reigate', 'Yateley']);
+    expect($coverage['unexpected'])->toBe(['Unexpected Hall']);
+
+    $admin = User::factory()->admin()->create();
+
+    Livewire::actingAs($admin)
+        ->test(Coaches::class)
+        ->assertSee(__('coaches.coverage_missing_title'))
+        ->assertSee('Reigate')
+        ->assertSee('Yateley')
+        ->assertSee('Unexpected Hall');
+});
+
+test('coaches page shows survey sharing partner congregation names', function () {
+    $admin = User::factory()->admin()->create();
+
+    $alpha = \App\Models\Congregation::query()->create([
+        'name' => 'Partner Alpha',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+    ]);
+    $beta = \App\Models\Congregation::query()->create([
+        'name' => 'Partner Beta',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+    ]);
+
+    \App\Models\CongregationNumbersResponse::query()->create([
+        'congregation_id' => $alpha->id,
+        'car_park_tickets_count' => 0,
+        'organizes_coach' => true,
+        'sharing_coach_with_others' => true,
+        'shared_with_congregation_ids' => [(int) $beta->id],
+        'coach_size' => \App\Models\CongregationNumbersResponse::COACH_SIZE_SMALL,
+        'disabled_parking_required' => false,
+    ]);
+
+    ParkingRegistration::query()->create([
+        'name' => 'Shared Captain',
+        'congregation' => $alpha->name,
+        'contact_number' => '07700000310',
+        'email' => 'shared@alpha.test',
+        'vehicle_type' => 'coach',
+        'days' => ['Friday'],
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Coaches::class)
+        ->assertSee('Partner Alpha')
+        ->assertSee('Partner Beta');
+});

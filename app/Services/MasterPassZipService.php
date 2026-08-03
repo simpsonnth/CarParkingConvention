@@ -25,6 +25,9 @@ class MasterPassZipService
      */
     public function buildZip(array $registrationIds): array
     {
+        @set_time_limit(300);
+        ini_set('max_execution_time', '300');
+
         if (empty($registrationIds)) {
             throw new \InvalidArgumentException('At least one registration ID is required.');
         }

@@ -23,6 +23,10 @@ class SendCarParkTicketsEmail
      */
     public function execute(array $registrationIds, string $toEmail): array
     {
+        // Large batches of Chrome PDFs need more than the default 30s.
+        @set_time_limit(300);
+        ini_set('max_execution_time', '300');
+
         $to = strtolower(trim($toEmail));
         if ($to === '' || ! filter_var($to, FILTER_VALIDATE_EMAIL)) {
             throw ValidationException::withMessages([

@@ -60,4 +60,18 @@ class Congregation extends Model
     {
         return $this->hasOne(CongregationNumbersResponse::class);
     }
+
+    /**
+     * JW Pub congregation email derived from the congregation code (uuid column).
+     */
+    public function jwpubEmail(): string
+    {
+        $code = trim((string) ($this->uuid ?? ''));
+
+        if ($code === '') {
+            return '';
+        }
+
+        return 'CONG097'.$code.'@jwpub.org';
+    }
 }

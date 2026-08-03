@@ -514,7 +514,8 @@ class Registrations extends Component
         $this->downloadPassesModalOpen = false;
 
         $token = \Illuminate\Support\Str::random(32);
-        cache()->put('master-passes-zip:'.$token, $ids, now()->addMinutes(2));
+        // Allow enough time for large batches (~20+ Chrome PDFs) to finish building.
+        cache()->put('master-passes-zip:'.$token, $ids, now()->addMinutes(15));
 
         try {
             return $this->redirect(route('admin.registrations.download-passes-zip', ['token' => $token]), navigate: false);

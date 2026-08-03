@@ -1,0 +1,62 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Spreadsheet source of truth for congregations expected to have a coach registration.
+ *
+ * @return list<string>
+ */
+return [
+    'Alton',
+    'Ashford, Kingsnorth',
+    'Biggin Hill',
+    'Bracknell, East',
+    'Bracknell, North',
+    'Bracknell, South',
+    'Broadstairs',
+    'Crawley, North',
+    'Crawley, Portuguese',
+    'Crawley, West',
+    'Deal',
+    'East Grinstead',
+    'Edenbridge',
+    'Farnborough, East',
+    'Farnborough, West',
+    'Herne Bay',
+    'London, Abbey Wood',
+    'London, Balham',
+    'London, Beckenham',
+    'London, Brockley Rise',
+    'London, Burgess Park',
+    'London, Charlton',
+    'London, Coulsdon',
+    'London, Eltham',
+    'London, Epsom',
+    'London, Herne Hill',
+    'London, Lewisham',
+    'London, Motspur Park',
+    'London, Mottingham',
+    'London, Norbury',
+    'London, Nunhead Green',
+    'London, Orpington',
+    'London, Peckham',
+    'London, Portuguese Battersea',
+    'London, Portuguese Becontree',
+    'London, Portuguese Springfield',
+    'London, Purley',
+    'London, Spanish Streatham',
+    'London, Streatham Common',
+    'London, Sutton',
+    'London, Thamesmead North',
+    'London, Tooting Bec',
+    'London, Wallington',
+    'London, West Wickham',
+    'London, Woodside',
+    'London, Woolwich Riverside',
+    'Reigate',
+    'Tonbridge',
+    'Weybridge',
+    'Woking',
+    'Yateley',
+];

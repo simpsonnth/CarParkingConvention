@@ -167,6 +167,10 @@ Route::middleware(['auth'])->group(function () {
             ->middleware('permission:registrations.manage')
             ->name('registrations.trash');
         Route::get('/registrations/download-master-passes-zip/{token}', function (string $token) {
+            // Bulk Chrome PDF generation for large selections can take several minutes.
+            @set_time_limit(300);
+            ini_set('max_execution_time', '300');
+
             $cacheKey = 'master-passes-zip:'.$token;
             $registrationIds = cache()->get($cacheKey);
             if (! is_array($registrationIds) || empty($registrationIds)) {

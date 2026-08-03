@@ -1,7 +1,34 @@
 <div class="space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <flux:heading size="xl">Congregations</flux:heading>
-        <flux:button variant="primary" wire:click="create" class="w-full sm:w-auto">Add Congregation</flux:button>
+        <div class="flex flex-wrap gap-2">
+            <div
+                x-data="{
+                    copied: false,
+                    async copyEmails() {
+                        try {
+                            const text = await $wire.getJwpubEmailsList();
+                            if (! text) {
+                                return;
+                            }
+                            await navigator.clipboard.writeText(text);
+                            this.copied = true;
+                            setTimeout(() => this.copied = false, 2000);
+                        } catch (e) {
+                            console.warn('Could not copy congregation emails', e);
+                        }
+                    }
+                }"
+            >
+                <flux:button type="button" variant="ghost" icon="clipboard-document" x-on:click="copyEmails()">
+                    <span x-text="copied ? 'Copied emails' : 'Copy emails for To'"></span>
+                </flux:button>
+            </div>
+            <flux:button variant="ghost" wire:click="downloadJwpubEmails" icon="arrow-down-tray">
+                Download emails
+            </flux:button>
+            <flux:button variant="primary" wire:click="create" class="w-full sm:w-auto">Add Congregation</flux:button>
+        </div>
     </div>
 
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -49,6 +76,7 @@
                     </th>
                     <th class="px-6 py-3">Name</th>
                     <th class="px-6 py-3">Code</th>
+                    <th class="px-6 py-3">Email</th>
                     <th class="px-6 py-3">Assigned Car Park</th>
                     <th class="px-6 py-3">Registered cars</th>
                     <th class="px-6 py-3">Active Vehicles</th>
@@ -65,6 +93,13 @@
                         <td class="px-6 py-4 font-medium text-zinc-900 dark:text-white">{{ $congregation->name }}</td>
                         <td class="px-6 py-4">
                             <code class="text-xs font-mono text-zinc-600 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-700 px-2 py-1 rounded" title="{{ $congregation->uuid }}">{{ \Illuminate\Support\Str::limit($congregation->uuid, 8) }}</code>
+                        </td>
+                        <td class="px-6 py-4">
+                            @if($congregation->jwpubEmail() !== '')
+                                <code class="text-xs font-mono text-zinc-600 dark:text-zinc-400 break-all" title="{{ $congregation->jwpubEmail() }}">{{ $congregation->jwpubEmail() }}</code>
+                            @else
+                                <span class="text-zinc-400 text-sm">—</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4">
                             @if($congregation->carPark)
@@ -104,7 +139,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-8 text-center text-zinc-500">
+                        <td colspan="8" class="px-6 py-8 text-center text-zinc-500">
                             No congregations found.
                         </td>
                     </tr>

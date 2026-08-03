@@ -6,9 +6,12 @@ namespace App\Services;
 
 use App\Models\Congregation;
 use App\Models\ParkingRegistration;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use RuntimeException;
 use Spatie\Browsershot\Browsershot;
+use Throwable;
 
 class MasterPassPdfGenerator
 {
@@ -52,7 +55,12 @@ class MasterPassPdfGenerator
                     'content' => $this->generatePdf($registration),
                     'registration' => $registration,
                 ];
-            } catch (RuntimeException $exception) {
+            } catch (Throwable $exception) {
+                Log::warning('Master pass PDF skipped for registration', [
+                    'registration_id' => $registration->id,
+                    'name' => $registration->name,
+                    'error' => $exception->getMessage(),
+                ]);
                 $skipped[] = $registration->name.' (#'.$registration->id.')';
             }
         }
@@ -72,24 +80,26 @@ class MasterPassPdfGenerator
     {
         [$congregation, $effectiveCarPark] = $this->resolvePassContext($registration);
 
-        // Same Blade + @media print CSS as /admin/registrations/{id}/print (not DomPDF).
-        $html = view('admin.print-pass', [
-            'congregation' => $congregation,
-            'registration' => $registration,
-            'effectiveCarPark' => $effectiveCarPark,
-            'forChromePdf' => true,
-        ])->render();
-
-        $html = $this->embedLocalAssetsAsDataUris($html);
-
+        // Prefer Chrome (Browsershot) for print-accurate layout; fall back to DomPDF when
+        // Chrome/system libraries are unavailable (common on lean production VPS images).
         try {
-            return $this->browsershot($html)->pdf();
-        } catch (\Throwable $exception) {
-            throw new RuntimeException(
-                'Could not render car park ticket PDF with Chrome: '.$exception->getMessage(),
-                0,
-                $exception
-            );
+            return $this->generatePdfWithChrome($registration, $congregation, $effectiveCarPark);
+        } catch (Throwable $chromeException) {
+            Log::warning('Chrome PDF failed; falling back to DomPDF', [
+                'registration_id' => $registration->id,
+                'error' => $chromeException->getMessage(),
+            ]);
+
+            try {
+                return $this->generatePdfWithDomPdf($registration, $congregation, $effectiveCarPark);
+            } catch (Throwable $domPdfException) {
+                throw new RuntimeException(
+                    'Could not render car park ticket PDF (Chrome and DomPDF both failed). Chrome: '
+                    .$chromeException->getMessage().' DomPDF: '.$domPdfException->getMessage(),
+                    0,
+                    $domPdfException
+                );
+            }
         }
     }
 
@@ -146,6 +156,42 @@ class MasterPassPdfGenerator
         return $filename;
     }
 
+    protected function generatePdfWithChrome(
+        ParkingRegistration $registration,
+        ?Congregation $congregation,
+        mixed $effectiveCarPark
+    ): string {
+        $html = view('admin.print-pass', [
+            'congregation' => $congregation,
+            'registration' => $registration,
+            'effectiveCarPark' => $effectiveCarPark,
+            'forChromePdf' => true,
+        ])->render();
+
+        $html = $this->embedLocalAssetsAsDataUris($html);
+
+        return $this->browsershot($html)->pdf();
+    }
+
+    protected function generatePdfWithDomPdf(
+        ParkingRegistration $registration,
+        ?Congregation $congregation,
+        mixed $effectiveCarPark
+    ): string {
+        $html = view('admin.print-pass', [
+            'congregation' => $congregation,
+            'registration' => $registration,
+            'effectiveCarPark' => $effectiveCarPark,
+            'forPdf' => true,
+        ])->render();
+
+        $html = $this->embedLocalAssetsAsDataUris($html);
+
+        return Pdf::loadHTML($html)
+            ->setPaper('a4', 'landscape')
+            ->output();
+    }
+
     protected function browsershot(string $html): Browsershot
     {
         $shot = Browsershot::html($html)
@@ -162,17 +208,53 @@ class MasterPassPdfGenerator
             ->setOption('printBackground', true)
             ->preferCSSPageSize();
 
+        $nodeModules = base_path('node_modules');
+        if (is_dir($nodeModules)) {
+            $shot->setNodeModulePath($nodeModules);
+        }
 
         $chromePath = (string) config('services.chrome.binary', '');
         if ($chromePath !== '' && is_executable($chromePath)) {
             $shot->setChromePath($chromePath);
+        } else {
+            // Prefer Puppeteer's bundled Chromium when system Chrome is missing.
+            $puppeteerChrome = $this->puppeteerChromePath();
+            if ($puppeteerChrome !== null) {
+                $shot->setChromePath($puppeteerChrome);
+            }
         }
 
         return $shot;
     }
 
+    protected function puppeteerChromePath(): ?string
+    {
+        $candidates = [
+            getenv('HOME') !== false
+                ? rtrim((string) getenv('HOME'), '/').'/.cache/puppeteer/chrome'
+                : null,
+            '/home/ploi/.cache/puppeteer/chrome',
+        ];
+
+        foreach ($candidates as $root) {
+            if ($root === null || ! is_dir($root)) {
+                continue;
+            }
+
+            $matches = glob($root.'/linux-*/chrome-linux64/chrome') ?: [];
+            rsort($matches);
+            foreach ($matches as $path) {
+                if (is_executable($path)) {
+                    return $path;
+                }
+            }
+        }
+
+        return null;
+    }
+
     /**
-     * Embed /storage/... images as data URIs so Chrome does not need the HTTP server.
+     * Embed /storage/... images as data URIs so Chrome/DomPDF do not need the HTTP server.
      */
     protected function embedLocalAssetsAsDataUris(string $html): string
     {

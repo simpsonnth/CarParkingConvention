@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Models\Congregation;
 use App\Models\CongregationNumbersResponse;
 use App\Models\ParkingRegistration;
+use App\Services\CoachCoverageReport;
 use App\Services\CoachRegistrationMetrics;
 use Flux\Flux;
 use Livewire\Attributes\Computed;
@@ -91,6 +92,24 @@ class Coaches extends Component
         return $map;
     }
 
+    /**
+     * Congregation names keyed by id for resolving survey sharing partners.
+     *
+     * @return array<int, string>
+     */
+    #[Computed]
+    public function congregationNamesById(): array
+    {
+        $map = [];
+        Congregation::query()
+            ->get(['id', 'name'])
+            ->each(function (Congregation $congregation) use (&$map): void {
+                $map[(int) $congregation->id] = (string) $congregation->name;
+            });
+
+        return $map;
+    }
+
     public function surveyResponseForRegistration(ParkingRegistration $registration): ?CongregationNumbersResponse
     {
         $key = mb_strtolower(trim((string) $registration->congregation), 'UTF-8');
@@ -99,6 +118,29 @@ class Coaches extends Component
         }
 
         return $this->surveyByCongregationName[$key] ?? null;
+    }
+
+    /**
+     * @return list<string>
+     */
+    public function sharingPartnerNames(?CongregationNumbersResponse $survey): array
+    {
+        if ($survey === null) {
+            return [];
+        }
+
+        $namesById = $this->congregationNamesById;
+        $names = [];
+
+        foreach ($survey->normalizedSharedCongregationIds() as $id) {
+            if (isset($namesById[$id])) {
+                $names[] = $namesById[$id];
+            }
+        }
+
+        sort($names, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return $names;
     }
 
     public function coachSizeLabel(?string $coachSize): string
@@ -218,11 +260,12 @@ class Coaches extends Component
         return $query->orderBy($sortColumn, $this->sortDir === 'desc' ? 'desc' : 'asc');
     }
 
-    public function render(CoachRegistrationMetrics $metrics)
+    public function render(CoachRegistrationMetrics $metrics, CoachCoverageReport $coverage)
     {
         return view('livewire.admin.coaches', [
             'coaches' => $this->coachesQuery()->paginate($this->perPage),
             'coachMetrics' => $metrics->summarize(),
+            'coachCoverage' => $coverage->summarize(),
         ]);
     }
 }

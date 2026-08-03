@@ -13,12 +13,16 @@ class CoachesExport implements FromQuery, WithHeadings, WithMapping
     /** @var array<string, \App\Models\CongregationNumbersResponse|null> */
     private array $surveyByName = [];
 
+    /** @var array<int, string> */
+    private array $congregationNamesById = [];
+
     public function __construct()
     {
         Congregation::query()
             ->with('numbersResponse')
             ->get()
             ->each(function (Congregation $congregation): void {
+                $this->congregationNamesById[(int) $congregation->id] = (string) $congregation->name;
                 $key = mb_strtolower(trim((string) $congregation->name), 'UTF-8');
                 if ($key !== '') {
                     $this->surveyByName[$key] = $congregation->numbersResponse;
@@ -50,6 +54,7 @@ class CoachesExport implements FromQuery, WithHeadings, WithMapping
             __('coaches.export.vehicle_reg'),
             __('coaches.export.sharing'),
             __('coaches.export.sharing_notes'),
+            __('coaches.export.survey_sharing_partners'),
             __('coaches.export.days'),
         ];
     }
@@ -78,6 +83,16 @@ class CoachesExport implements FromQuery, WithHeadings, WithMapping
             default => __('coaches.staying_not_set'),
         };
 
+        $partnerNames = [];
+        if ($survey !== null) {
+            foreach ($survey->normalizedSharedCongregationIds() as $id) {
+                if (isset($this->congregationNamesById[$id])) {
+                    $partnerNames[] = $this->congregationNamesById[$id];
+                }
+            }
+            sort($partnerNames, SORT_NATURAL | SORT_FLAG_CASE);
+        }
+
         return [
             $row->created_at?->format('Y-m-d H:i'),
             $row->congregation,
@@ -92,6 +107,7 @@ class CoachesExport implements FromQuery, WithHeadings, WithMapping
             $row->vehicle_registration ?? '',
             ($row->sharing_with_other_congregations ?? false) ? __('registrations.yes') : __('registrations.no'),
             $row->sharing_congregations_notes ?? '',
+            implode(', ', $partnerNames),
             is_array($row->days) ? implode(', ', $row->days) : '',
         ];
     }

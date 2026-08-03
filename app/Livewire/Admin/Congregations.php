@@ -149,9 +149,37 @@ class Congregations extends Component
         return $query;
     }
 
+    /**
+     * Comma-separated JW Pub emails for the current filtered congregation set (all pages).
+     */
+    public function getJwpubEmailsList(): string
+    {
+        $emails = $this->getCongregationsQuery()
+            ->orderBy('name')
+            ->get(['uuid'])
+            ->map(fn (Congregation $congregation): string => $congregation->jwpubEmail())
+            ->filter(fn (string $email): bool => $email !== '')
+            ->values()
+            ->all();
+
+        return implode(', ', $emails);
+    }
+
+    public function downloadJwpubEmails()
+    {
+        $content = $this->getJwpubEmailsList();
+        $filename = 'congregation-emails-'.now()->format('Y-m-d-His').'.txt';
+
+        return response()->streamDownload(static function () use ($content): void {
+            echo $content;
+        }, $filename, [
+            'Content-Type' => 'text/plain; charset=UTF-8',
+        ]);
+    }
+
     public function render()
     {
-        $congregations = $this->getCongregationsQuery()->paginate($this->perPage);
+        $congregations = $this->getCongregationsQuery()->orderBy('name')->paginate($this->perPage);
 
         return view('livewire.admin.congregations', [
             'congregations' => $congregations,
