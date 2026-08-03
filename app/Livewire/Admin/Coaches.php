@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Models\CarPark;
 use App\Models\Congregation;
 use App\Models\CongregationNumbersResponse;
 use App\Models\ParkingRegistration;
@@ -34,6 +35,12 @@ class Coaches extends Component
 
     public string $name = '';
 
+    public string $congregation = '';
+
+    public string $carParkId = '';
+
+    public string $vehicleReg = '';
+
     public string $contactNumber = '';
 
     public string $email = '';
@@ -43,6 +50,9 @@ class Coaches extends Component
     public string $sharingWithOtherCongregations = '0';
 
     public string $sharingCongregationsNotes = '';
+
+    /** @var list<string> */
+    public array $days = [];
 
     public function updatedSearch(): void
     {
@@ -175,29 +185,54 @@ class Coaches extends Component
         }
     }
 
+    public function create(): void
+    {
+        $this->resetErrorBag();
+        $this->editingRegistration = null;
+        $this->resetFormFields();
+        $this->modalOpen = true;
+    }
+
     public function edit(int $id): void
     {
+        $this->resetErrorBag();
         $this->editingRegistration = ParkingRegistration::query()
             ->where('vehicle_type', 'coach')
             ->findOrFail($id);
 
         $this->name = (string) $this->editingRegistration->name;
+        $this->congregation = (string) ($this->editingRegistration->congregation ?? '');
+        $this->carParkId = $this->editingRegistration->car_park_id ? (string) $this->editingRegistration->car_park_id : '';
+        $this->vehicleReg = (string) ($this->editingRegistration->vehicle_registration ?? '');
         $this->contactNumber = (string) $this->editingRegistration->contact_number;
         $this->email = (string) ($this->editingRegistration->email ?? '');
         $this->coachCaptainToBeAssigned = (bool) ($this->editingRegistration->coach_captain_to_be_assigned ?? false);
         $this->sharingWithOtherCongregations = $this->editingRegistration->sharing_with_other_congregations ? '1' : '0';
         $this->sharingCongregationsNotes = (string) ($this->editingRegistration->sharing_congregations_notes ?? '');
+        $this->days = is_array($this->editingRegistration->days) ? array_values($this->editingRegistration->days) : [];
         $this->modalOpen = true;
+    }
+
+    public function toggleDay(string $day): void
+    {
+        if (in_array($day, $this->days, true)) {
+            $this->days = array_values(array_diff($this->days, [$day]));
+        } else {
+            $this->days[] = $day;
+        }
     }
 
     public function save(): void
     {
-        if ($this->editingRegistration === null) {
-            return;
-        }
+        $isCreating = $this->editingRegistration === null;
 
         $rules = [
             'name' => 'required|string|max:255',
+            'congregation' => $isCreating
+                ? 'required|string|exists:congregations,name'
+                : 'required|string|max:255',
+            'carParkId' => 'nullable|exists:car_parks,id',
+            'vehicleReg' => 'nullable|string|max:20',
             'contactNumber' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
             'coachCaptainToBeAssigned' => 'boolean',
@@ -205,29 +240,84 @@ class Coaches extends Component
             'sharingCongregationsNotes' => $this->sharingWithOtherCongregations === '1'
                 ? 'required|string|max:1000'
                 : 'nullable|string|max:1000',
+            'days' => $isCreating ? 'required|array|min:1' : 'nullable|array',
         ];
         $this->validate($rules);
 
         $sharingWithOther = $this->sharingWithOtherCongregations === '1';
         $sharingNotes = $sharingWithOther ? trim($this->sharingCongregationsNotes) : null;
+        $vehicleReg = trim($this->vehicleReg) !== ''
+            ? strtoupper(str_replace(' ', '', trim($this->vehicleReg)))
+            : null;
+        $carParkId = $this->carParkId !== '' ? (int) $this->carParkId : null;
 
-        $this->editingRegistration->update([
+        $payload = [
             'name' => $this->name,
+            'congregation' => trim($this->congregation),
+            'car_park_id' => $carParkId,
+            'vehicle_type' => 'coach',
+            'vehicle_registration' => $vehicleReg,
             'contact_number' => $this->contactNumber,
             'email' => $this->email !== '' ? $this->email : null,
             'coach_captain_to_be_assigned' => $this->coachCaptainToBeAssigned,
             'sharing_with_other_congregations' => $sharingWithOther,
             'sharing_congregations_notes' => $sharingNotes,
-        ]);
+            'days' => $this->days,
+        ];
+
+        if ($isCreating) {
+            ParkingRegistration::query()->create($payload);
+            $this->resetPage();
+            $toast = __('coaches.toast_created');
+        } else {
+            $this->editingRegistration->update($payload);
+            $toast = __('coaches.toast_saved');
+        }
 
         $this->modalOpen = false;
-        $this->reset('editingRegistration', 'name', 'contactNumber', 'email', 'coachCaptainToBeAssigned', 'sharingWithOtherCongregations', 'sharingCongregationsNotes');
+        $this->editingRegistration = null;
+        $this->resetFormFields();
 
         try {
-            Flux::toast(__('coaches.toast_saved'));
+            Flux::toast($toast);
         } catch (\Throwable) {
-            session()->flash('status', __('coaches.toast_saved'));
+            session()->flash('status', $toast);
         }
+    }
+
+    public function delete(int $id): void
+    {
+        $registration = ParkingRegistration::query()
+            ->where('vehicle_type', 'coach')
+            ->findOrFail($id);
+
+        if ($this->editingRegistration?->id === $registration->id) {
+            $this->modalOpen = false;
+            $this->editingRegistration = null;
+            $this->resetFormFields();
+        }
+
+        $registration->delete();
+
+        try {
+            Flux::toast(__('coaches.toast_deleted'));
+        } catch (\Throwable) {
+            session()->flash('status', __('coaches.toast_deleted'));
+        }
+    }
+
+    protected function resetFormFields(): void
+    {
+        $this->name = '';
+        $this->congregation = '';
+        $this->carParkId = '';
+        $this->vehicleReg = '';
+        $this->contactNumber = '';
+        $this->email = '';
+        $this->coachCaptainToBeAssigned = false;
+        $this->sharingWithOtherCongregations = '0';
+        $this->sharingCongregationsNotes = '';
+        $this->days = [];
     }
 
     protected function coachesQuery()
@@ -266,6 +356,8 @@ class Coaches extends Component
             'coaches' => $this->coachesQuery()->paginate($this->perPage),
             'coachMetrics' => $metrics->summarize(),
             'coachCoverage' => $coverage->summarize(),
+            'congregations' => Congregation::query()->orderBy('name')->pluck('name')->all(),
+            'carParks' => CarPark::query()->orderBy('name')->get(['id', 'name']),
         ]);
     }
 }

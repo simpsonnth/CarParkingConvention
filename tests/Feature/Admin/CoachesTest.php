@@ -81,6 +81,90 @@ test('admin can update staying on site inline', function () {
     expect($coach->fresh()->coach_staying_on_site)->toBeNull();
 });
 
+test('admin can create a coach registration from the coaches page', function () {
+    $admin = User::factory()->admin()->create();
+
+    $park = \App\Models\CarPark::query()->create([
+        'name' => 'Coach Create Park',
+        'capacity' => 20,
+        'location' => 'North',
+        'color' => '#4338ca',
+    ]);
+
+    $congregation = \App\Models\Congregation::query()->create([
+        'name' => 'Create Coach Hall',
+        'uuid' => 'create-coach-hall',
+        'car_park_id' => $park->id,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Coaches::class)
+        ->call('create')
+        ->assertSet('modalOpen', true)
+        ->assertSet('editingRegistration', null)
+        ->set('congregation', $congregation->name)
+        ->set('name', 'New Coach Captain')
+        ->set('contactNumber', '07700900444')
+        ->set('email', 'captain@create.test')
+        ->set('days', ['Friday', 'Sunday'])
+        ->set('carParkId', (string) $park->id)
+        ->set('sharingWithOtherCongregations', '0')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertSet('modalOpen', false)
+        ->assertSee('New Coach Captain')
+        ->assertSee('Create Coach Hall');
+
+    $registration = ParkingRegistration::query()
+        ->where('vehicle_type', 'coach')
+        ->where('name', 'New Coach Captain')
+        ->first();
+
+    expect($registration)->not->toBeNull()
+        ->and($registration->congregation)->toBe($congregation->name)
+        ->and($registration->days)->toBe(['Friday', 'Sunday'])
+        ->and($registration->car_park_id)->toBe($park->id)
+        ->and($registration->email)->toBe('captain@create.test');
+});
+
+test('admin create coach requires congregation and days', function () {
+    $admin = User::factory()->admin()->create();
+
+    Livewire::actingAs($admin)
+        ->test(Coaches::class)
+        ->call('create')
+        ->set('name', 'Incomplete Captain')
+        ->set('congregation', '')
+        ->set('contactNumber', '07700900555')
+        ->set('days', [])
+        ->call('save')
+        ->assertHasErrors(['congregation', 'days']);
+
+    expect(ParkingRegistration::query()->where('name', 'Incomplete Captain')->exists())->toBeFalse();
+});
+
+test('admin can remove a coach registration from the coaches page', function () {
+    $admin = User::factory()->admin()->create();
+
+    $coach = ParkingRegistration::query()->create([
+        'name' => 'Remove Me',
+        'congregation' => 'Remove Hall',
+        'contact_number' => '07700000005',
+        'email' => 'remove@hall.test',
+        'vehicle_type' => 'coach',
+        'days' => ['Friday'],
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Coaches::class)
+        ->assertSee('Remove Me')
+        ->call('delete', $coach->id)
+        ->assertDontSee('Remove Me');
+
+    expect(ParkingRegistration::query()->find($coach->id))->toBeNull();
+    expect(ParkingRegistration::withTrashed()->find($coach->id)?->trashed())->toBeTrue();
+});
+
 test('admin can edit coach contact and captain tba from coaches page', function () {
     $admin = User::factory()->admin()->create();
 

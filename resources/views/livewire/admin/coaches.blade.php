@@ -11,6 +11,9 @@
             <flux:button variant="ghost" :href="route('admin.coaches.export')" icon="arrow-down-tray">
                 {{ __('coaches.export_button') }}
             </flux:button>
+            <flux:button variant="primary" wire:click="create" icon="plus">
+                {{ __('coaches.add_coach') }}
+            </flux:button>
         </div>
     </div>
 
@@ -220,9 +223,19 @@
                             </select>
                         </td>
                         <td class="px-4 py-4">
-                            <flux:button size="sm" variant="ghost" wire:click="edit({{ $reg->id }})">
-                                {{ __('coaches.edit') }}
-                            </flux:button>
+                            <div class="flex flex-wrap items-center gap-1">
+                                <flux:button size="sm" variant="ghost" wire:click="edit({{ $reg->id }})">
+                                    {{ __('coaches.edit') }}
+                                </flux:button>
+                                <flux:button
+                                    size="sm"
+                                    variant="danger"
+                                    wire:click="delete({{ $reg->id }})"
+                                    wire:confirm="{{ __('coaches.delete_confirm') }}"
+                                >
+                                    {{ __('coaches.delete') }}
+                                </flux:button>
+                            </div>
                         </td>
                     </tr>
                 @empty
@@ -242,7 +255,34 @@
 
     <flux:modal wire:model="modalOpen" class="w-[calc(100vw-2rem)] max-w-lg">
         <div class="space-y-6">
-            <flux:heading size="lg">{{ __('coaches.edit_coach') }}</flux:heading>
+            <div>
+                <flux:heading size="lg">
+                    {{ $editingRegistration ? __('coaches.edit_coach') : __('coaches.add_coach') }}
+                </flux:heading>
+                @if(! $editingRegistration)
+                    <flux:subheading class="mt-1">{{ __('coaches.add_coach_subtitle') }}</flux:subheading>
+                @endif
+            </div>
+
+            <flux:select wire:model="congregation" :label="__('registrations.congregation')" :placeholder="__('registrations.select_congregation')">
+                @foreach($congregations as $name)
+                    <option value="{{ $name }}">{{ $name }}</option>
+                @endforeach
+            </flux:select>
+            @error('congregation') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+
+            <div class="space-y-2">
+                <label for="coachCarParkId" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                    {{ __('registrations.car_park') }} ({{ __('registrations.optional_individual') }})
+                </label>
+                <select wire:model="carParkId" id="coachCarParkId"
+                    class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
+                    <option value="">— {{ __('registrations.no_car_park') }}</option>
+                    @foreach($carParks as $park)
+                        <option value="{{ $park->id }}">{{ $park->name }}</option>
+                    @endforeach
+                </select>
+            </div>
 
             <label class="flex items-start gap-3 cursor-pointer">
                 <input type="checkbox" wire:model.live="coachCaptainToBeAssigned"
@@ -265,6 +305,11 @@
                 wire:model="email"
                 type="email"
                 :label="$coachCaptainToBeAssigned ? __('register.secretary_email_address') : __('register.coach_captain_email_address')"
+            />
+            <flux:input
+                wire:model="vehicleReg"
+                :label="__('coaches.vehicle_reg_optional')"
+                :placeholder="__('registrations.registration')"
             />
 
             <div class="space-y-2">
@@ -292,9 +337,27 @@
                 </div>
             @endif
 
+            <div class="space-y-2">
+                <label class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ __('registrations.days_attending') }}</label>
+                <div class="flex gap-2">
+                    @foreach(['Friday', 'Saturday', 'Sunday'] as $day)
+                        <button type="button" wire:click="toggleDay('{{ $day }}')" @class([
+                            'px-3 py-1.5 rounded-lg text-sm font-medium transition-all border',
+                            'bg-indigo-500 text-white border-indigo-600 shadow-sm' => in_array($day, $days, true),
+                            'bg-white dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-700' => ! in_array($day, $days, true),
+                        ])>
+                            {{ $day }}
+                        </button>
+                    @endforeach
+                </div>
+                @error('days') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+            </div>
+
             <div class="flex justify-end gap-2">
                 <flux:button variant="ghost" wire:click="$set('modalOpen', false)">{{ __('coaches.cancel') }}</flux:button>
-                <flux:button variant="primary" wire:click="save">{{ __('coaches.save_changes') }}</flux:button>
+                <flux:button variant="primary" wire:click="save">
+                    {{ $editingRegistration ? __('coaches.save_changes') : __('coaches.create_button') }}
+                </flux:button>
             </div>
         </div>
     </flux:modal>
