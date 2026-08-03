@@ -427,6 +427,7 @@ test('coach coverage reports missing and unexpected against expected spreadsheet
     expect($coverage['registered_expected'])->toBe(1);
     expect($coverage['missing'])->toBe(['Reigate', 'Yateley']);
     expect($coverage['unexpected'])->toBe(['Unexpected Hall']);
+    expect($coverage['covered_via_sharing'])->toBe([]);
 
     $admin = User::factory()->admin()->create();
 
@@ -436,6 +437,59 @@ test('coach coverage reports missing and unexpected against expected spreadsheet
         ->assertSee('Reigate')
         ->assertSee('Yateley')
         ->assertSee('Unexpected Hall');
+});
+
+test('coach coverage treats survey sharing partners as covered without their own registration', function () {
+    config([
+        'expected_coach_congregations' => [
+            'Deal',
+            'Alton',
+        ],
+    ]);
+
+    $deal = \App\Models\Congregation::query()->create([
+        'name' => 'Deal',
+        'uuid' => 'deal-uuid',
+    ]);
+    $walmer = \App\Models\Congregation::query()->create([
+        'name' => 'Walmer',
+        'uuid' => 'walmer-uuid',
+    ]);
+
+    \App\Models\CongregationNumbersResponse::query()->create([
+        'congregation_id' => $deal->id,
+        'car_park_tickets_count' => 0,
+        'organizes_coach' => true,
+        'sharing_coach_with_others' => true,
+        'shared_with_congregation_ids' => [(int) $walmer->id],
+        'coach_size' => \App\Models\CongregationNumbersResponse::COACH_SIZE_LARGE,
+        'disabled_parking_required' => false,
+    ]);
+
+    ParkingRegistration::query()->create([
+        'name' => 'Walmer Captain',
+        'congregation' => 'Walmer',
+        'contact_number' => '07700000320',
+        'email' => 'walmer@test',
+        'vehicle_type' => 'coach',
+        'days' => ['Friday'],
+    ]);
+
+    $coverage = app(\App\Services\CoachCoverageReport::class)->summarize();
+
+    expect($coverage['registered_expected'])->toBe(1);
+    expect($coverage['missing'])->toBe(['Alton']);
+    expect($coverage['covered_via_sharing'])->toBe(['Deal']);
+    expect($coverage['unexpected'])->toBe(['Walmer']);
+
+    $admin = User::factory()->admin()->create();
+
+    Livewire::actingAs($admin)
+        ->test(Coaches::class)
+        ->assertSee(__('coaches.coverage_via_sharing_title'))
+        ->assertSee('Deal')
+        ->assertSee('Alton')
+        ->assertSee('Walmer');
 });
 
 test('coaches page shows survey sharing partner congregation names', function () {
