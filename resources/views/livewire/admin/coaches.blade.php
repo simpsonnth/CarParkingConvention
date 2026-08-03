@@ -91,9 +91,14 @@
             @if(count($coachCoverage['covered_via_sharing']) === 0)
                 <p class="mt-3 text-sm text-zinc-500 dark:text-zinc-400">—</p>
             @else
-                <ul class="mt-3 max-h-48 space-y-1 overflow-y-auto text-sm text-zinc-800 dark:text-zinc-200">
-                    @foreach($coachCoverage['covered_via_sharing'] as $name)
-                        <li wire:key="shared-cover-cong-{{ $loop->index }}">{{ $name }}</li>
+                <ul class="mt-3 max-h-48 space-y-2 overflow-y-auto text-sm text-zinc-800 dark:text-zinc-200">
+                    @foreach($coachCoverage['covered_via_sharing'] as $entry)
+                        <li wire:key="shared-cover-cong-{{ $loop->index }}">
+                            <span class="font-medium">{{ $entry['name'] }}</span>
+                            <span class="block text-xs text-zinc-500 dark:text-zinc-400">
+                                {{ __('coaches.coverage_via_sharing_with', ['partners' => implode(', ', $entry['partners'])]) }}
+                            </span>
+                        </li>
                     @endforeach
                 </ul>
             @endif

@@ -479,7 +479,12 @@ test('coach coverage treats survey sharing partners as covered without their own
 
     expect($coverage['registered_expected'])->toBe(1);
     expect($coverage['missing'])->toBe(['Alton']);
-    expect($coverage['covered_via_sharing'])->toBe(['Deal']);
+    expect($coverage['covered_via_sharing'])->toBe([
+        [
+            'name' => 'Deal',
+            'partners' => ['Walmer'],
+        ],
+    ]);
     expect($coverage['unexpected'])->toBe(['Walmer']);
 
     $admin = User::factory()->admin()->create();
@@ -488,6 +493,7 @@ test('coach coverage treats survey sharing partners as covered without their own
         ->test(Coaches::class)
         ->assertSee(__('coaches.coverage_via_sharing_title'))
         ->assertSee('Deal')
+        ->assertSee('Sharing with Walmer')
         ->assertSee('Alton')
         ->assertSee('Walmer');
 });

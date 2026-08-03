@@ -15,6 +15,7 @@ return [
     'coverage_missing_none' => 'All expected congregations are covered.',
     'coverage_via_sharing_title' => 'Covered via sharing',
     'coverage_via_sharing_hint' => 'Expected congregations with no own registration, but linked in the survey to a congregation that has registered a coach.',
+    'coverage_via_sharing_with' => 'Sharing with :partners',
     'coverage_unexpected_title' => 'Unexpected registrations',
     'coverage_unexpected_hint' => 'Coach registrations whose congregation is not on the expected spreadsheet list.',
     'coverage_unexpected_none' => 'No unexpected coach congregations.',

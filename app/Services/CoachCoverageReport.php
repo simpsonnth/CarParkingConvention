@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\Congregation;
 use App\Models\CongregationNumbersResponse;
 use App\Models\ParkingRegistration;
+use Illuminate\Support\Collection;
 
 final class CoachCoverageReport
 {
@@ -22,7 +23,7 @@ final class CoachCoverageReport
      *     missing: list<string>,
      *     unexpected: list<string>,
      *     registered_names: list<string>,
-     *     covered_via_sharing: list<string>
+     *     covered_via_sharing: list<array{name: string, partners: list<string>}>
      * }
      */
     public function summarize(): array
@@ -53,14 +54,18 @@ final class CoachCoverageReport
 
         /** @var array<string, int> $nameToId */
         $nameToId = [];
+        /** @var array<int, string> $idToName */
+        $idToName = [];
         Congregation::query()
             ->get(['id', 'name'])
-            ->each(function (Congregation $congregation) use (&$nameToId): void {
+            ->each(function (Congregation $congregation) use (&$nameToId, &$idToName): void {
                 $key = $this->normalize((string) $congregation->name);
                 if ($key === '') {
                     return;
                 }
-                $nameToId[$key] = (int) $congregation->id;
+                $id = (int) $congregation->id;
+                $nameToId[$key] = $id;
+                $idToName[$id] = (string) $congregation->name;
             });
 
         /** @var array<int, true> $coachCongregationIds */
@@ -71,11 +76,13 @@ final class CoachCoverageReport
             }
         }
 
+        /** @var Collection<int|string, CongregationNumbersResponse> $responses */
         $responses = CongregationNumbersResponse::query()
             ->get(['congregation_id', 'sharing_coach_with_others', 'shared_with_congregation_ids'])
             ->keyBy('congregation_id');
 
         $missing = [];
+        /** @var list<array{name: string, partners: list<string>}> $coveredViaSharing */
         $coveredViaSharing = [];
         $registeredExpected = 0;
 
@@ -88,13 +95,16 @@ final class CoachCoverageReport
             }
 
             $congregationId = $nameToId[$key] ?? null;
-            if ($congregationId !== null && $this->isCoveredViaSharing(
-                $congregationId,
-                $responses,
-                $coachCongregationIds
-            )) {
+            $coveringPartners = $congregationId === null
+                ? []
+                : $this->coveringPartnerNames($congregationId, $responses, $coachCongregationIds, $idToName);
+
+            if ($coveringPartners !== []) {
                 $registeredExpected++;
-                $coveredViaSharing[] = $name;
+                $coveredViaSharing[] = [
+                    'name' => $name,
+                    'partners' => $coveringPartners,
+                ];
 
                 continue;
             }
@@ -128,30 +138,34 @@ final class CoachCoverageReport
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int|string, CongregationNumbersResponse>  $responses
+     * @param  Collection<int|string, CongregationNumbersResponse>  $responses
      * @param  array<int, true>  $coachCongregationIds
+     * @param  array<int, string>  $idToName
+     * @return list<string>
      */
-    private function isCoveredViaSharing(
+    private function coveringPartnerNames(
         int $congregationId,
-        $responses,
-        array $coachCongregationIds
-    ): bool {
+        Collection $responses,
+        array $coachCongregationIds,
+        array $idToName
+    ): array {
         $response = $responses->get($congregationId);
         if ($response === null || ! ($response->sharing_coach_with_others ?? false)) {
-            return false;
+            return [];
         }
 
+        $partners = [];
         foreach ($response->normalizedSharedCongregationIds() as $partnerId) {
-            if ($partnerId === $congregationId) {
+            if ($partnerId === $congregationId || ! isset($coachCongregationIds[$partnerId])) {
                 continue;
             }
 
-            if (isset($coachCongregationIds[$partnerId])) {
-                return true;
-            }
+            $partners[] = $idToName[$partnerId] ?? ('#'.$partnerId);
         }
 
-        return false;
+        sort($partners, SORT_NATURAL | SORT_FLAG_CASE);
+
+        return array_values(array_unique($partners));
     }
 
     private function normalize(string $name): string
