@@ -25,11 +25,18 @@ class ParkingRegistrationListQuery
     {
         $query
             ->when($filters->search !== '', function ($q) use ($filters): void {
-                $q->where(function ($q2) use ($filters): void {
-                    $q2->where('name', 'like', '%'.$filters->search.'%')
-                        ->orWhere('vehicle_registration', 'like', '%'.$filters->search.'%')
-                        ->orWhere('congregation', 'like', '%'.$filters->search.'%')
-                        ->orWhere('email', 'like', '%'.$filters->search.'%');
+                $term = trim($filters->search);
+                $q->where(function ($q2) use ($term): void {
+                    $q2->where('parking_registrations.name', 'like', '%'.$term.'%')
+                        ->orWhere('parking_registrations.vehicle_registration', 'like', '%'.$term.'%')
+                        ->orWhere('parking_registrations.congregation', 'like', '%'.$term.'%')
+                        ->orWhere('parking_registrations.email', 'like', '%'.$term.'%');
+
+                    // Ticket No. is the zero-padded registration id (e.g. 000525).
+                    // PHP (int) casting strips leading zeros: (int) '000525' === 525.
+                    if ($term !== '' && ctype_digit($term)) {
+                        $q2->orWhere('parking_registrations.id', (int) $term);
+                    }
                 });
             })
             ->when($filters->congregations !== [], function ($q) use ($filters): void {
@@ -81,11 +88,12 @@ class ParkingRegistrationListQuery
             });
 
         $sortColumn = match ($filters->sortBy) {
-            'name' => 'name',
-            'congregation' => 'congregation',
-            'created_at' => 'created_at',
-            'vehicle_registration' => 'vehicle_registration',
-            default => 'created_at',
+            'name' => 'parking_registrations.name',
+            'congregation' => 'parking_registrations.congregation',
+            'created_at' => 'parking_registrations.created_at',
+            'vehicle_registration' => 'parking_registrations.vehicle_registration',
+            'id', 'ticket_number' => 'parking_registrations.id',
+            default => 'parking_registrations.created_at',
         };
         $query->orderBy($sortColumn, $filters->sortDir === 'desc' ? 'desc' : 'asc');
 

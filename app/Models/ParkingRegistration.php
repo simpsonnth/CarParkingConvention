@@ -43,6 +43,14 @@ class ParkingRegistration extends Model
         return $this->belongsTo(CarPark::class);
     }
 
+    /**
+     * Ticket number printed on master passes (zero-padded registration id).
+     */
+    public function ticketNumber(): string
+    {
+        return str_pad((string) $this->id, 6, '0', STR_PAD_LEFT);
+    }
+
     /** Scope: registrations counted as assigned to this car park (individual override or congregation default). */
     public function scopeAssignedToCarPark($query, int $carParkId)
     {

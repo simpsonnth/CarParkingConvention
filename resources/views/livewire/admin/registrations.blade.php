@@ -395,6 +395,14 @@
                         </button>
                     </th>
                     <th class="px-6 py-3">
+                        <button type="button" wire:click="setSort('ticket_number')" class="inline-flex items-center gap-1 font-medium hover:text-zinc-700 dark:hover:text-zinc-300">
+                            {{ __('registrations.ticket_number') }}
+                            @if($sortBy === 'ticket_number')
+                                <flux:icon name="{{ $sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
+                            @endif
+                        </button>
+                    </th>
+                    <th class="px-6 py-3">
                         <button type="button" wire:click="setSort('name')" class="inline-flex items-center gap-1 font-medium hover:text-zinc-700 dark:hover:text-zinc-300">
                             {{ __('registrations.name') }}
                             @if($sortBy === 'name')
@@ -430,6 +438,9 @@
                         </td>
                         <td class="px-6 py-4 text-zinc-500 whitespace-nowrap">
                             {{ $reg->created_at->format('d M H:i') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="font-mono text-sm font-semibold tabular-nums text-zinc-800 dark:text-zinc-200">{{ $reg->ticketNumber() }}</span>
                         </td>
                         <td class="px-6 py-4 font-medium text-zinc-900 dark:text-white">
                             {{ $reg->name }}
@@ -540,7 +551,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="13" class="px-6 py-12 text-center text-zinc-500">
+                        <td colspan="14" class="px-6 py-12 text-center text-zinc-500">
                             <div class="flex flex-col items-center justify-center">
                                 <flux:icon name="clipboard-document-list" class="size-10 text-zinc-300 mb-2" />
                                 <p>{{ __('registrations.no_registrations') }}</p>

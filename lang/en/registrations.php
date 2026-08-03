@@ -9,6 +9,7 @@ return [
     'export_excel_filtered' => 'Export filtered to Excel',
     'language' => 'Language',
     'date' => 'Date',
+    'ticket_number' => 'Ticket No.',
     'name' => 'Name',
     'congregation' => 'Congregation',
     'type' => 'Type',
@@ -177,6 +178,7 @@ return [
     // Export
     'export' => [
         'date' => 'Date',
+        'ticket_number' => 'Ticket No.',
         'name' => 'Name',
         'congregation' => 'Congregation',
         'car_park' => 'Car park',

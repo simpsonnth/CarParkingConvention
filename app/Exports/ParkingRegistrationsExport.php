@@ -40,6 +40,7 @@ class ParkingRegistrationsExport implements FromQuery, WithHeadings, WithMapping
     {
         return [
             __('registrations.export.date'),
+            __('registrations.export.ticket_number'),
             __('registrations.export.name'),
             __('registrations.export.congregation'),
             __('registrations.export.car_park'),
@@ -71,6 +72,7 @@ class ParkingRegistrationsExport implements FromQuery, WithHeadings, WithMapping
 
         return [
             $row->created_at?->format('Y-m-d H:i'),
+            $row->ticketNumber(),
             $row->name,
             $row->congregation,
             $effectiveCarPark?->name ?? '',
