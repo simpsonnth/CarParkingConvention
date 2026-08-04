@@ -26,6 +26,7 @@ class ParkingRegistration extends Model
         'coach_captain_to_be_assigned',
         'coach_staying_on_site',
         'ticket_sent_at',
+        'cancelled_via',
     ];
 
     protected $casts = [

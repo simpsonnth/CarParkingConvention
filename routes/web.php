@@ -30,6 +30,57 @@ Route::middleware('public.route')->group(function () {
     Route::get('/register-simple', App\Livewire\Public\CongregationNumbers::class)->name('parking.register-simple');
     Route::get('/register-circuit-overseer', App\Livewire\Public\CircuitOverseerRegister::class)->name('parking.register-circuit-overseer');
     Route::get('/congregation-portal', App\Livewire\Public\CongregationPortal::class)->name('parking.congregation-portal');
+    Route::get('/congregation-portal/download-ticket/{token}', function (string $token) {
+        @set_time_limit(120);
+
+        $auth = app(\App\Services\CongregationPortalAuth::class);
+        $congregation = $auth->authenticatedCongregation();
+        if ($congregation === null) {
+            return redirect()->route('parking.congregation-portal')
+                ->with('error', __('congregation_portal.download_login_required'));
+        }
+
+        $cacheKey = 'portal-pass-pdf:'.$token;
+        $payload = cache()->pull($cacheKey);
+        if (! is_array($payload)
+            || ! isset($payload['registration_id'], $payload['congregation_id'])
+            || (int) $payload['congregation_id'] !== (int) $congregation->id
+        ) {
+            return redirect()->route('parking.congregation-portal')
+                ->with('error', __('congregation_portal.download_link_expired'));
+        }
+
+        $label = trim((string) $congregation->name);
+        $registration = \App\Models\ParkingRegistration::query()
+            ->with('carPark')
+            ->whereKey((int) $payload['registration_id'])
+            ->whereRaw('TRIM(congregation) = ?', [$label])
+            ->where('is_circuit_overseer', false)
+            ->first();
+
+        if ($registration === null) {
+            return redirect()->route('parking.congregation-portal')
+                ->with('error', __('congregation_portal.download_not_found'));
+        }
+
+        try {
+            $generator = app(\App\Services\MasterPassPdfGenerator::class);
+            $usedNames = [];
+            $filename = $generator->uniquePersonFilename($registration, $usedNames);
+            $content = $generator->generatePdf($registration);
+
+            return response()->streamDownload(
+                static function () use ($content): void {
+                    echo $content;
+                },
+                $filename,
+                ['Content-Type' => 'application/pdf']
+            );
+        } catch (\Throwable $e) {
+            return redirect()->route('parking.congregation-portal')
+                ->with('error', $e->getMessage());
+        }
+    })->name('parking.congregation-portal.download-ticket');
     Route::middleware('throttle:10,1')->group(function () {
         Route::get('/parking-incidents', App\Livewire\Public\ParkingIncidentReport::class)->name('management.parking-incidents');
         Route::get('/toolbox-feedback', App\Livewire\Public\ToolboxFeedback::class)->name('management.toolbox-feedback');
@@ -192,6 +243,36 @@ Route::middleware(['auth'])->group(function () {
         })
             ->middleware('permission:registrations.print')
             ->name('registrations.download-passes-zip');
+        Route::get('/registrations/download-master-pass-pdf/{token}', function (string $token) {
+            @set_time_limit(120);
+            ini_set('max_execution_time', '120');
+
+            $cacheKey = 'master-pass-pdf:'.$token;
+            $registrationId = cache()->pull($cacheKey);
+            if (! is_numeric($registrationId)) {
+                return redirect()->route('admin.registrations')
+                    ->with('error', __('registrations.download_link_expired'));
+            }
+
+            try {
+                $generator = app(\App\Services\MasterPassPdfGenerator::class);
+                $attachments = $generator->generateForIds([(int) $registrationId]);
+                $attachment = $attachments[0];
+
+                return response()->streamDownload(
+                    static function () use ($attachment): void {
+                        echo $attachment['content'];
+                    },
+                    $attachment['filename'],
+                    ['Content-Type' => 'application/pdf']
+                );
+            } catch (\Throwable $e) {
+                return redirect()->route('admin.registrations')
+                    ->with('error', $e->getMessage());
+            }
+        })
+            ->middleware('permission:registrations.print')
+            ->name('registrations.download-pass-pdf');
         Route::get('/registrations/export', function (\App\Http\Requests\Admin\ExportParkingRegistrationsRequest $request) {
             $filters = $request->filters();
             $suffix = $filters->hasActiveConstraints() ? 'filtered' : 'all';

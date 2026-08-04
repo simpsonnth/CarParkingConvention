@@ -56,18 +56,47 @@ test('confirm download with mark sent stamps ticket_sent_at and redirects to zip
     expect($other->fresh()->ticket_sent_at)->toBeNull();
 });
 
-test('confirm download without mark leaves ticket_sent_at null and still redirects', function () {
+test('confirm download as individual pdf redirects to pdf route when one selected', function () {
     $admin = User::factory()->admin()->create();
-    $reg = createTicketSentTestRegistration('no');
+    $reg = createTicketSentTestRegistration('pdf');
 
     Livewire::actingAs($admin)
         ->test(Registrations::class)
         ->set('selectedIds', [(string) $reg->id])
+        ->set('downloadFormat', 'pdf')
+        ->set('downloadPassesModalOpen', true)
+        ->call('confirmDownloadMasterPassesZip', false)
+        ->assertRedirectContains('/admin/registrations/download-master-pass-pdf/');
+
+    expect($reg->fresh()->ticket_sent_at)->toBeNull();
+});
+
+test('confirm download forces zip when multiple selected even if format is pdf', function () {
+    $admin = User::factory()->admin()->create();
+    $a = createTicketSentTestRegistration('multi-a');
+    $b = createTicketSentTestRegistration('multi-b');
+
+    Livewire::actingAs($admin)
+        ->test(Registrations::class)
+        ->set('selectedIds', [(string) $a->id, (string) $b->id])
+        ->set('downloadFormat', 'pdf')
         ->set('downloadPassesModalOpen', true)
         ->call('confirmDownloadMasterPassesZip', false)
         ->assertRedirectContains('/admin/registrations/download-master-passes-zip/');
+});
 
-    expect($reg->fresh()->ticket_sent_at)->toBeNull();
+test('opening download modal resets format to zip for multi selection', function () {
+    $admin = User::factory()->admin()->create();
+    $a = createTicketSentTestRegistration('reset-a');
+    $b = createTicketSentTestRegistration('reset-b');
+
+    Livewire::actingAs($admin)
+        ->test(Registrations::class)
+        ->set('selectedIds', [(string) $a->id, (string) $b->id])
+        ->set('downloadFormat', 'pdf')
+        ->call('openDownloadMasterPassesModal')
+        ->assertSet('downloadFormat', 'zip')
+        ->assertSet('downloadPassesModalOpen', true);
 });
 
 test('closing download modal without confirm does not mark sent or redirect', function () {
@@ -84,6 +113,19 @@ test('closing download modal without confirm does not mark sent or redirect', fu
         ->assertSet('selectedIds', [(string) $reg->id]);
 
     expect($reg->fresh()->ticket_sent_at)->toBeNull();
+});
+
+test('admin delete stamps cancelled_via admin', function () {
+    $admin = User::factory()->admin()->create();
+    $reg = createTicketSentTestRegistration('admin-del');
+
+    Livewire::actingAs($admin)
+        ->test(Registrations::class)
+        ->call('delete', $reg->id);
+
+    $trashed = ParkingRegistration::onlyTrashed()->find($reg->id);
+    expect($trashed)->not->toBeNull()
+        ->and($trashed->cancelled_via)->toBe('admin');
 });
 
 test('bulk mark and clear ticket sent update only selected rows', function () {

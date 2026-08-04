@@ -122,3 +122,33 @@ test('admin congregations page can show all rows per page', function () {
         ->assertSee('Hall 01')
         ->assertSee('Hall 30');
 });
+
+test('renaming a congregation updates matching parking registration names', function () {
+    $admin = User::factory()->admin()->create();
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Old Hall Name',
+        'uuid' => 'old-hall-code',
+    ]);
+
+    $registration = \App\Models\ParkingRegistration::query()->create([
+        'name' => 'Driver',
+        'congregation' => 'Old Hall Name',
+        'contact_number' => '07700900999',
+        'email' => 'driver@rename.test',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'RN01AAA',
+        'days' => ['Friday'],
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Congregations::class)
+        ->call('edit', $congregation)
+        ->set('name', 'New Hall Name')
+        ->set('code', 'old-hall-code')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($congregation->fresh()->name)->toBe('New Hall Name');
+    expect($registration->fresh()->congregation)->toBe('New Hall Name');
+});

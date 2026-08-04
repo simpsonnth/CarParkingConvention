@@ -297,6 +297,7 @@ class Coaches extends Component
             $this->resetFormFields();
         }
 
+        $registration->update(['cancelled_via' => 'admin']);
         $registration->delete();
 
         try {

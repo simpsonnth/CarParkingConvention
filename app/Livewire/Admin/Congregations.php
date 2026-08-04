@@ -4,6 +4,7 @@ namespace App\Livewire\Admin;
 
 use App\Models\CarPark;
 use App\Models\Congregation;
+use App\Models\ParkingRegistration;
 use Flux\Flux;
 use Illuminate\Validation\Rule;
 use Livewire\Component;
@@ -262,11 +263,21 @@ class Congregations extends Component
 
         if ($this->congregationId) {
             $congregation = Congregation::findOrFail($this->congregationId);
+            $previousName = (string) $congregation->name;
+            $newName = trim((string) $this->name);
+
             $congregation->update([
-                'name' => $this->name,
+                'name' => $newName,
                 'uuid' => $this->code,
                 'car_park_id' => $this->carParkId,
             ]);
+
+            // Parking registrations store congregation as a denormalized name string.
+            if ($previousName !== '' && $previousName !== $newName) {
+                ParkingRegistration::query()
+                    ->where('congregation', $previousName)
+                    ->update(['congregation' => $newName]);
+            }
         } else {
             Congregation::create([
                 'name' => $this->name,

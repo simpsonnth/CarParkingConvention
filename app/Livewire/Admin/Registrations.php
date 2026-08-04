@@ -87,6 +87,9 @@ class Registrations extends Component
 
     public bool $downloadPassesModalOpen = false;
 
+    /** 'zip' | 'pdf' — PDF only allowed when exactly one registration is selected */
+    public string $downloadFormat = 'zip';
+
     public string $ticketEmailTo = '';
 
     public bool $sendingTickets = false;
@@ -307,7 +310,9 @@ class Registrations extends Component
 
     public function delete($id): void
     {
-        ParkingRegistration::findOrFail($id)->delete();
+        $registration = ParkingRegistration::findOrFail($id);
+        $registration->update(['cancelled_via' => 'admin']);
+        $registration->delete();
         Flux::toast(__('registrations.deleted'));
     }
 
@@ -451,6 +456,7 @@ class Registrations extends Component
 
             return;
         }
+        ParkingRegistration::whereIn('id', $this->selectedIds)->update(['cancelled_via' => 'admin']);
         $count = ParkingRegistration::whereIn('id', $this->selectedIds)->delete();
         $this->selectedIds = [];
         Flux::toast(__('registrations.bulk_deleted', ['count' => $count]));
@@ -459,11 +465,17 @@ class Registrations extends Component
     /** Soft-delete standard car registrations only (not coaches, not elderly/infirm cars, not Circuit Overseers). */
     public function bulkDeleteStandardCarRegistrations(): void
     {
-        $count = ParkingRegistration::query()
+        $ids = ParkingRegistration::query()
             ->where('vehicle_type', 'car')
             ->where('elderly_infirm_parking', false)
             ->where('is_circuit_overseer', false)
-            ->delete();
+            ->pluck('id');
+
+        if ($ids->isNotEmpty()) {
+            ParkingRegistration::whereIn('id', $ids)->update(['cancelled_via' => 'admin']);
+        }
+
+        $count = ParkingRegistration::whereIn('id', $ids)->delete();
 
         Flux::toast(__('registrations.bulk_deleted_standard_cars', ['count' => $count]));
     }
@@ -471,10 +483,16 @@ class Registrations extends Component
     /** Soft-delete elderly/infirm car registrations only (not Circuit Overseers). Coaches are unaffected. */
     public function bulkDeleteDisabledRegistrations(): void
     {
-        $count = ParkingRegistration::query()
+        $ids = ParkingRegistration::query()
             ->where('elderly_infirm_parking', true)
             ->where('is_circuit_overseer', false)
-            ->delete();
+            ->pluck('id');
+
+        if ($ids->isNotEmpty()) {
+            ParkingRegistration::whereIn('id', $ids)->update(['cancelled_via' => 'admin']);
+        }
+
+        $count = ParkingRegistration::whereIn('id', $ids)->delete();
 
         Flux::toast(__('registrations.bulk_deleted_disabled', ['count' => $count]));
     }
@@ -488,13 +506,19 @@ class Registrations extends Component
             return;
         }
 
+        if (count($this->selectedIds) !== 1) {
+            $this->downloadFormat = 'zip';
+        }
+
         $this->downloadPassesModalOpen = true;
     }
 
     /**
-     * Confirm ZIP download. When $markAsSent is true, stamp ticket_sent_at on
-     * selected rows before redirecting so the mark survives even if the ZIP
-     * stream fails after navigation.
+     * Confirm download. When $markAsSent is true, stamp ticket_sent_at on
+     * selected rows before redirecting so the mark survives even if the
+     * download stream fails after navigation.
+     *
+     * Individual PDF is only allowed when exactly one registration is selected.
      */
     public function confirmDownloadMasterPassesZip(bool $markAsSent = false)
     {
@@ -506,6 +530,7 @@ class Registrations extends Component
         }
 
         $ids = array_values(array_map('intval', $this->selectedIds));
+        $asPdf = count($ids) === 1 && $this->downloadFormat === 'pdf';
 
         if ($markAsSent) {
             ParkingRegistration::whereIn('id', $ids)->update(['ticket_sent_at' => now()]);
@@ -514,6 +539,20 @@ class Registrations extends Component
         $this->downloadPassesModalOpen = false;
 
         $token = \Illuminate\Support\Str::random(32);
+
+        if ($asPdf) {
+            cache()->put('master-pass-pdf:'.$token, $ids[0], now()->addMinutes(15));
+
+            try {
+                return $this->redirect(route('admin.registrations.download-pass-pdf', ['token' => $token]), navigate: false);
+            } catch (Throwable $e) {
+                cache()->forget('master-pass-pdf:'.$token);
+                Flux::toast($e->getMessage(), variant: 'danger');
+
+                return null;
+            }
+        }
+
         // Allow enough time for large batches (~20+ Chrome PDFs) to finish building.
         cache()->put('master-passes-zip:'.$token, $ids, now()->addMinutes(15));
 

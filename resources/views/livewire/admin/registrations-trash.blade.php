@@ -41,7 +41,8 @@
                             {{ count($registrations->items()) > 0 && count(array_intersect($selectedIds, collect($registrations->items())->pluck('id')->all())) === count($registrations->items()) ? 'checked' : '' }}
                             class="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500">
                     </th>
-                    <th class="px-6 py-3">{{ __('registrations.deleted_at') }}</th>
+                    <th class="px-6 py-3">{{ __('registrations.cancelled_at') }}</th>
+                    <th class="px-6 py-3">{{ __('registrations.cancelled_via') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.name') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.congregation') }}</th>
                     <th class="px-6 py-3">{{ __('registrations.type') }}</th>
@@ -58,6 +59,15 @@
                         </td>
                         <td class="px-6 py-4 text-zinc-500 whitespace-nowrap">
                             {{ $reg->deleted_at?->format('d M Y H:i') }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            @if ($reg->cancelled_via === 'portal')
+                                <flux:badge color="amber">{{ __('registrations.cancelled_via_portal') }}</flux:badge>
+                            @elseif ($reg->cancelled_via === 'admin')
+                                <flux:badge color="zinc">{{ __('registrations.cancelled_via_admin') }}</flux:badge>
+                            @else
+                                <span class="text-zinc-400">{{ __('registrations.cancelled_via_unknown') }}</span>
+                            @endif
                         </td>
                         <td class="px-6 py-4 font-medium text-zinc-900 dark:text-white">{{ $reg->name }}</td>
                         <td class="px-6 py-4 text-zinc-600 dark:text-zinc-300">{{ $reg->congregation }}</td>
@@ -78,7 +88,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-12 text-center text-zinc-500">
+                        <td colspan="8" class="px-6 py-12 text-center text-zinc-500">
                             <div class="flex flex-col items-center justify-center">
                                 <flux:icon name="trash" class="size-10 text-zinc-300 mb-2" />
                                 <p>{{ __('registrations.no_trashed') }}</p>

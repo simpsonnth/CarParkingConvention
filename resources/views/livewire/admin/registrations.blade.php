@@ -725,13 +725,37 @@
         </div>
     </flux:modal>
 
-    {{-- Download master passes: confirm whether to mark tickets as sent --}}
+    {{-- Download master passes: format (single selection) + mark-as-sent --}}
     <flux:modal wire:model="downloadPassesModalOpen" class="w-[calc(100vw-2rem)] max-w-md">
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">{{ __('registrations.download_passes_modal_title') }}</flux:heading>
                 <flux:subheading>{{ __('registrations.download_passes_modal_body', ['count' => count($selectedIds)]) }}</flux:subheading>
             </div>
+            @if (count($selectedIds) === 1)
+                <div>
+                    <flux:text class="mb-2 font-medium">{{ __('registrations.download_format_label') }}</flux:text>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <flux:button
+                            type="button"
+                            size="sm"
+                            variant="{{ $downloadFormat === 'zip' ? 'primary' : 'ghost' }}"
+                            wire:click="$set('downloadFormat', 'zip')"
+                        >
+                            {{ __('registrations.download_format_zip') }}
+                        </flux:button>
+                        <flux:button
+                            type="button"
+                            size="sm"
+                            variant="{{ $downloadFormat === 'pdf' ? 'primary' : 'ghost' }}"
+                            wire:click="$set('downloadFormat', 'pdf')"
+                        >
+                            {{ __('registrations.download_format_pdf') }}
+                        </flux:button>
+                    </div>
+                    <flux:text class="mt-2 text-sm text-zinc-500">{{ __('registrations.download_format_help') }}</flux:text>
+                </div>
+            @endif
             <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
                 <flux:button variant="ghost" wire:click="$set('downloadPassesModalOpen', false)">{{ __('registrations.cancel') }}</flux:button>
                 <flux:button variant="ghost" wire:click="confirmDownloadMasterPassesZip(false)">

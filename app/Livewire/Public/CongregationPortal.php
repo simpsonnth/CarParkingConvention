@@ -7,6 +7,7 @@ use App\Models\ParkingRegistration;
 use App\Services\CongregationPortalAuth;
 use App\Services\ParkingRegistrationQuotaValidator;
 use Flux\Flux;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -234,6 +235,76 @@ class CongregationPortal extends Component
             Flux::toast(__('congregation_portal.updated'));
         } catch (\Throwable) {
             session()->flash('status', __('congregation_portal.updated'));
+        }
+    }
+
+    /**
+     * Issue a short-lived download token and redirect to the PDF stream route.
+     */
+    public function downloadTicket(int $id)
+    {
+        $congregation = $this->congregation;
+        $registration = $this->findOwnedRegistration($id);
+        if ($congregation === null || $registration === null) {
+            try {
+                Flux::toast(__('congregation_portal.download_not_found'), variant: 'danger');
+            } catch (\Throwable) {
+                session()->flash('error', __('congregation_portal.download_not_found'));
+            }
+
+            return null;
+        }
+
+        $token = Str::random(32);
+        cache()->put('portal-pass-pdf:'.$token, [
+            'registration_id' => $registration->id,
+            'congregation_id' => $congregation->id,
+        ], now()->addMinutes(5));
+
+        try {
+            return $this->redirect(
+                route('parking.congregation-portal.download-ticket', ['token' => $token]),
+                navigate: false
+            );
+        } catch (\Throwable $e) {
+            cache()->forget('portal-pass-pdf:'.$token);
+            try {
+                Flux::toast($e->getMessage(), variant: 'danger');
+            } catch (\Throwable) {
+                session()->flash('error', $e->getMessage());
+            }
+
+            return null;
+        }
+    }
+
+    /** Soft-delete an owned car park ticket (appears in admin cancelled list). */
+    public function cancelRegistration(int $id): void
+    {
+        $registration = $this->findOwnedRegistration($id);
+        if ($registration === null) {
+            try {
+                Flux::toast(__('congregation_portal.cancel_not_found'), variant: 'danger');
+            } catch (\Throwable) {
+                session()->flash('error', __('congregation_portal.cancel_not_found'));
+            }
+
+            return;
+        }
+
+        $registration->update(['cancelled_via' => 'portal']);
+        $registration->delete();
+
+        if ($this->editingId === $id) {
+            $this->closeEdit();
+        }
+
+        unset($this->surveySummary);
+
+        try {
+            Flux::toast(__('congregation_portal.cancelled'));
+        } catch (\Throwable) {
+            session()->flash('status', __('congregation_portal.cancelled'));
         }
     }
 

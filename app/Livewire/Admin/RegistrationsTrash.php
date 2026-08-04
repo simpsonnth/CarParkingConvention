@@ -24,7 +24,9 @@ class RegistrationsTrash extends Component
 
     public function restore(int $id): void
     {
-        ParkingRegistration::onlyTrashed()->findOrFail($id)->restore();
+        $registration = ParkingRegistration::onlyTrashed()->findOrFail($id);
+        $registration->cancelled_via = null;
+        $registration->restore();
         $this->selectedIds = array_values(array_diff($this->selectedIds, [$id]));
         $this->resetPage();
         Flux::toast(__('registrations.restored'));
@@ -37,7 +39,12 @@ class RegistrationsTrash extends Component
 
             return;
         }
-        ParkingRegistration::onlyTrashed()->whereIn('id', $this->selectedIds)->restore();
+        ParkingRegistration::onlyTrashed()
+            ->whereIn('id', $this->selectedIds)
+            ->update(['cancelled_via' => null]);
+        ParkingRegistration::onlyTrashed()
+            ->whereIn('id', $this->selectedIds)
+            ->restore();
         $count = count($this->selectedIds);
         $this->selectedIds = [];
         $this->resetPage();

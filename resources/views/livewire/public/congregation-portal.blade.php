@@ -8,6 +8,19 @@
             <p class="text-zinc-500 dark:text-zinc-400">{{ __('congregation_portal.subtitle') }}</p>
         </div>
 
+        @if (session('error'))
+            <div class="mb-6 rounded-2xl border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 p-4 text-sm text-red-900 dark:text-red-100"
+                role="alert">
+                {{ session('error') }}
+            </div>
+        @endif
+        @if (session('status'))
+            <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-900/20 p-4 text-sm text-emerald-900 dark:text-emerald-100"
+                role="status">
+                {{ session('status') }}
+            </div>
+        @endif
+
         @if (!$this->isAuthenticated)
             @if (!$this->portalConfigured)
                 <div class="rounded-2xl border border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20 p-4 text-sm text-amber-900 dark:text-amber-100"
@@ -162,10 +175,23 @@
                                             {{ implode(', ', $registration->days ?? []) }}
                                         </td>
                                         <td class="px-4 py-3 text-end">
-                                            <button type="button" wire:click="openEdit({{ $registration->id }})"
-                                                class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">
-                                                {{ __('congregation_portal.edit') }}
-                                            </button>
+                                            <div class="flex flex-wrap items-center justify-end gap-3">
+                                                <button type="button" wire:click="downloadTicket({{ $registration->id }})"
+                                                    wire:loading.attr="disabled"
+                                                    class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline disabled:opacity-50">
+                                                    {{ __('congregation_portal.download_ticket') }}
+                                                </button>
+                                                <button type="button" wire:click="openEdit({{ $registration->id }})"
+                                                    class="text-indigo-600 dark:text-indigo-400 font-semibold hover:underline">
+                                                    {{ __('congregation_portal.edit') }}
+                                                </button>
+                                                <button type="button"
+                                                    wire:click="cancelRegistration({{ $registration->id }})"
+                                                    wire:confirm="{{ __('congregation_portal.confirm_cancel') }}"
+                                                    class="text-red-600 dark:text-red-400 font-semibold hover:underline">
+                                                    {{ __('congregation_portal.cancel_ticket') }}
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 @endforeach

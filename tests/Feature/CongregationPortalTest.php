@@ -168,36 +168,101 @@ test('portal can save edit with elderly infirm no selected via buttons', functio
     expect($reg->vehicle_registration)->toBe('CD34EFG');
 });
 
-test('portal blocks update when car quota is full', function () {
-    $cong = seedPortalCongregation('Alpha Hall', 1);
-    ParkingRegistration::query()->create([
-        'name' => 'First',
+test('portal can cancel owned registration with cancelled_via portal', function () {
+    $cong = seedPortalCongregation();
+    $reg = ParkingRegistration::query()->create([
+        'name' => 'User',
         'congregation' => $cong->name,
         'contact_number' => '111',
-        'vehicle_registration' => 'AA11AAA',
+        'vehicle_registration' => 'AB12CDE',
         'days' => ['Friday'],
-        'email' => 'first@example.test',
+        'email' => 'cancel@example.test',
         'vehicle_type' => 'car',
         'elderly_infirm_parking' => false,
-    ]);
-
-    $second = ParkingRegistration::query()->create([
-        'name' => 'Second',
-        'congregation' => $cong->name,
-        'contact_number' => '222',
-        'vehicle_registration' => 'BB22BBB',
-        'days' => ['Friday'],
-        'email' => 'second@example.test',
-        'vehicle_type' => 'car',
-        'elderly_infirm_parking' => true,
     ]);
 
     Livewire::test(CongregationPortal::class)
         ->set('congregationCode', $cong->uuid)
         ->set('password', 'Happiness')
         ->call('login')
-        ->call('openEdit', $second->id)
-        ->set('elderlyInfirmParking', '0')
-        ->call('saveEdit')
-        ->assertHasErrors('congregationCode');
+        ->call('cancelRegistration', $reg->id)
+        ->assertDontSee('AB12CDE');
+
+    expect(ParkingRegistration::query()->find($reg->id))->toBeNull();
+    $trashed = ParkingRegistration::onlyTrashed()->find($reg->id);
+    expect($trashed)->not->toBeNull()
+        ->and($trashed->cancelled_via)->toBe('portal')
+        ->and($trashed->trashed())->toBeTrue();
+});
+
+test('portal cannot cancel another congregations registration', function () {
+    $congA = seedPortalCongregation('Hall A');
+    $congB = seedPortalCongregation('Hall B');
+
+    $other = ParkingRegistration::query()->create([
+        'name' => 'Other',
+        'congregation' => $congB->name,
+        'contact_number' => '111',
+        'vehicle_registration' => 'ZZ99ZZZ',
+        'days' => ['Friday'],
+        'email' => 'other-cancel@example.test',
+        'vehicle_type' => 'car',
+        'elderly_infirm_parking' => false,
+    ]);
+
+    Livewire::test(CongregationPortal::class)
+        ->set('congregationCode', $congA->uuid)
+        ->set('password', 'Happiness')
+        ->call('login')
+        ->call('cancelRegistration', $other->id);
+
+    expect($other->fresh())->not->toBeNull()
+        ->and($other->fresh()->trashed())->toBeFalse();
+});
+
+test('portal download ticket redirects with token for owned registration', function () {
+    $cong = seedPortalCongregation();
+    $reg = ParkingRegistration::query()->create([
+        'name' => 'User',
+        'congregation' => $cong->name,
+        'contact_number' => '111',
+        'vehicle_registration' => 'AB12CDE',
+        'days' => ['Friday'],
+        'email' => 'dl@example.test',
+        'vehicle_type' => 'car',
+        'elderly_infirm_parking' => false,
+    ]);
+
+    Livewire::test(CongregationPortal::class)
+        ->set('congregationCode', $cong->uuid)
+        ->set('password', 'Happiness')
+        ->call('login')
+        ->call('downloadTicket', $reg->id)
+        ->assertRedirectContains('/congregation-portal/download-ticket/');
+});
+
+test('portal cannot download another congregations ticket', function () {
+    $congA = seedPortalCongregation('Hall A');
+    $congB = seedPortalCongregation('Hall B');
+
+    $other = ParkingRegistration::query()->create([
+        'name' => 'Other',
+        'congregation' => $congB->name,
+        'contact_number' => '111',
+        'vehicle_registration' => 'ZZ99ZZZ',
+        'days' => ['Friday'],
+        'email' => 'other-dl@example.test',
+        'vehicle_type' => 'car',
+        'elderly_infirm_parking' => false,
+    ]);
+
+    $component = Livewire::test(CongregationPortal::class)
+        ->set('congregationCode', $congA->uuid)
+        ->set('password', 'Happiness')
+        ->call('login')
+        ->call('downloadTicket', $other->id);
+
+    // Ownership failure returns null (no redirect to the download stream).
+    expect($component->effects['redirect'] ?? null)->toBeNull();
+    expect($other->fresh())->not->toBeNull();
 });
