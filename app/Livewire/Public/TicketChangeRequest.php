@@ -39,6 +39,7 @@ class TicketChangeRequest extends Component
             'name' => trim($this->name),
             'congregation' => trim($this->congregation),
             'notes' => trim($this->notes),
+            'status' => TicketChangeRequestModel::STATUS_PENDING,
         ]);
 
         $this->submitted = true;
