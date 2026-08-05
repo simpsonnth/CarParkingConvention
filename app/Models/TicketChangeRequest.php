@@ -60,4 +60,21 @@ class TicketChangeRequest extends Model
 
         return $query;
     }
+
+    /**
+     * Requests from the same congregation, case-insensitive.
+     *
+     * @param  list<int>|null  $excludeIds
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeForSameCongregation($query, string $congregation, ?array $excludeIds = null)
+    {
+        $query->whereRaw('LOWER(TRIM(congregation)) = ?', [mb_strtolower(trim($congregation))]);
+
+        if ($excludeIds !== null && $excludeIds !== []) {
+            $query->whereNotIn('id', $excludeIds);
+        }
+
+        return $query;
+    }
 }

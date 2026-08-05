@@ -116,7 +116,7 @@
                     @endcan
                     @can('ticket-change-requests.view')
                         <flux:navlist.item icon="pencil-square" :href="route('admin.ticket-change-requests')"
-                            :current="request()->routeIs('admin.ticket-change-requests')" wire:navigate>{{ __('management.nav_ticket_change_requests') }}
+                            :current="request()->routeIs('admin.ticket-change-requests*')" wire:navigate>{{ __('management.nav_ticket_change_requests') }}
                         </flux:navlist.item>
                     @endcan
                 </flux:navlist.group>

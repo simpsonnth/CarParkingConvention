@@ -336,6 +336,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/ticket-change-requests', App\Livewire\Admin\TicketChangeRequests::class)
             ->middleware('permission:ticket-change-requests.view')
             ->name('ticket-change-requests');
+        Route::get('/ticket-change-requests/{ticketChangeRequest}', App\Livewire\Admin\TicketChangeRequestDetail::class)
+            ->middleware('permission:ticket-change-requests.view')
+            ->name('ticket-change-requests.show');
         Route::get('/parking-qr-codes', App\Livewire\Admin\GenericParkingQrCodes::class)
             ->middleware('permission:parking-qr.view')
             ->name('parking-qr-codes');

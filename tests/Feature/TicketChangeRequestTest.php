@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Admin\TicketChangeRequestDetail;
 use App\Livewire\Admin\TicketChangeRequests;
 use App\Livewire\Public\TicketChangeRequest;
 use App\Models\Congregation;
@@ -52,7 +53,7 @@ test('ticket change request persists valid submission', function () {
         ->and($row->notes)->toContain('XY99ZZZ');
 });
 
-test('admin can view ticket change requests', function () {
+test('admin can view ticket change requests list', function () {
     $admin = User::factory()->admin()->create();
     $cong = seedTicketChangeCongregation('Admin View Hall');
 
@@ -67,8 +68,23 @@ test('admin can view ticket change requests', function () {
         ->test(TicketChangeRequests::class)
         ->assertSee('Sam Parker')
         ->assertSee('Admin View Hall')
-        ->call('openDetail', TicketChangeRequestModel::query()->first()->id)
-        ->assertSet('detailModalOpen', true)
+        ->assertSee('Cancel ticket for vehicle AB12CDE please.');
+});
+
+test('admin can open ticket change request detail page', function () {
+    $admin = User::factory()->admin()->create();
+    $cong = seedTicketChangeCongregation('Detail Hall');
+
+    $row = TicketChangeRequestModel::query()->create([
+        'name' => 'Sam Parker',
+        'congregation' => $cong->name,
+        'notes' => 'Cancel ticket for vehicle AB12CDE please.',
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(TicketChangeRequestDetail::class, ['ticketChangeRequest' => $row])
+        ->assertSee('Sam Parker')
         ->assertSee('Cancel ticket for vehicle AB12CDE please.');
 });
 
@@ -137,7 +153,7 @@ test('admin can reopen a completed ticket change request', function () {
         ->and($row->actioned_by)->toBeNull();
 });
 
-test('admin can save optional staff note on a ticket change request', function () {
+test('admin can save optional staff note on detail page', function () {
     $admin = User::factory()->admin()->create();
     $cong = seedTicketChangeCongregation('Notes Hall');
 
@@ -149,8 +165,7 @@ test('admin can save optional staff note on a ticket change request', function (
     ]);
 
     Livewire::actingAs($admin)
-        ->test(TicketChangeRequests::class)
-        ->call('openDetail', $row->id)
+        ->test(TicketChangeRequestDetail::class, ['ticketChangeRequest' => $row])
         ->set('adminNotes', 'Emailed confirmation on 5 Aug that the ticket was cancelled.')
         ->call('saveAdminNotes')
         ->assertHasNoErrors();
@@ -158,7 +173,7 @@ test('admin can save optional staff note on a ticket change request', function (
     expect($row->fresh()->admin_notes)->toBe('Emailed confirmation on 5 Aug that the ticket was cancelled.');
 });
 
-test('admin can mark completed while saving staff note from the detail modal', function () {
+test('admin can mark completed while saving staff note from the detail page', function () {
     $admin = User::factory()->admin()->create();
     $cong = seedTicketChangeCongregation('Complete Notes Hall');
 
@@ -170,10 +185,9 @@ test('admin can mark completed while saving staff note from the detail modal', f
     ]);
 
     Livewire::actingAs($admin)
-        ->test(TicketChangeRequests::class)
-        ->call('openDetail', $row->id)
+        ->test(TicketChangeRequestDetail::class, ['ticketChangeRequest' => $row])
         ->set('adminNotes', 'Updated registration and replied by email.')
-        ->call('markCompleted', $row->id)
+        ->call('markCompleted')
         ->assertHasNoErrors();
 
     $row->refresh();
@@ -206,7 +220,7 @@ test('admin can create a ticket change request from the admin page', function ()
         ->and($row->admin_notes)->toBe('Taken by phone on reception desk.');
 });
 
-test('admin can see related requests for the same person and mark all pending completed', function () {
+test('admin can see related requests on detail page and mark all pending completed', function () {
     $admin = User::factory()->admin()->create();
     $cong = seedTicketChangeCongregation('Related Hall');
 
@@ -230,16 +244,89 @@ test('admin can see related requests for the same person and mark all pending co
     ]);
 
     Livewire::actingAs($admin)
-        ->test(TicketChangeRequests::class)
-        ->call('openDetail', $first->id)
+        ->test(TicketChangeRequestDetail::class, ['ticketChangeRequest' => $first])
         ->assertSee('Also change another vehicle to XY99ZZZ.')
         ->set('adminNotes', 'Replied to both points in one email.')
         ->call('markAllRelatedPendingCompleted')
-        ->assertHasNoErrors();
+        ->assertHasNoErrors()
+        ->assertRedirect(route('admin.ticket-change-requests'));
 
     expect($first->fresh()->status)->toBe(TicketChangeRequestModel::STATUS_COMPLETED)
         ->and($second->fresh()->status)->toBe(TicketChangeRequestModel::STATUS_COMPLETED)
         ->and($first->fresh()->admin_notes)->toBe('Replied to both points in one email.')
         ->and(TicketChangeRequestModel::query()->where('name', 'Someone Else')->value('status'))
         ->toBe(TicketChangeRequestModel::STATUS_PENDING);
+});
+
+test('admin list groups requests by congregation', function () {
+    $admin = User::factory()->admin()->create();
+    $alpha = seedTicketChangeCongregation('Alpha Hall');
+    $beta = seedTicketChangeCongregation('Beta Hall');
+
+    TicketChangeRequestModel::query()->create([
+        'name' => 'Person A',
+        'congregation' => $alpha->name,
+        'notes' => 'Alpha person A needs a cancellation.',
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+    ]);
+    TicketChangeRequestModel::query()->create([
+        'name' => 'Person B',
+        'congregation' => $alpha->name,
+        'notes' => 'Alpha person B needs a registration change.',
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+    ]);
+    TicketChangeRequestModel::query()->create([
+        'name' => 'Person C',
+        'congregation' => $beta->name,
+        'notes' => 'Beta person needs help with parking.',
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(TicketChangeRequests::class)
+        ->assertSeeInOrder([
+            'Alpha Hall',
+            'Person A',
+            'Person B',
+            'Beta Hall',
+            'Person C',
+        ])
+        ->assertSee('2 people · 2 pending');
+});
+
+test('admin can mark all congregation pending requests completed', function () {
+    $admin = User::factory()->admin()->create();
+    $cong = seedTicketChangeCongregation('Group Hall');
+    $other = seedTicketChangeCongregation('Other Hall');
+
+    $first = TicketChangeRequestModel::query()->create([
+        'name' => 'Alex One',
+        'congregation' => $cong->name,
+        'notes' => 'Cancel ticket for AA11AAA.',
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+    ]);
+    $second = TicketChangeRequestModel::query()->create([
+        'name' => 'Blake Two',
+        'congregation' => $cong->name,
+        'notes' => 'Change registration to BB22BBB.',
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+    ]);
+    $outsider = TicketChangeRequestModel::query()->create([
+        'name' => 'Casey Other',
+        'congregation' => $other->name,
+        'notes' => 'Should remain pending outside the congregation.',
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(TicketChangeRequestDetail::class, ['ticketChangeRequest' => $first])
+        ->assertSee('Blake Two')
+        ->assertSee('Change registration to BB22BBB.')
+        ->call('markAllCongregationPendingCompleted')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('admin.ticket-change-requests'));
+
+    expect($first->fresh()->status)->toBe(TicketChangeRequestModel::STATUS_COMPLETED)
+        ->and($second->fresh()->status)->toBe(TicketChangeRequestModel::STATUS_COMPLETED)
+        ->and($outsider->fresh()->status)->toBe(TicketChangeRequestModel::STATUS_PENDING);
 });
