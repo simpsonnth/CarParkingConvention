@@ -17,6 +17,7 @@ class TicketChangeRequest extends Model
         'name',
         'congregation',
         'notes',
+        'admin_notes',
         'status',
         'actioned_at',
         'actioned_by',
@@ -39,5 +40,24 @@ class TicketChangeRequest extends Model
     public function isCompleted(): bool
     {
         return $this->status === self::STATUS_COMPLETED;
+    }
+
+    /**
+     * Other requests from the same person (name + congregation), case-insensitive.
+     *
+     * @param  list<int>|null  $excludeIds
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeForSamePerson($query, string $name, string $congregation, ?array $excludeIds = null)
+    {
+        $query
+            ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim($name))])
+            ->whereRaw('LOWER(TRIM(congregation)) = ?', [mb_strtolower(trim($congregation))]);
+
+        if ($excludeIds !== null && $excludeIds !== []) {
+            $query->whereNotIn('id', $excludeIds);
+        }
+
+        return $query;
     }
 }
