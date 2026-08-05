@@ -34,6 +34,7 @@ return [
     'closed_congregation_portal' => 'El portal de congregación está cerrado.',
     'closed_parking_incidents' => 'El informe de incidentes de estacionamiento está cerrado.',
     'closed_toolbox_feedback' => 'Los comentarios para charlas matutinas están cerrados.',
+    'closed_ticket_change_request' => 'Las solicitudes de cambio de billete están cerradas.',
     'closed_lessons_learned' => 'Las lecciones aprendidas están cerradas.',
 
     'row_home' => 'Bienvenida',
@@ -43,6 +44,7 @@ return [
     'row_congregation_portal' => 'Portal de congregación (ver / editar inscripciones)',
     'row_parking_incidents' => 'Casi accidentes y accidentes de estacionamiento',
     'row_toolbox_feedback' => 'Comentarios para charlas matutinas',
+    'row_ticket_change_request' => 'Solicitud de cambio de billete',
     'row_lessons_learned' => 'Lecciones aprendidas (equipo de estacionamiento)',
     'row_locale' => 'Cambiar idioma (ej.: inglés)',
     'row_login' => 'Inicio de sesión (equipo)',

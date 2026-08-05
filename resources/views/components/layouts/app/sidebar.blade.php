@@ -34,6 +34,7 @@
                 'congregations.view',
                 'users.manage',
                 'registrations.view',
+                'extras.view',
                 'parking-qr.view',
                 'coaches.view',
                 'congregation-numbers.view',
@@ -59,6 +60,11 @@
                     @can('registrations.view')
                         <flux:navlist.item icon="clipboard-document-list" :href="route('admin.registrations')"
                             :current="request()->routeIs(['admin.registrations', 'admin.registrations.attendance-by-day'])" wire:navigate>{{ __('Registrations') }}
+                        </flux:navlist.item>
+                    @endcan
+                    @can('extras.view')
+                        <flux:navlist.item icon="queue-list" :href="route('admin.extras')"
+                            :current="request()->routeIs('admin.extras')" wire:navigate>{{ __('extras.nav') }}
                         </flux:navlist.item>
                     @endcan
                     @can('parking-qr.view')
@@ -89,7 +95,7 @@
                 </flux:navlist.group>
             @endif
 
-            @if (auth()->user()->canAny(['parking-incidents.view', 'toolbox-feedback.view', 'lessons-learned.view']))
+            @if (auth()->user()->canAny(['parking-incidents.view', 'toolbox-feedback.view', 'lessons-learned.view', 'ticket-change-requests.view']))
                 <flux:separator class="my-2" />
 
                 <flux:navlist.group :heading="__('management.nav_group')" class="grid">
@@ -106,6 +112,11 @@
                     @can('lessons-learned.view')
                         <flux:navlist.item icon="light-bulb" :href="route('admin.lessons-learned')"
                             :current="request()->routeIs('admin.lessons-learned')" wire:navigate>{{ __('management.nav_lessons_learned') }}
+                        </flux:navlist.item>
+                    @endcan
+                    @can('ticket-change-requests.view')
+                        <flux:navlist.item icon="pencil-square" :href="route('admin.ticket-change-requests')"
+                            :current="request()->routeIs('admin.ticket-change-requests')" wire:navigate>{{ __('management.nav_ticket_change_requests') }}
                         </flux:navlist.item>
                     @endcan
                 </flux:navlist.group>

@@ -5,6 +5,7 @@ return [
     'nav_parking_incidents' => 'Casi accidentes y accidentes',
     'nav_toolbox_feedback' => 'Comentarios para charlas',
     'nav_lessons_learned' => 'Lecciones aprendidas',
+    'nav_ticket_change_requests' => 'Solicitudes de cambio de billete',
 
     'convention_day' => [
         'friday' => 'Viernes',
@@ -131,5 +132,22 @@ return [
         'saved_toast' => 'Lección guardada.',
         'deleted_toast' => 'Lección eliminada.',
         'validation_lesson_content' => 'Indique al menos uno de los campos de contenido.',
+    ],
+
+    'ticket_change_requests' => [
+        'title' => 'Solicitudes de cambio de billete',
+        'subtitle' => 'Solicitudes del público para cambiar o cancelar billetes de aparcamiento.',
+        'total' => ':count solicitud(es) registradas',
+        'search' => 'Buscar nombre, congregación, notas…',
+        'per_page' => 'por página',
+        'col_submitted' => 'Enviado',
+        'col_name' => 'Nombre',
+        'col_congregation' => 'Congregación',
+        'col_notes' => 'Cambio necesario',
+        'col_actions' => 'Acciones',
+        'view' => 'Ver',
+        'empty' => 'Aún no hay solicitudes.',
+        'detail_title' => 'Solicitud de cambio',
+        'close' => 'Cerrar',
     ],
 ];

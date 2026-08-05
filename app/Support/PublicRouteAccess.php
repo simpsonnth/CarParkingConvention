@@ -80,6 +80,13 @@ class PublicRouteAccess
                 'toggleable' => true,
             ],
             [
+                'route' => 'management.ticket-change-request',
+                'params' => [],
+                'label_key' => 'routes_list.row_ticket_change_request',
+                'closed_message_key' => 'routes_list.closed_ticket_change_request',
+                'toggleable' => true,
+            ],
+            [
                 'route' => 'locale.set',
                 'params' => ['locale' => 'en'],
                 'label_key' => 'routes_list.row_locale',

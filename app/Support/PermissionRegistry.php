@@ -56,6 +56,10 @@ final class PermissionRegistry
                 'registrations.export',
                 'registrations.print',
             ],
+            'Extras' => [
+                'extras.view',
+                'extras.manage',
+            ],
             'Coaches' => [
                 'coaches.view',
                 'coaches.manage',
@@ -82,6 +86,10 @@ final class PermissionRegistry
             'Lessons Learned' => [
                 'lessons-learned.view',
                 'lessons-learned.manage',
+            ],
+            'Ticket Change Requests' => [
+                'ticket-change-requests.view',
+                'ticket-change-requests.manage',
             ],
             'Parking QR Codes' => [
                 'parking-qr.view',

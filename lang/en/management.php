@@ -5,6 +5,7 @@ return [
     'nav_parking_incidents' => 'Near misses & accidents',
     'nav_toolbox_feedback' => 'Toolbox feedback',
     'nav_lessons_learned' => 'Lessons learned',
+    'nav_ticket_change_requests' => 'Ticket change requests',
 
     'convention_day' => [
         'friday' => 'Friday',
@@ -131,5 +132,22 @@ return [
         'saved_toast' => 'Lesson saved.',
         'deleted_toast' => 'Lesson deleted.',
         'validation_lesson_content' => 'Provide at least one of "what worked well" or "what did not work well".',
+    ],
+
+    'ticket_change_requests' => [
+        'title' => 'Ticket change requests',
+        'subtitle' => 'Requests from the public to change or cancel car park tickets.',
+        'total' => ':count request(s) on record',
+        'search' => 'Search name, congregation, notes…',
+        'per_page' => 'per page',
+        'col_submitted' => 'Submitted',
+        'col_name' => 'Name',
+        'col_congregation' => 'Congregation',
+        'col_notes' => 'Change needed',
+        'col_actions' => 'Actions',
+        'view' => 'View',
+        'empty' => 'No change requests yet.',
+        'detail_title' => 'Change request',
+        'close' => 'Close',
     ],
 ];

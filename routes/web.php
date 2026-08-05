@@ -85,6 +85,7 @@ Route::middleware('public.route')->group(function () {
         Route::get('/parking-incidents', App\Livewire\Public\ParkingIncidentReport::class)->name('management.parking-incidents');
         Route::get('/toolbox-feedback', App\Livewire\Public\ToolboxFeedback::class)->name('management.toolbox-feedback');
         Route::get('/lessons-learned', App\Livewire\Public\LessonLearned::class)->name('management.lessons-learned');
+        Route::get('/ticket-change-request', App\Livewire\Public\TicketChangeRequest::class)->name('management.ticket-change-request');
     });
 });
 Route::get('/locale/{locale}', function (string $locale) {
@@ -140,6 +141,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/registrations', App\Livewire\Admin\Registrations::class)
             ->middleware('permission:registrations.view')
             ->name('registrations');
+        Route::get('/extras', App\Livewire\Admin\Extras::class)
+            ->middleware('permission:extras.view')
+            ->name('extras');
         Route::get('/coaches', App\Livewire\Admin\Coaches::class)
             ->middleware('permission:coaches.view')
             ->name('coaches');
@@ -329,6 +333,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/lessons-learned', App\Livewire\Admin\LessonsLearned::class)
             ->middleware('permission:lessons-learned.view')
             ->name('lessons-learned');
+        Route::get('/ticket-change-requests', App\Livewire\Admin\TicketChangeRequests::class)
+            ->middleware('permission:ticket-change-requests.view')
+            ->name('ticket-change-requests');
         Route::get('/parking-qr-codes', App\Livewire\Admin\GenericParkingQrCodes::class)
             ->middleware('permission:parking-qr.view')
             ->name('parking-qr-codes');

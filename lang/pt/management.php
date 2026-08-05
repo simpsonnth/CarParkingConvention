@@ -5,6 +5,7 @@ return [
     'nav_parking_incidents' => 'Quase-acidentes e acidentes',
     'nav_toolbox_feedback' => 'Feedback para reuniões',
     'nav_lessons_learned' => 'Lições aprendidas',
+    'nav_ticket_change_requests' => 'Pedidos de alteração de bilhete',
 
     'convention_day' => [
         'friday' => 'Sexta-feira',
@@ -131,5 +132,22 @@ return [
         'saved_toast' => 'Lição guardada.',
         'deleted_toast' => 'Lição eliminada.',
         'validation_lesson_content' => 'Indique pelo menos um dos campos de conteúdo.',
+    ],
+
+    'ticket_change_requests' => [
+        'title' => 'Pedidos de alteração de bilhete',
+        'subtitle' => 'Pedidos do público para alterar ou cancelar bilhetes de estacionamento.',
+        'total' => ':count pedido(s) registados',
+        'search' => 'Pesquisar nome, congregação, notas…',
+        'per_page' => 'por página',
+        'col_submitted' => 'Enviado',
+        'col_name' => 'Nome',
+        'col_congregation' => 'Congregação',
+        'col_notes' => 'Alteração necessária',
+        'col_actions' => 'Ações',
+        'view' => 'Ver',
+        'empty' => 'Ainda não há pedidos.',
+        'detail_title' => 'Pedido de alteração',
+        'close' => 'Fechar',
     ],
 ];
