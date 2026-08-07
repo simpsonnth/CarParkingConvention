@@ -17,6 +17,9 @@ class HotelGuestParkingRequest extends Model
 
     public const CONGREGATION_NAME = 'Radisson Hotel Guest';
 
+    /** Public congregation code guests enter on ticket-change-request. */
+    public const PUBLIC_CODE = 'RADISSON';
+
     /** @var list<string> */
     public const ALLOWED_DAYS = [
         'Wednesday',
@@ -44,6 +47,47 @@ class HotelGuestParkingRequest extends Model
         'days' => 'array',
         'actioned_at' => 'datetime',
     ];
+
+    /**
+     * Ensure the Radisson Hotel Guest congregation exists with the public RADISSON code.
+     */
+    public static function ensureCongregation(?int $defaultCarParkId = null): Congregation
+    {
+        $byCode = Congregation::query()
+            ->whereRaw('LOWER(TRIM(uuid)) = ?', [mb_strtolower(self::PUBLIC_CODE)])
+            ->first();
+
+        if ($byCode !== null) {
+            if (trim((string) $byCode->name) !== self::CONGREGATION_NAME) {
+                $byCode->update(['name' => self::CONGREGATION_NAME]);
+            }
+            if ($defaultCarParkId !== null && $byCode->car_park_id === null) {
+                $byCode->update(['car_park_id' => $defaultCarParkId]);
+            }
+
+            return $byCode->fresh() ?? $byCode;
+        }
+
+        $byName = Congregation::query()
+            ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(self::CONGREGATION_NAME)])
+            ->first();
+
+        if ($byName !== null) {
+            $byName->update([
+                'uuid' => self::PUBLIC_CODE,
+                'name' => self::CONGREGATION_NAME,
+                'car_park_id' => $byName->car_park_id ?? $defaultCarParkId,
+            ]);
+
+            return $byName->fresh() ?? $byName;
+        }
+
+        return Congregation::query()->create([
+            'name' => self::CONGREGATION_NAME,
+            'uuid' => self::PUBLIC_CODE,
+            'car_park_id' => $defaultCarParkId,
+        ]);
+    }
 
     public function actionedByUser(): BelongsTo
     {

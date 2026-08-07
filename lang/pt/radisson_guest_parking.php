@@ -22,6 +22,8 @@ return [
     'processing' => 'A enviar…',
     'complete_title' => 'Pedido enviado',
     'complete_body' => 'Obrigado. O seu pedido de estacionamento está pendente de aprovação. Receberá o bilhete por email assim que for aprovado.',
+    'complete_change_hint' => 'Precisa de alterar a matrícula mais tarde? Use o formulário de alteração de bilhete e escolha “Sou hóspede do hotel Radisson”, ou introduza o código :code.',
+    'complete_change_link' => 'Abrir pedido de alteração de bilhete',
     'submit_another' => 'Enviar outro pedido',
     'footer' => 'Estacionamento da Convenção',
     'validation' => [

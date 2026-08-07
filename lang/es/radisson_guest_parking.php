@@ -22,6 +22,8 @@ return [
     'processing' => 'Enviando…',
     'complete_title' => 'Solicitud enviada',
     'complete_body' => 'Gracias. Su solicitud de aparcamiento está pendiente de aprobación. Recibirá el billete por correo cuando sea aprobada.',
+    'complete_change_hint' => '¿Necesita cambiar la matrícula más adelante? Use el formulario de cambio de billete y elija “Soy huésped del hotel Radisson”, o introduzca el código :code.',
+    'complete_change_link' => 'Abrir solicitud de cambio de billete',
     'submit_another' => 'Enviar otra solicitud',
     'footer' => 'Aparcamiento de la Convención',
     'validation' => [

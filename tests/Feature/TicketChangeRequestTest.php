@@ -761,3 +761,52 @@ test('decline requires a notification email', function () {
 
     expect($row->fresh()->status)->toBe(TicketChangeRequestModel::STATUS_PENDING);
 });
+
+test('radisson hotel guest shortcut loads congregation and allows field update', function () {
+    Mail::fake();
+
+    $cong = \App\Models\HotelGuestParkingRequest::ensureCongregation();
+    expect($cong->uuid)->toBe(\App\Models\HotelGuestParkingRequest::PUBLIC_CODE)
+        ->and($cong->name)->toBe(\App\Models\HotelGuestParkingRequest::CONGREGATION_NAME);
+
+    $registration = seedTicketChangeRegistration($cong, [
+        'name' => 'Hotel Driver',
+        'vehicle_registration' => 'HG99XYZ',
+        'congregation' => \App\Models\HotelGuestParkingRequest::CONGREGATION_NAME,
+    ]);
+
+    $this->mock(MasterPassPdfGenerator::class, function ($mock) use ($registration): void {
+        $mock->shouldReceive('generateForIds')
+            ->once()
+            ->with([$registration->id])
+            ->andReturn([
+                [
+                    'filename' => 'Hotel Driver.pdf',
+                    'content' => '%PDF-fake',
+                    'registration' => $registration,
+                ],
+            ]);
+    });
+
+    Livewire::test(TicketChangeRequest::class)
+        ->call('useRadissonHotelGuest')
+        ->assertSet('congregationCode', 'RADISSON')
+        ->assertSet('resolvedCongregation.name', \App\Models\HotelGuestParkingRequest::CONGREGATION_NAME)
+        ->set('requestType', 'field_update')
+        ->assertDontSee('Hotel Driver')
+        ->assertSee('H***l D****r')
+        ->assertSee('HG9*XYZ')
+        ->set('parkingRegistrationId', (string) $registration->id)
+        ->set('confirmOwnership', 'HG99XYZ')
+        ->assertSet('ownershipVerified', true)
+        ->set('changeVehicleRegistration', true)
+        ->set('newVehicleRegistration', 'HG11NEW')
+        ->set('notificationEmail', 'hotel@example.test')
+        ->set('notificationEmailConfirmation', 'hotel@example.test')
+        ->call('submit')
+        ->assertHasNoErrors()
+        ->assertSet('submitted', true)
+        ->assertSet('submittedAutoApplied', true);
+
+    expect($registration->fresh()->vehicle_registration)->toBe('HG11NEW');
+});

@@ -31,6 +31,11 @@
                         class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 py-3 px-4 font-mono text-sm"
                         autocomplete="off" placeholder="{{ __('ticket_change_request.congregation_code_placeholder') }}">
                     <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('ticket_change_request.congregation_code_help') }}</p>
+                    <button type="button" wire:click="useRadissonHotelGuest"
+                        class="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200 dark:hover:bg-indigo-900/50">
+                        {{ __('ticket_change_request.radisson_shortcut') }}
+                    </button>
+                    <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('ticket_change_request.radisson_shortcut_help', ['code' => \App\Models\HotelGuestParkingRequest::PUBLIC_CODE]) }}</p>
                     @if ($this->resolvedCongregation)
                         <p class="mt-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
                             {{ __('ticket_change_request.congregation_resolved', ['name' => $this->resolvedCongregation->name]) }}
@@ -90,16 +95,19 @@
                             @php($selected = $this->selectedRegistration)
                             @if ($selected && ($selected['vehicle_type'] ?? 'car') === 'coach')
                                 <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('ticket_change_request.confirm_ticket') }}</label>
-                                <input type="text" wire:model="confirmOwnership"
+                                <input type="text" wire:model.live.debounce.300ms="confirmOwnership"
                                     class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 py-3 px-4"
                                     autocomplete="off" placeholder="{{ __('ticket_change_request.confirm_ticket_placeholder') }}">
                                 <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('ticket_change_request.confirm_ticket_help') }}</p>
                             @else
                                 <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('ticket_change_request.confirm_vrn') }}</label>
-                                <input type="text" wire:model="confirmOwnership"
+                                <input type="text" wire:model.live.debounce.300ms="confirmOwnership"
                                     class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 py-3 px-4"
                                     autocomplete="off" placeholder="{{ __('ticket_change_request.confirm_vrn_placeholder') }}">
                                 <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('ticket_change_request.confirm_vrn_help') }}</p>
+                            @endif
+                            @if ($ownershipVerified)
+                                <p class="mt-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">{{ __('ticket_change_request.ownership_verified') }}</p>
                             @endif
                             @error('confirmOwnership')
                                 <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
@@ -108,7 +116,7 @@
                     @endif
                 @endif
 
-                @if ($requestType === 'field_update' && $parkingRegistrationId !== '')
+                @if ($requestType === 'field_update' && $parkingRegistrationId !== '' && $ownershipVerified)
                     <div class="rounded-2xl border border-zinc-200 dark:border-zinc-600 p-4 space-y-4">
                         <p class="text-sm font-bold text-zinc-800 dark:text-zinc-200">{{ __('ticket_change_request.changes_heading') }}</p>
 

@@ -25,11 +25,20 @@
                     </div>
                 </div>
                 <h3 class="text-xl font-bold text-green-800 dark:text-green-200 mb-2">{{ __('radisson_guest_parking.complete_title') }}</h3>
-                <p class="text-green-700 dark:text-green-300 mb-6">{{ __('radisson_guest_parking.complete_body') }}</p>
-                <button wire:click="submitAnother"
-                    class="text-sm font-semibold text-green-800 dark:text-green-200 hover:underline">
-                    {{ __('radisson_guest_parking.submit_another') }}
-                </button>
+                <p class="text-green-700 dark:text-green-300 mb-4">{{ __('radisson_guest_parking.complete_body') }}</p>
+                <p class="text-sm text-green-800/80 dark:text-green-200/80 mb-6">
+                    {{ __('radisson_guest_parking.complete_change_hint', ['code' => \App\Models\HotelGuestParkingRequest::PUBLIC_CODE]) }}
+                </p>
+                <div class="flex flex-col gap-3">
+                    <a href="{{ route('management.ticket-change-request') }}"
+                        class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700">
+                        {{ __('radisson_guest_parking.complete_change_link') }}
+                    </a>
+                    <button wire:click="submitAnother"
+                        class="text-sm font-semibold text-green-800 dark:text-green-200 hover:underline">
+                        {{ __('radisson_guest_parking.submit_another') }}
+                    </button>
+                </div>
             </div>
         @else
             <form wire:submit="submit" class="space-y-6">

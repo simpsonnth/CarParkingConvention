@@ -6,8 +6,12 @@ namespace App\Livewire\Public;
 
 use App\Actions\TicketChangeRequests\SubmitTicketChangeRequest;
 use App\Models\Congregation;
+use App\Models\HotelGuestParkingRequest;
 use App\Models\ParkingRegistration;
 use App\Models\TicketChangeRequest as TicketChangeRequestModel;
+use App\Support\PersonNameMasker;
+use App\Support\VehicleRegistrationMasker;
+use App\Support\VehicleRegistrationNormalizer;
 use Flux\Flux;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -25,6 +29,8 @@ class TicketChangeRequest extends Component
     public string $parkingRegistrationId = '';
 
     public string $confirmOwnership = '';
+
+    public bool $ownershipVerified = false;
 
     public string $notificationEmail = '';
 
@@ -77,6 +83,7 @@ class TicketChangeRequest extends Component
     {
         $this->parkingRegistrationId = '';
         $this->confirmOwnership = '';
+        $this->ownershipVerified = false;
         $this->resetFieldEditors();
         unset($this->resolvedCongregation, $this->registrations);
     }
@@ -85,6 +92,7 @@ class TicketChangeRequest extends Component
     {
         $this->parkingRegistrationId = '';
         $this->confirmOwnership = '';
+        $this->ownershipVerified = false;
         $this->notes = '';
         $this->resetFieldEditors();
         $this->resetAdditionFields();
@@ -93,7 +101,15 @@ class TicketChangeRequest extends Component
     public function updatedParkingRegistrationId(): void
     {
         $this->confirmOwnership = '';
-        $this->hydrateFieldEditorsFromRegistration();
+        $this->ownershipVerified = false;
+        $this->resetFieldEditors();
+    }
+
+    public function updatedConfirmOwnership(): void
+    {
+        $this->ownershipVerified = false;
+        $this->resetFieldEditors();
+        $this->tryVerifyOwnership();
     }
 
     public function submitAnother(): void
@@ -103,6 +119,7 @@ class TicketChangeRequest extends Component
             'requestType',
             'parkingRegistrationId',
             'confirmOwnership',
+            'ownershipVerified',
             'notificationEmail',
             'notificationEmailConfirmation',
             'notes',
@@ -111,6 +128,17 @@ class TicketChangeRequest extends Component
         ]);
         $this->resetFieldEditors();
         $this->resetAdditionFields();
+        unset($this->resolvedCongregation, $this->registrations);
+    }
+
+    public function useRadissonHotelGuest(): void
+    {
+        HotelGuestParkingRequest::ensureCongregation();
+        $this->congregationCode = HotelGuestParkingRequest::PUBLIC_CODE;
+        $this->parkingRegistrationId = '';
+        $this->confirmOwnership = '';
+        $this->ownershipVerified = false;
+        $this->resetFieldEditors();
         unset($this->resolvedCongregation, $this->registrations);
     }
 
@@ -158,11 +186,15 @@ class TicketChangeRequest extends Component
             return null;
         }
 
-        return Congregation::query()->where('uuid', $code)->first();
+        return Congregation::query()
+            ->whereRaw('LOWER(TRIM(uuid)) = ?', [mb_strtolower($code)])
+            ->first();
     }
 
     /**
-     * @return list<array{id: int, label: string, ticket: string, name: string, vehicle_registration: string, vehicle_type: string, email: string, contact_number: string}>
+     * Public list payload — no full name / email / phone / full VRN.
+     *
+     * @return list<array{id: int, label: string, ticket: string, vehicle_type: string}>
      */
     #[Computed]
     public function registrations(): array
@@ -181,8 +213,6 @@ class TicketChangeRequest extends Component
                 'name',
                 'vehicle_registration',
                 'vehicle_type',
-                'email',
-                'contact_number',
             ])
             ->map(function (ParkingRegistration $registration): array {
                 $vrn = (string) ($registration->vehicle_registration ?? '');
@@ -191,22 +221,20 @@ class TicketChangeRequest extends Component
                 $typeLabel = $isCoach
                     ? __('ticket_change_request.vehicle_coach')
                     : __('ticket_change_request.vehicle_car');
+                $maskedName = PersonNameMasker::mask((string) $registration->name);
 
                 if ($isCoach) {
-                    $label = trim($ticket.' — '.$typeLabel.' — '.$registration->name);
+                    $label = trim($ticket.' — '.$typeLabel.' — '.$maskedName);
                 } else {
-                    $label = trim($ticket.' — '.$typeLabel.' — '.$registration->name.($vrn !== '' ? ' ('.$vrn.')' : ''));
+                    $maskedVrn = VehicleRegistrationMasker::mask($vrn);
+                    $label = trim($ticket.' — '.$typeLabel.' — '.$maskedName.($maskedVrn !== '' ? ' ('.$maskedVrn.')' : ''));
                 }
 
                 return [
                     'id' => $registration->id,
                     'label' => $label,
                     'ticket' => $ticket,
-                    'name' => (string) $registration->name,
-                    'vehicle_registration' => $vrn,
                     'vehicle_type' => (string) ($registration->vehicle_type ?: 'car'),
-                    'email' => (string) ($registration->email ?? ''),
-                    'contact_number' => (string) ($registration->contact_number ?? ''),
                 ];
             })
             ->values()
@@ -303,21 +331,47 @@ class TicketChangeRequest extends Component
         };
     }
 
-    private function hydrateFieldEditorsFromRegistration(): void
+    private function tryVerifyOwnership(): void
     {
-        $selected = $this->selectedRegistration;
-
-        if ($selected === null) {
-            $this->resetFieldEditors();
-
+        if ($this->parkingRegistrationId === '' || trim($this->confirmOwnership) === '') {
             return;
         }
 
-        $this->newName = $selected['name'];
-        $this->newVehicleRegistration = $selected['vehicle_registration'];
-        $this->newEmail = $selected['email'];
-        $this->newContactNumber = $selected['contact_number'];
-        $this->newVehicleType = $selected['vehicle_type'] ?: 'car';
+        $registration = ParkingRegistration::query()->find((int) $this->parkingRegistrationId);
+        if ($registration === null) {
+            return;
+        }
+
+        $vehicleType = (string) ($registration->vehicle_type ?: 'car');
+        $confirmed = false;
+
+        if ($vehicleType === 'coach') {
+            $entered = preg_replace('/\D+/', '', trim($this->confirmOwnership)) ?? '';
+            $ticket = preg_replace('/\D+/', '', $registration->ticketNumber()) ?? '';
+            $confirmed = $entered !== '' && $ticket !== '' && $entered === $ticket;
+        } else {
+            $confirmed = VehicleRegistrationNormalizer::matches(
+                $this->confirmOwnership,
+                $registration->vehicle_registration,
+                'car',
+            );
+        }
+
+        if (! $confirmed) {
+            return;
+        }
+
+        $this->ownershipVerified = true;
+        $this->hydrateFieldEditorsFromRegistration($registration);
+    }
+
+    private function hydrateFieldEditorsFromRegistration(ParkingRegistration $registration): void
+    {
+        $this->newName = (string) $registration->name;
+        $this->newVehicleRegistration = (string) ($registration->vehicle_registration ?? '');
+        $this->newEmail = (string) ($registration->email ?? '');
+        $this->newContactNumber = (string) ($registration->contact_number ?? '');
+        $this->newVehicleType = (string) ($registration->vehicle_type ?: 'car');
         $this->changeName = false;
         $this->changeVehicleRegistration = false;
         $this->changeEmail = false;

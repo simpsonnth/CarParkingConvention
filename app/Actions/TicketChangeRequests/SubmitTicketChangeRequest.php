@@ -49,7 +49,7 @@ class SubmitTicketChangeRequest
 
         $validated = Validator::make($input, [
             'request_type' => ['required', Rule::in(TicketChangeRequest::TYPES)],
-            'congregation_code' => ['required', 'string', 'exists:congregations,uuid'],
+            'congregation_code' => ['required', 'string', 'max:255'],
             'parking_registration_id' => [
                 Rule::requiredIf($needsRegistration),
                 'nullable',
@@ -101,7 +101,7 @@ class SubmitTicketChangeRequest
 
         $type = $validated['request_type'];
         $congregation = \App\Models\Congregation::query()
-            ->where('uuid', trim((string) $validated['congregation_code']))
+            ->whereRaw('LOWER(TRIM(uuid)) = ?', [mb_strtolower(trim((string) $validated['congregation_code']))])
             ->first();
 
         if ($congregation === null) {

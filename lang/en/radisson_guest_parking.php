@@ -22,6 +22,8 @@ return [
     'processing' => 'Submitting…',
     'complete_title' => 'Request submitted',
     'complete_body' => 'Thank you. Your parking request is pending approval. You will receive your car park ticket by email once it has been approved.',
+    'complete_change_hint' => 'Need to change your vehicle registration later? Use the ticket change form and choose “I am a Radisson hotel guest”, or enter code :code.',
+    'complete_change_link' => 'Open ticket change request',
     'submit_another' => 'Submit another request',
     'footer' => 'Convention Car Parking',
     'validation' => [

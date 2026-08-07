@@ -5,13 +5,11 @@ declare(strict_types=1);
 namespace App\Actions\HotelGuestParking;
 
 use App\Models\CarPark;
-use App\Models\Congregation;
 use App\Models\HotelGuestParkingRequest;
 use App\Models\ParkingRegistration;
 use App\Models\User;
 use App\Support\DeferredTicketMail;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ApproveHotelGuestParkingRequest
@@ -38,17 +36,7 @@ class ApproveHotelGuestParkingRequest
                 ]);
             }
 
-            $congregation = Congregation::query()->firstOrCreate(
-                ['name' => HotelGuestParkingRequest::CONGREGATION_NAME],
-                [
-                    'uuid' => (string) Str::uuid(),
-                    'car_park_id' => $carParkId,
-                ],
-            );
-
-            if ($congregation->car_park_id === null) {
-                $congregation->update(['car_park_id' => $carParkId]);
-            }
+            HotelGuestParkingRequest::ensureCongregation($carParkId);
 
             $registration = ParkingRegistration::query()->create([
                 'name' => $locked->name,
