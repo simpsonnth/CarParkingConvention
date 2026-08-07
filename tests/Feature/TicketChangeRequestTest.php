@@ -810,3 +810,20 @@ test('radisson hotel guest shortcut loads congregation and allows field update',
 
     expect($registration->fresh()->vehicle_registration)->toBe('HG11NEW');
 });
+
+test('ticket change request auto fills radisson code from guest query param', function () {
+    \App\Models\HotelGuestParkingRequest::ensureCongregation();
+
+    Livewire::withQueryParams(['guest' => 'radisson'])
+        ->test(TicketChangeRequest::class)
+        ->assertSet('congregationCode', 'RADISSON')
+        ->assertSet('resolvedCongregation.name', \App\Models\HotelGuestParkingRequest::CONGREGATION_NAME);
+});
+
+test('ticket change request auto fills radisson code from code query param', function () {
+    \App\Models\HotelGuestParkingRequest::ensureCongregation();
+
+    Livewire::withQueryParams(['code' => 'radisson'])
+        ->test(TicketChangeRequest::class)
+        ->assertSet('congregationCode', 'RADISSON');
+});

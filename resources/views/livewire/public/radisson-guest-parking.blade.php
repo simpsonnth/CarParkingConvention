@@ -17,7 +17,7 @@
             <p class="text-sm font-semibold text-indigo-900 dark:text-indigo-100">
                 {{ __('radisson_guest_parking.already_have_ticket') }}
             </p>
-            <a href="{{ route('management.ticket-change-request') }}"
+            <a href="{{ route('management.ticket-change-request', ['guest' => 'radisson']) }}"
                 class="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700">
                 {{ __('radisson_guest_parking.already_have_ticket_link') }}
             </a>
@@ -43,7 +43,7 @@
                     {{ __('radisson_guest_parking.complete_change_hint', ['code' => \App\Models\HotelGuestParkingRequest::PUBLIC_CODE]) }}
                 </p>
                 <div class="flex flex-col gap-3">
-                    <a href="{{ route('management.ticket-change-request') }}"
+                    <a href="{{ route('management.ticket-change-request', ['guest' => 'radisson']) }}"
                         class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700">
                         {{ __('radisson_guest_parking.complete_change_link') }}
                     </a>

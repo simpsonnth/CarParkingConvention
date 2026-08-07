@@ -79,6 +79,16 @@ class TicketChangeRequest extends Component
 
     public bool $submittedAutoApplied = false;
 
+    public function mount(): void
+    {
+        $guest = strtolower(trim((string) request()->query('guest', '')));
+        $code = strtoupper(trim((string) request()->query('code', '')));
+
+        if ($guest === 'radisson' || $code === HotelGuestParkingRequest::PUBLIC_CODE) {
+            $this->useRadissonHotelGuest();
+        }
+    }
+
     public function updatedCongregationCode(): void
     {
         $this->parkingRegistrationId = '';
