@@ -155,6 +155,8 @@ test('send car park tickets shows success popup after sending', function () {
 
         return true;
     });
+
+    expect($registration->fresh()->ticket_sent_at)->not->toBeNull();
 });
 
 test('send car park tickets action rejects invalid recipient', function () {

@@ -66,6 +66,19 @@ class SendCarParkTicketsEmail
             ccAddresses: $cc,
         ));
 
+        $sentIds = $registrations
+            ->map(fn (ParkingRegistration $registration): int => (int) $registration->id)
+            ->filter(fn (int $id): bool => $id > 0)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($sentIds !== []) {
+            ParkingRegistration::query()
+                ->whereIn('id', $sentIds)
+                ->update(['ticket_sent_at' => now()]);
+        }
+
         return [
             'sent' => count($pdfPayload),
             'to' => $to,

@@ -157,7 +157,8 @@ test('approve creates radisson hotel guest registration emails ticket with ccs',
         ->and($registration->vehicle_registration)->toBe('HG12ABC')
         ->and($registration->days)->toBe(['Wednesday', 'Friday', 'Sunday'])
         ->and($registration->vehicle_type)->toBe('car')
-        ->and($registration->is_circuit_overseer)->toBeFalse();
+        ->and($registration->is_circuit_overseer)->toBeFalse()
+        ->and($registration->ticket_sent_at)->not->toBeNull();
 
     expect(Congregation::query()->where('name', HotelGuestParkingRequest::CONGREGATION_NAME)->exists())->toBeTrue();
 
