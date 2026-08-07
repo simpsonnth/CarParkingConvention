@@ -87,6 +87,13 @@ class PublicRouteAccess
                 'toggleable' => true,
             ],
             [
+                'route' => 'management.radisson-guest-parking',
+                'params' => [],
+                'label_key' => 'routes_list.row_radisson_guest_parking',
+                'closed_message_key' => 'routes_list.closed_radisson_guest_parking',
+                'toggleable' => true,
+            ],
+            [
                 'route' => 'locale.set',
                 'params' => ['locale' => 'en'],
                 'label_key' => 'routes_list.row_locale',

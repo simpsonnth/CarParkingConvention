@@ -35,6 +35,7 @@ return [
     'closed_parking_incidents' => 'Parking incident reporting is now closed.',
     'closed_toolbox_feedback' => 'Toolbox feedback is now closed.',
     'closed_ticket_change_request' => 'Ticket change requests are now closed.',
+    'closed_radisson_guest_parking' => 'Radisson hotel guest parking requests are now closed.',
     'closed_lessons_learned' => 'Lessons learned submissions are now closed.',
 
     'row_home' => 'Welcome / landing',
@@ -45,6 +46,7 @@ return [
     'row_parking_incidents' => 'Parking near misses & accidents',
     'row_toolbox_feedback' => 'Toolbox talk feedback',
     'row_ticket_change_request' => 'Ticket change request',
+    'row_radisson_guest_parking' => 'Radisson hotel guest parking',
     'row_lessons_learned' => 'Lessons learned (parking team)',
     'row_locale' => 'Set language (example: English)',
     'row_login' => 'Staff login',

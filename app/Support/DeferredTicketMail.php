@@ -6,6 +6,7 @@ namespace App\Support;
 
 use App\Actions\Registrations\SendCarParkTicketsEmail;
 use App\Actions\TicketChangeRequests\SendTicketCancellationEmail;
+use App\Actions\TicketChangeRequests\SendTicketChangeRequestDeclinedEmail;
 use Illuminate\Support\Facades\Log;
 
 final class DeferredTicketMail
@@ -55,6 +56,35 @@ final class DeferredTicketMail
                 Log::error('Deferred cancellation email failed', [
                     'to' => $toEmail,
                     'ticket_number' => $ticketNumber,
+                    'message' => $e->getMessage(),
+                ]);
+            }
+        };
+
+        if (app()->runningUnitTests()) {
+            $send();
+
+            return;
+        }
+
+        dispatch($send)->afterResponse();
+    }
+
+    public static function sendDecline(
+        string $toEmail,
+        string $requesterName,
+        string $congregation,
+    ): void {
+        $send = function () use ($toEmail, $requesterName, $congregation): void {
+            try {
+                app(SendTicketChangeRequestDeclinedEmail::class)->execute(
+                    toEmail: $toEmail,
+                    requesterName: $requesterName,
+                    congregation: $congregation,
+                );
+            } catch (\Throwable $e) {
+                Log::error('Deferred ticket change decline email failed', [
+                    'to' => $toEmail,
                     'message' => $e->getMessage(),
                 ]);
             }

@@ -1,0 +1,32 @@
+<?php
+
+return [
+    'title' => 'Estacionamento para hóspedes do Radisson',
+    'subtitle' => 'Solicite bilhetes de estacionamento para a sua estadia no hotel Radisson. Os pedidos são revistos antes da emissão dos bilhetes.',
+    'full_name' => 'Nome completo',
+    'full_name_placeholder' => 'O seu nome completo',
+    'contact_number' => 'Número de telemóvel',
+    'contact_placeholder' => 'Apenas telemóvel',
+    'email' => 'Email de contacto',
+    'email_placeholder' => 'voce@exemplo.com',
+    'vehicle_registration' => 'Matrícula do veículo',
+    'vehicle_reg_placeholder' => 'ex. AB12 CDE',
+    'days_staying' => 'Dias de estadia no hotel',
+    'select_all_days' => 'Selecionar todos os dias',
+    'day_wednesday' => 'Quarta-feira',
+    'day_thursday' => 'Quinta-feira',
+    'day_friday' => 'Sexta-feira',
+    'day_saturday' => 'Sábado',
+    'day_sunday' => 'Domingo',
+    'submit' => 'Enviar pedido',
+    'processing' => 'A enviar…',
+    'complete_title' => 'Pedido enviado',
+    'complete_body' => 'Obrigado. O seu pedido de estacionamento está pendente de aprovação. Receberá o bilhete por email assim que for aprovado.',
+    'submit_another' => 'Enviar outro pedido',
+    'footer' => 'Estacionamento da Convenção',
+    'validation' => [
+        'days_required' => 'Selecione pelo menos um dia.',
+        'vehicle_registration_required' => 'Introduza a matrícula do veículo.',
+        'personal_email' => 'Use um email pessoal (não um endereço jw.org ou jwpub.org).',
+    ],
+];

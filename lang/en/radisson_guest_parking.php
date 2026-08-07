@@ -1,0 +1,32 @@
+<?php
+
+return [
+    'title' => 'Radisson Hotel Guest Parking',
+    'subtitle' => 'Request car park tickets for your Radisson hotel stay. Requests are reviewed before tickets are issued.',
+    'full_name' => 'Full name',
+    'full_name_placeholder' => 'Your full name',
+    'contact_number' => 'Mobile number',
+    'contact_placeholder' => 'Mobile number only',
+    'email' => 'Contact email',
+    'email_placeholder' => 'you@example.com',
+    'vehicle_registration' => 'Vehicle registration',
+    'vehicle_reg_placeholder' => 'e.g. AB12 CDE',
+    'days_staying' => 'Days staying at the hotel',
+    'select_all_days' => 'Select all days',
+    'day_wednesday' => 'Wednesday',
+    'day_thursday' => 'Thursday',
+    'day_friday' => 'Friday',
+    'day_saturday' => 'Saturday',
+    'day_sunday' => 'Sunday',
+    'submit' => 'Submit request',
+    'processing' => 'Submitting…',
+    'complete_title' => 'Request submitted',
+    'complete_body' => 'Thank you. Your parking request is pending approval. You will receive your car park ticket by email once it has been approved.',
+    'submit_another' => 'Submit another request',
+    'footer' => 'Convention Car Parking',
+    'validation' => [
+        'days_required' => 'Please select at least one day.',
+        'vehicle_registration_required' => 'Please enter a vehicle registration.',
+        'personal_email' => 'Please use a personal email address (not a jw.org or jwpub.org address).',
+    ],
+];

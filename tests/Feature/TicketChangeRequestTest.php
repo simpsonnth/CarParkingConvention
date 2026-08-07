@@ -692,3 +692,72 @@ test('admin can mark all congregation pending requests completed', function () {
         ->and($second->fresh()->status)->toBe(TicketChangeRequestModel::STATUS_COMPLETED)
         ->and($outsider->fresh()->status)->toBe(TicketChangeRequestModel::STATUS_PENDING);
 });
+
+test('admin can decline ticket change request and email inability to fulfil', function () {
+    Mail::fake();
+
+    $admin = User::factory()->admin()->create();
+    $cong = seedTicketChangeCongregation('Decline Hall');
+    $registration = seedTicketChangeRegistration($cong);
+
+    Setting::set(TicketEmailCcList::SETTING_KEY, "nathan-simpson@outlook.com\nops@example.com");
+
+    $row = TicketChangeRequestModel::query()->create([
+        'request_type' => TicketChangeRequestModel::TYPE_ADDITION,
+        'name' => 'Space Seeker',
+        'congregation' => $cong->name,
+        'notification_email' => 'seeker@example.test',
+        'notes' => 'Need an extra car park ticket.',
+        'payload' => [
+            'addition' => [
+                'name' => 'Space Seeker',
+                'contact_number' => '07700900111',
+                'email' => 'seeker@example.test',
+                'vehicle_type' => 'car',
+                'vehicle_registration' => 'SS12SSS',
+                'days' => ['Friday'],
+                'elderly_infirm_parking' => false,
+            ],
+        ],
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+        'parking_registration_id' => $registration->id,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(TicketChangeRequestDetail::class, ['ticketChangeRequest' => $row])
+        ->call('decline')
+        ->assertHasNoErrors();
+
+    $row->refresh();
+    expect($row->status)->toBe(TicketChangeRequestModel::STATUS_COMPLETED)
+        ->and($row->actioned_by)->toBe($admin->id)
+        ->and($row->admin_notes)->toContain('spacing at Twickenham');
+
+    Mail::assertSent(\App\Mail\TicketChangeRequestDeclinedMail::class, function (\App\Mail\TicketChangeRequestDeclinedMail $mail): bool {
+        return $mail->hasTo('seeker@example.test')
+            && in_array('nathan-simpson@outlook.com', $mail->ccAddresses, true)
+            && in_array('ops@example.com', $mail->ccAddresses, true)
+            && str_contains($mail->render(), 'unable to fulfil your request due to spacing at Twickenham');
+    });
+});
+
+test('decline requires a notification email', function () {
+    $admin = User::factory()->admin()->create();
+    $cong = seedTicketChangeCongregation('No Email Decline Hall');
+
+    $row = TicketChangeRequestModel::query()->create([
+        'request_type' => TicketChangeRequestModel::TYPE_ADDITION,
+        'name' => 'No Email Person',
+        'congregation' => $cong->name,
+        'notification_email' => null,
+        'notes' => 'Need an extra ticket.',
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(TicketChangeRequestDetail::class, ['ticketChangeRequest' => $row])
+        ->call('decline')
+        ->assertHasErrors(['decline']);
+
+    expect($row->fresh()->status)->toBe(TicketChangeRequestModel::STATUS_PENDING);
+});

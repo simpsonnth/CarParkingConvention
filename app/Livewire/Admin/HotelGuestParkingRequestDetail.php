@@ -1,0 +1,193 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Livewire\Admin;
+
+use App\Actions\HotelGuestParking\ApproveHotelGuestParkingRequest;
+use App\Actions\HotelGuestParking\RejectHotelGuestParkingRequest;
+use App\Models\CarPark;
+use App\Models\HotelGuestParkingRequest;
+use Flux\Flux;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\Layout;
+use Livewire\Component;
+
+#[Layout('components.layouts.app')]
+class HotelGuestParkingRequestDetail extends Component
+{
+    public HotelGuestParkingRequest $hotelGuestParkingRequest;
+
+    public string $adminNotes = '';
+
+    public bool $approveModalOpen = false;
+
+    public string $approveCarParkId = '';
+
+    public function mount(HotelGuestParkingRequest $hotelGuestParkingRequest): void
+    {
+        $this->hotelGuestParkingRequest = $hotelGuestParkingRequest->load([
+            'actionedByUser:id,name',
+            'carPark:id,name',
+            'parkingRegistration',
+        ]);
+        $this->adminNotes = $hotelGuestParkingRequest->admin_notes ?? '';
+    }
+
+    public function saveAdminNotes(): void
+    {
+        abort_unless(auth()->user()?->can('hotel-guest-parking.manage'), 403);
+
+        $this->validate([
+            'adminNotes' => 'nullable|string|max:5000',
+        ]);
+
+        $this->hotelGuestParkingRequest->update([
+            'admin_notes' => trim($this->adminNotes) !== '' ? trim($this->adminNotes) : null,
+        ]);
+        $this->hotelGuestParkingRequest->refresh();
+
+        try {
+            Flux::toast(__('management.hotel_guest_parking.admin_notes_saved'));
+        } catch (\Throwable) {
+            session()->flash('status', __('management.hotel_guest_parking.admin_notes_saved'));
+        }
+    }
+
+    public function openApproveModal(): void
+    {
+        abort_unless(auth()->user()?->can('hotel-guest-parking.manage'), 403);
+
+        if (! $this->hotelGuestParkingRequest->isPending()) {
+            return;
+        }
+
+        $this->resetErrorBag();
+        $this->approveCarParkId = (string) ($this->defaultCarParkId() ?? '');
+        $this->approveModalOpen = true;
+    }
+
+    public function closeApproveModal(): void
+    {
+        $this->approveModalOpen = false;
+        $this->approveCarParkId = '';
+    }
+
+    public function approve(ApproveHotelGuestParkingRequest $approve): void
+    {
+        abort_unless(auth()->user()?->can('hotel-guest-parking.manage'), 403);
+
+        $user = auth()->user();
+        if ($user === null) {
+            abort(403);
+        }
+
+        $this->validate([
+            'approveCarParkId' => 'required|exists:car_parks,id',
+            'adminNotes' => 'nullable|string|max:5000',
+        ], [
+            'approveCarParkId.required' => __('management.hotel_guest_parking.car_park_required'),
+        ]);
+
+        try {
+            $this->hotelGuestParkingRequest = $approve->execute(
+                $this->hotelGuestParkingRequest,
+                $user,
+                (int) $this->approveCarParkId,
+                trim($this->adminNotes) !== '' ? trim($this->adminNotes) : null,
+            )->load(['actionedByUser:id,name', 'carPark:id,name', 'parkingRegistration']);
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError((string) $field, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->adminNotes = $this->hotelGuestParkingRequest->admin_notes ?? '';
+        $this->closeApproveModal();
+
+        try {
+            Flux::toast(__('management.hotel_guest_parking.approved'));
+        } catch (\Throwable) {
+            session()->flash('status', __('management.hotel_guest_parking.approved'));
+        }
+    }
+
+    public function reject(RejectHotelGuestParkingRequest $reject): void
+    {
+        abort_unless(auth()->user()?->can('hotel-guest-parking.manage'), 403);
+
+        $user = auth()->user();
+        if ($user === null) {
+            abort(403);
+        }
+
+        $this->validate([
+            'adminNotes' => 'nullable|string|max:5000',
+        ]);
+
+        try {
+            $this->hotelGuestParkingRequest = $reject->execute(
+                $this->hotelGuestParkingRequest,
+                $user,
+                trim($this->adminNotes) !== '' ? trim($this->adminNotes) : null,
+            )->load(['actionedByUser:id,name', 'carPark:id,name', 'parkingRegistration']);
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError((string) $field, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->adminNotes = $this->hotelGuestParkingRequest->admin_notes ?? '';
+
+        try {
+            Flux::toast(__('management.hotel_guest_parking.rejected'));
+        } catch (\Throwable) {
+            session()->flash('status', __('management.hotel_guest_parking.rejected'));
+        }
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, CarPark>
+     */
+    #[Computed]
+    public function carParks()
+    {
+        return CarPark::query()->orderBy('name')->get(['id', 'name']);
+    }
+
+    public function defaultCarParkId(): ?int
+    {
+        $northId = CarPark::query()
+            ->where('name', 'like', '%North%')
+            ->orderBy('name')
+            ->value('id');
+
+        if ($northId !== null) {
+            return (int) $northId;
+        }
+
+        $fallback = CarPark::query()->orderBy('name')->value('id');
+
+        return $fallback !== null ? (int) $fallback : null;
+    }
+
+    public function render()
+    {
+        $this->hotelGuestParkingRequest->refresh()->loadMissing([
+            'actionedByUser:id,name',
+            'carPark:id,name',
+            'parkingRegistration',
+        ]);
+
+        return view('livewire.admin.hotel-guest-parking-request-detail');
+    }
+}

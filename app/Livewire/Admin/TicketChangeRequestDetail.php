@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Admin;
 
 use App\Actions\TicketChangeRequests\ApproveTicketChangeRequest;
+use App\Actions\TicketChangeRequests\DeclineTicketChangeRequest;
 use App\Models\CarPark;
 use App\Models\TicketChangeRequest;
 use Flux\Flux;
@@ -115,6 +116,44 @@ class TicketChangeRequestDetail extends Component
             Flux::toast(__('management.ticket_change_requests.closed_without_applying'));
         } catch (\Throwable) {
             session()->flash('status', __('management.ticket_change_requests.closed_without_applying'));
+        }
+    }
+
+    public function decline(DeclineTicketChangeRequest $decline): void
+    {
+        abort_unless(auth()->user()?->can('ticket-change-requests.manage'), 403);
+
+        $user = auth()->user();
+        if ($user === null) {
+            abort(403);
+        }
+
+        $this->validate([
+            'adminNotes' => 'nullable|string|max:5000',
+        ]);
+
+        try {
+            $this->ticketChangeRequest = $decline->execute(
+                $this->ticketChangeRequest,
+                $user,
+                trim($this->adminNotes) !== '' ? trim($this->adminNotes) : null,
+            )->load(['actionedByUser:id,name', 'parkingRegistration']);
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError((string) $field, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->adminNotes = $this->ticketChangeRequest->admin_notes ?? '';
+
+        try {
+            Flux::toast(__('management.ticket_change_requests.declined'));
+        } catch (\Throwable) {
+            session()->flash('status', __('management.ticket_change_requests.declined'));
         }
     }
 

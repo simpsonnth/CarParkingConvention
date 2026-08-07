@@ -28,6 +28,12 @@
                                 {{ __('management.ticket_change_requests.approve') }}
                             </flux:button>
                         @endif
+                        @if (filled($ticketChangeRequest->notification_email))
+                            <flux:button variant="danger" wire:click="decline"
+                                wire:confirm="{{ __('management.ticket_change_requests.confirm_decline') }}">
+                                {{ __('management.ticket_change_requests.decline') }}
+                            </flux:button>
+                        @endif
                         <flux:button variant="ghost" wire:click="closeWithoutApplying"
                             wire:confirm="{{ __('management.ticket_change_requests.confirm_close_without_applying') }}">
                             {{ __('management.ticket_change_requests.close_without_applying') }}
@@ -37,6 +43,12 @@
                             wire:confirm="{{ __('management.ticket_change_requests.confirm_complete') }}">
                             {{ __('management.ticket_change_requests.mark_completed') }}
                         </flux:button>
+                        @if (filled($ticketChangeRequest->notification_email))
+                            <flux:button variant="danger" wire:click="decline"
+                                wire:confirm="{{ __('management.ticket_change_requests.confirm_decline') }}">
+                                {{ __('management.ticket_change_requests.decline') }}
+                            </flux:button>
+                        @endif
                     @endif
                 @else
                     <flux:button variant="ghost" wire:click="markPending">
@@ -222,6 +234,9 @@
                             {{ __('management.ticket_change_requests.save_admin_notes') }}
                         </flux:button>
                     </div>
+                    @error('decline')
+                        <p class="text-xs text-red-500">{{ $message }}</p>
+                    @enderror
                 </section>
             @else
                 @if (filled($ticketChangeRequest->admin_notes))

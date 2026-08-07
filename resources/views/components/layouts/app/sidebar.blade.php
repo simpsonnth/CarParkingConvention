@@ -95,7 +95,7 @@
                 </flux:navlist.group>
             @endif
 
-            @if (auth()->user()->canAny(['parking-incidents.view', 'toolbox-feedback.view', 'lessons-learned.view', 'ticket-change-requests.view']))
+            @if (auth()->user()->canAny(['parking-incidents.view', 'toolbox-feedback.view', 'lessons-learned.view', 'ticket-change-requests.view', 'hotel-guest-parking.view']))
                 <flux:separator class="my-2" />
 
                 <flux:navlist.group :heading="__('management.nav_group')" class="grid">
@@ -117,6 +117,11 @@
                     @can('ticket-change-requests.view')
                         <flux:navlist.item icon="pencil-square" :href="route('admin.ticket-change-requests')"
                             :current="request()->routeIs('admin.ticket-change-requests*')" wire:navigate>{{ __('management.nav_ticket_change_requests') }}
+                        </flux:navlist.item>
+                    @endcan
+                    @can('hotel-guest-parking.view')
+                        <flux:navlist.item icon="building-office-2" :href="route('admin.hotel-guest-parking')"
+                            :current="request()->routeIs('admin.hotel-guest-parking*')" wire:navigate>{{ __('management.nav_hotel_guest_parking') }}
                         </flux:navlist.item>
                     @endcan
                 </flux:navlist.group>

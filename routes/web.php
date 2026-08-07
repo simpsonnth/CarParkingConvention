@@ -86,6 +86,7 @@ Route::middleware('public.route')->group(function () {
         Route::get('/toolbox-feedback', App\Livewire\Public\ToolboxFeedback::class)->name('management.toolbox-feedback');
         Route::get('/lessons-learned', App\Livewire\Public\LessonLearned::class)->name('management.lessons-learned');
         Route::get('/ticket-change-request', App\Livewire\Public\TicketChangeRequest::class)->name('management.ticket-change-request');
+        Route::get('/radisson-guest-parking', App\Livewire\Public\RadissonGuestParking::class)->name('management.radisson-guest-parking');
     });
 });
 Route::get('/locale/{locale}', function (string $locale) {
@@ -339,6 +340,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/ticket-change-requests/{ticketChangeRequest}', App\Livewire\Admin\TicketChangeRequestDetail::class)
             ->middleware('permission:ticket-change-requests.view')
             ->name('ticket-change-requests.show');
+        Route::get('/hotel-guest-parking', App\Livewire\Admin\HotelGuestParkingRequests::class)
+            ->middleware('permission:hotel-guest-parking.view')
+            ->name('hotel-guest-parking');
+        Route::get('/hotel-guest-parking/{hotelGuestParkingRequest}', App\Livewire\Admin\HotelGuestParkingRequestDetail::class)
+            ->middleware('permission:hotel-guest-parking.view')
+            ->name('hotel-guest-parking.show');
         Route::get('/parking-qr-codes', App\Livewire\Admin\GenericParkingQrCodes::class)
             ->middleware('permission:parking-qr.view')
             ->name('parking-qr-codes');

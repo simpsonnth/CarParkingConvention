@@ -91,6 +91,10 @@ final class PermissionRegistry
                 'ticket-change-requests.view',
                 'ticket-change-requests.manage',
             ],
+            'Hotel Guest Parking' => [
+                'hotel-guest-parking.view',
+                'hotel-guest-parking.manage',
+            ],
             'Parking QR Codes' => [
                 'parking-qr.view',
             ],
