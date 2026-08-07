@@ -28,6 +28,8 @@ class TicketChangeRequest extends Component
     /** Select values arrive as strings from HTML. */
     public string $parkingRegistrationId = '';
 
+    public string $registrationSearch = '';
+
     public string $confirmOwnership = '';
 
     public bool $ownershipVerified = false;
@@ -91,21 +93,25 @@ class TicketChangeRequest extends Component
 
     public function updatedCongregationCode(): void
     {
-        $this->parkingRegistrationId = '';
-        $this->confirmOwnership = '';
-        $this->ownershipVerified = false;
-        $this->resetFieldEditors();
-        unset($this->resolvedCongregation, $this->registrations);
+        $this->clearRegistrationSelection();
+        unset($this->resolvedCongregation, $this->registrationSearchResults);
     }
 
     public function updatedRequestType(): void
     {
+        $this->clearRegistrationSelection();
+        $this->notes = '';
+        $this->resetAdditionFields();
+        unset($this->registrationSearchResults);
+    }
+
+    public function updatedRegistrationSearch(): void
+    {
         $this->parkingRegistrationId = '';
         $this->confirmOwnership = '';
         $this->ownershipVerified = false;
-        $this->notes = '';
         $this->resetFieldEditors();
-        $this->resetAdditionFields();
+        unset($this->registrationSearchResults, $this->selectedRegistration);
     }
 
     public function updatedParkingRegistrationId(): void
@@ -122,12 +128,61 @@ class TicketChangeRequest extends Component
         $this->tryVerifyOwnership();
     }
 
+    public function selectRegistration(int $id): void
+    {
+        $this->resetErrorBag('parkingRegistrationId');
+
+        $congregation = $this->resolvedCongregation;
+        if ($congregation === null) {
+            return;
+        }
+
+        $registration = ParkingRegistration::query()
+            ->whereKey($id)
+            ->whereRaw('LOWER(TRIM(congregation)) = ?', [mb_strtolower(trim($congregation->name))])
+            ->first();
+
+        if ($registration === null) {
+            return;
+        }
+
+        $this->parkingRegistrationId = (string) $id;
+        $this->confirmOwnership = '';
+        $this->ownershipVerified = false;
+        $this->resetFieldEditors();
+        unset($this->selectedRegistration);
+
+        // Exact vehicle-reg search → treat as ownership proof and open the update form.
+        if (VehicleRegistrationNormalizer::matches(
+            $this->registrationSearch,
+            $registration->vehicle_registration,
+            'car',
+        )) {
+            $this->confirmOwnership = (string) (VehicleRegistrationNormalizer::normalize(
+                $this->registrationSearch,
+                'car',
+            ) ?? '');
+            $this->tryVerifyOwnership();
+        }
+    }
+
+    public function clearRegistrationSelection(): void
+    {
+        $this->parkingRegistrationId = '';
+        $this->registrationSearch = '';
+        $this->confirmOwnership = '';
+        $this->ownershipVerified = false;
+        $this->resetFieldEditors();
+        unset($this->registrationSearchResults, $this->selectedRegistration);
+    }
+
     public function submitAnother(): void
     {
         $this->reset([
             'congregationCode',
             'requestType',
             'parkingRegistrationId',
+            'registrationSearch',
             'confirmOwnership',
             'ownershipVerified',
             'notificationEmail',
@@ -138,18 +193,15 @@ class TicketChangeRequest extends Component
         ]);
         $this->resetFieldEditors();
         $this->resetAdditionFields();
-        unset($this->resolvedCongregation, $this->registrations);
+        unset($this->resolvedCongregation, $this->registrationSearchResults, $this->selectedRegistration);
     }
 
     public function useRadissonHotelGuest(): void
     {
         HotelGuestParkingRequest::ensureCongregation();
         $this->congregationCode = HotelGuestParkingRequest::PUBLIC_CODE;
-        $this->parkingRegistrationId = '';
-        $this->confirmOwnership = '';
-        $this->ownershipVerified = false;
-        $this->resetFieldEditors();
-        unset($this->resolvedCongregation, $this->registrations);
+        $this->clearRegistrationSelection();
+        unset($this->resolvedCongregation);
     }
 
     public function submit(SubmitTicketChangeRequest $submit): void
@@ -202,28 +254,41 @@ class TicketChangeRequest extends Component
     }
 
     /**
-     * Public list payload — no full name / email / phone / full VRN.
+     * Search results for the current congregation — masked labels only (no full PII).
      *
      * @return list<array{id: int, label: string, ticket: string, vehicle_type: string}>
      */
     #[Computed]
-    public function registrations(): array
+    public function registrationSearchResults(): array
     {
         $congregation = $this->resolvedCongregation;
-        if ($congregation === null) {
+        $term = trim($this->registrationSearch);
+        if ($congregation === null || mb_strlen($term) < 2) {
             return [];
         }
 
-        return ParkingRegistration::query()
+        $like = '%'.$term.'%';
+        $vrnNorm = strtoupper(str_replace(' ', '', $term));
+        $digits = preg_replace('/\D+/', '', $term) ?? '';
+        $ticketId = ($digits !== '' && ctype_digit($digits)) ? (int) $digits : null;
+
+        $query = ParkingRegistration::query()
             ->whereRaw('LOWER(TRIM(congregation)) = ?', [mb_strtolower(trim($congregation->name))])
+            ->where(function ($q) use ($like, $vrnNorm, $ticketId): void {
+                $q->where('name', 'like', $like)
+                    ->orWhere('vehicle_registration', 'like', $like)
+                    ->orWhereRaw("REPLACE(UPPER(COALESCE(vehicle_registration, '')), ' ', '') LIKE ?", ['%'.$vrnNorm.'%']);
+
+                if ($ticketId !== null && $ticketId > 0) {
+                    $q->orWhere('id', $ticketId);
+                }
+            })
             ->orderByRaw("CASE WHEN vehicle_type = 'coach' THEN 0 ELSE 1 END")
             ->orderBy('name')
-            ->get([
-                'id',
-                'name',
-                'vehicle_registration',
-                'vehicle_type',
-            ])
+            ->limit(12)
+            ->get(['id', 'name', 'vehicle_registration', 'vehicle_type']);
+
+        return $query
             ->map(function (ParkingRegistration $registration): array {
                 $vrn = (string) ($registration->vehicle_registration ?? '');
                 $ticket = $registration->ticketNumber();
@@ -259,8 +324,33 @@ class TicketChangeRequest extends Component
         }
 
         $id = (int) $this->parkingRegistrationId;
+        $fromSearch = collect($this->registrationSearchResults)->firstWhere('id', $id);
+        if ($fromSearch !== null) {
+            return $fromSearch;
+        }
 
-        return collect($this->registrations)->firstWhere('id', $id);
+        $registration = ParkingRegistration::query()->find($id);
+        if ($registration === null) {
+            return null;
+        }
+
+        $vrn = (string) ($registration->vehicle_registration ?? '');
+        $ticket = $registration->ticketNumber();
+        $isCoach = ($registration->vehicle_type ?? 'car') === 'coach';
+        $typeLabel = $isCoach
+            ? __('ticket_change_request.vehicle_coach')
+            : __('ticket_change_request.vehicle_car');
+        $maskedName = PersonNameMasker::mask((string) $registration->name);
+        $label = $isCoach
+            ? trim($ticket.' — '.$typeLabel.' — '.$maskedName)
+            : trim($ticket.' — '.$typeLabel.' — '.$maskedName.' ('.VehicleRegistrationMasker::mask($vrn).')');
+
+        return [
+            'id' => $registration->id,
+            'label' => $label,
+            'ticket' => $ticket,
+            'vehicle_type' => (string) ($registration->vehicle_type ?: 'car'),
+        ];
     }
 
     public function render()

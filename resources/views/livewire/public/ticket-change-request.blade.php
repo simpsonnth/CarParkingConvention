@@ -70,27 +70,58 @@
                 </div>
 
                 @if ($requestType !== '' && ! in_array($requestType, ['addition', 'email_request'], true))
-                    <div>
-                        <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('ticket_change_request.registration') }}</label>
-                        <select wire:model.live="parkingRegistrationId"
-                            class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 py-3 px-4"
-                            @disabled($this->resolvedCongregation === null)>
-                            <option value="">{{ __('ticket_change_request.select_registration') }}</option>
-                            @foreach ($this->registrations as $registration)
-                                <option value="{{ $registration['id'] }}">{{ $registration['label'] }}</option>
-                            @endforeach
-                        </select>
-                        @if ($this->resolvedCongregation && count($this->registrations) === 0)
-                            <p class="mt-1 text-xs text-amber-600 dark:text-amber-400">{{ __('ticket_change_request.no_registrations') }}</p>
-                        @elseif ($this->resolvedCongregation === null)
-                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('ticket_change_request.enter_code_first') }}</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-bold text-zinc-700 dark:text-zinc-300 mb-2">{{ __('ticket_change_request.registration_search') }}</label>
+                            <input type="text" wire:model.live.debounce.300ms="registrationSearch"
+                                class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 py-3 px-4"
+                                autocomplete="off"
+                                @disabled($this->resolvedCongregation === null)
+                                placeholder="{{ __('ticket_change_request.registration_search_placeholder') }}">
+                            <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('ticket_change_request.registration_search_help') }}</p>
+                            @if ($this->resolvedCongregation === null)
+                                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('ticket_change_request.enter_code_first') }}</p>
+                            @endif
+                            @error('parkingRegistrationId')
+                                <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
+                            @enderror
+                        </div>
+
+                        @if ($parkingRegistrationId !== '' && $this->selectedRegistration)
+                            <div class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950/30">
+                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                    <div>
+                                        <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">{{ __('ticket_change_request.registration_selected') }}</p>
+                                        <p class="mt-1 text-sm font-medium text-emerald-900 dark:text-emerald-100">{{ $this->selectedRegistration['label'] }}</p>
+                                    </div>
+                                    <button type="button" wire:click="clearRegistrationSelection"
+                                        class="text-sm font-semibold text-emerald-800 underline hover:no-underline dark:text-emerald-200">
+                                        {{ __('ticket_change_request.registration_change') }}
+                                    </button>
+                                </div>
+                            </div>
+                        @elseif ($this->resolvedCongregation && mb_strlen(trim($registrationSearch)) >= 2)
+                            @if (count($this->registrationSearchResults) === 0)
+                                <p class="text-sm text-amber-600 dark:text-amber-400">{{ __('ticket_change_request.registration_search_empty') }}</p>
+                            @else
+                                <ul class="divide-y divide-zinc-200 overflow-hidden rounded-xl border border-zinc-200 dark:divide-zinc-700 dark:border-zinc-600">
+                                    @foreach ($this->registrationSearchResults as $result)
+                                        <li>
+                                            <button type="button" wire:click="selectRegistration({{ $result['id'] }})"
+                                                class="flex w-full items-center justify-between gap-3 px-4 py-3 text-left text-sm hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+                                                <span class="font-medium text-zinc-900 dark:text-zinc-100">{{ $result['label'] }}</span>
+                                                <span class="shrink-0 text-xs font-semibold text-indigo-600 dark:text-indigo-400">{{ __('ticket_change_request.registration_select') }}</span>
+                                            </button>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                        @elseif ($this->resolvedCongregation && trim($registrationSearch) !== '')
+                            <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('ticket_change_request.registration_search_min') }}</p>
                         @endif
-                        @error('parkingRegistrationId')
-                            <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
-                        @enderror
                     </div>
 
-                    @if ($parkingRegistrationId !== '')
+                    @if ($parkingRegistrationId !== '' && ! $ownershipVerified)
                         <div>
                             @php($selected = $this->selectedRegistration)
                             @if ($selected && ($selected['vehicle_type'] ?? 'car') === 'coach')
@@ -106,13 +137,12 @@
                                     autocomplete="off" placeholder="{{ __('ticket_change_request.confirm_vrn_placeholder') }}">
                                 <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('ticket_change_request.confirm_vrn_help') }}</p>
                             @endif
-                            @if ($ownershipVerified)
-                                <p class="mt-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">{{ __('ticket_change_request.ownership_verified') }}</p>
-                            @endif
                             @error('confirmOwnership')
                                 <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span>
                             @enderror
                         </div>
+                    @elseif ($ownershipVerified)
+                        <p class="text-sm font-medium text-emerald-700 dark:text-emerald-400">{{ __('ticket_change_request.ownership_verified') }}</p>
                     @endif
                 @endif
 

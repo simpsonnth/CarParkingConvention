@@ -42,6 +42,21 @@ class SubmitTicketChangeRequest
         ], true);
         $isEmailRequest = $typeForRules === TicketChangeRequest::TYPE_EMAIL_REQUEST;
 
+        $congregationCode = trim((string) ($input['congregation_code'] ?? ''));
+        $congregation = null;
+
+        if ($congregationCode !== '') {
+            $congregation = \App\Models\Congregation::query()
+                ->whereRaw('LOWER(TRIM(uuid)) = ?', [mb_strtolower($congregationCode)])
+                ->first();
+
+            if ($congregation === null) {
+                throw ValidationException::withMessages([
+                    'congregation_code' => __('ticket_change_request.validation.invalid_congregation_code'),
+                ]);
+            }
+        }
+
         $emailRules = ['required', 'email', 'max:255'];
         if (! $isEmailRequest) {
             $emailRules[] = new PersonalEmail;
@@ -99,10 +114,11 @@ class SubmitTicketChangeRequest
             ],
         ])->validate();
 
-        $type = $validated['request_type'];
-        $congregation = \App\Models\Congregation::query()
-            ->whereRaw('LOWER(TRIM(uuid)) = ?', [mb_strtolower(trim((string) $validated['congregation_code']))])
-            ->first();
+        if ($congregation === null) {
+            $congregation = \App\Models\Congregation::query()
+                ->whereRaw('LOWER(TRIM(uuid)) = ?', [mb_strtolower(trim((string) $validated['congregation_code']))])
+                ->first();
+        }
 
         if ($congregation === null) {
             throw ValidationException::withMessages([
@@ -110,6 +126,7 @@ class SubmitTicketChangeRequest
             ]);
         }
 
+        $type = $validated['request_type'];
         $congregationName = trim((string) $congregation->name);
         $notificationEmail = strtolower(trim((string) $validated['notification_email']));
         $notes = isset($validated['notes']) && trim((string) $validated['notes']) !== ''
