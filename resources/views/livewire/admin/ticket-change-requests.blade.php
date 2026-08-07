@@ -52,13 +52,15 @@
     <flux:separator />
 
     <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
-        <table class="w-full min-w-[720px] text-left text-sm">
+        <table class="w-full min-w-[960px] text-left text-sm">
             <thead class="bg-zinc-50 text-xs uppercase text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
                 <tr>
                     <th class="px-4 py-3">{{ __('management.ticket_change_requests.col_status') }}</th>
+                    <th class="px-4 py-3">{{ __('management.ticket_change_requests.col_type') }}</th>
                     <th class="px-4 py-3">{{ __('management.ticket_change_requests.col_submitted') }}</th>
                     <th class="px-4 py-3">{{ __('management.ticket_change_requests.col_name') }}</th>
                     <th class="px-4 py-3">{{ __('management.ticket_change_requests.col_notes') }}</th>
+                    <th class="px-4 py-3">{{ __('management.ticket_change_requests.col_completed_by') }}</th>
                     <th class="px-4 py-3 text-end">{{ __('management.ticket_change_requests.col_actions') }}</th>
                 </tr>
             </thead>
@@ -69,7 +71,7 @@
                     @if ($congKey !== $previousCongKey)
                         @php($stats = $congregationStats[$congKey] ?? null)
                         <tr wire:key="tcr-cong-{{ $congKey }}" class="bg-zinc-100 dark:bg-zinc-900/80">
-                            <td colspan="5" class="px-4 py-3">
+                            <td colspan="7" class="px-4 py-3">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span class="text-sm font-semibold text-zinc-900 dark:text-white">
                                         {{ $stats['label'] ?? $row->congregation }}
@@ -96,6 +98,20 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-300">
+                            @if ($row->isStructured())
+                                <flux:badge size="sm" color="zinc">
+                                    {{ __('management.ticket_change_requests.type_'.$row->request_type) }}
+                                </flux:badge>
+                            @else
+                                <span class="text-xs text-zinc-400">{{ __('management.ticket_change_requests.type_legacy') }}</span>
+                            @endif
+                            @if ($row->parking_registration_id)
+                                <div class="mt-1 text-xs tabular-nums text-zinc-500">
+                                    #{{ str_pad((string) $row->parking_registration_id, 6, '0', STR_PAD_LEFT) }}
+                                </div>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-300">
                             {{ $row->created_at?->timezone(config('app.timezone'))->format('Y-m-d H:i') }}
                         </td>
                         <td class="px-4 py-3 font-medium text-zinc-900 dark:text-white">
@@ -108,6 +124,9 @@
                                     </flux:badge>
                                 </div>
                             @endif
+                            @if (filled($row->notification_email))
+                                <div class="mt-1 text-xs font-normal text-zinc-500 truncate max-w-[180px]">{{ $row->notification_email }}</div>
+                            @endif
                         </td>
                         <td class="px-4 py-3 text-zinc-600 dark:text-zinc-300 max-w-xs truncate">
                             {{ $row->notes }}
@@ -115,6 +134,19 @@
                                 <div class="mt-1 text-xs text-indigo-600 dark:text-indigo-400 truncate">
                                     {{ __('management.ticket_change_requests.admin_notes_preview') }}: {{ $row->admin_notes }}
                                 </div>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-300">
+                            @if ($row->isCompleted())
+                                @if ($row->actionedByUser)
+                                    {{ $row->actionedByUser->name }}
+                                @elseif ($row->wasAutoCompleted())
+                                    {{ __('management.ticket_change_requests.completed_by_auto') }}
+                                @else
+                                    <span class="text-zinc-400">—</span>
+                                @endif
+                            @else
+                                <span class="text-zinc-400">—</span>
                             @endif
                         </td>
                         <td class="px-4 py-3 text-end">
@@ -125,10 +157,17 @@
                                 </a>
                                 @can('ticket-change-requests.manage')
                                     @if ($row->isPending())
-                                        <flux:button variant="primary" size="sm" wire:click="markCompleted({{ $row->id }})"
-                                            wire:confirm="{{ __('management.ticket_change_requests.confirm_complete') }}">
-                                            {{ __('management.ticket_change_requests.mark_completed') }}
-                                        </flux:button>
+                                        @if ($row->requiresApproval())
+                                            <a href="{{ route('admin.ticket-change-requests.show', $row) }}" wire:navigate
+                                                class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                                                {{ __('management.ticket_change_requests.approve') }}
+                                            </a>
+                                        @else
+                                            <flux:button variant="primary" size="sm" wire:click="markCompleted({{ $row->id }})"
+                                                wire:confirm="{{ __('management.ticket_change_requests.confirm_complete') }}">
+                                                {{ __('management.ticket_change_requests.mark_completed') }}
+                                            </flux:button>
+                                        @endif
                                     @else
                                         <flux:button variant="ghost" size="sm" wire:click="markPending({{ $row->id }})">
                                             {{ __('management.ticket_change_requests.mark_pending') }}
@@ -140,7 +179,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-12 text-center text-zinc-500">
+                        <td colspan="7" class="px-6 py-12 text-center text-zinc-500">
                             {{ __('management.ticket_change_requests.empty') }}
                         </td>
                     </tr>

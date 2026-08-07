@@ -179,7 +179,10 @@ class TicketChangeRequests extends Component
 
     public function render()
     {
-        $query = TicketChangeRequest::query()->with('actionedByUser:id,name');
+        $query = TicketChangeRequest::query()->with([
+            'actionedByUser:id,name',
+            'parkingRegistration:id,vehicle_registration',
+        ]);
 
         if ($this->statusFilter === 'pending') {
             $query->where('status', TicketChangeRequest::STATUS_PENDING);
@@ -193,7 +196,9 @@ class TicketChangeRequests extends Component
                 $q->where('name', 'like', $term)
                     ->orWhere('congregation', 'like', $term)
                     ->orWhere('notes', 'like', $term)
-                    ->orWhere('admin_notes', 'like', $term);
+                    ->orWhere('admin_notes', 'like', $term)
+                    ->orWhere('notification_email', 'like', $term)
+                    ->orWhere('request_type', 'like', $term);
             });
         }
 

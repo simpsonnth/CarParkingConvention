@@ -65,6 +65,8 @@
                                 <flux:badge color="amber">{{ __('registrations.cancelled_via_portal') }}</flux:badge>
                             @elseif ($reg->cancelled_via === 'admin')
                                 <flux:badge color="zinc">{{ __('registrations.cancelled_via_admin') }}</flux:badge>
+                            @elseif ($reg->cancelled_via === 'change_request')
+                                <flux:badge color="sky">{{ __('registrations.cancelled_via_change_request') }}</flux:badge>
                             @else
                                 <span class="text-zinc-400">{{ __('registrations.cancelled_via_unknown') }}</span>
                             @endif

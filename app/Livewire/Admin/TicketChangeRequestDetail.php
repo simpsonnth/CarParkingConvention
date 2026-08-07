@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin;
 
+use App\Actions\TicketChangeRequests\ApproveTicketChangeRequest;
+use App\Models\CarPark;
 use App\Models\TicketChangeRequest;
 use Flux\Flux;
+use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -16,9 +20,16 @@ class TicketChangeRequestDetail extends Component
 
     public string $adminNotes = '';
 
+    public bool $approveModalOpen = false;
+
+    public string $approveCarParkId = '';
+
     public function mount(TicketChangeRequest $ticketChangeRequest): void
     {
-        $this->ticketChangeRequest = $ticketChangeRequest->load('actionedByUser:id,name');
+        $this->ticketChangeRequest = $ticketChangeRequest->load([
+            'actionedByUser:id,name',
+            'parkingRegistration',
+        ]);
         $this->adminNotes = $ticketChangeRequest->admin_notes ?? '';
     }
 
@@ -42,11 +53,148 @@ class TicketChangeRequestDetail extends Component
         }
     }
 
+    public function openApproveModal(): void
+    {
+        abort_unless(auth()->user()?->can('ticket-change-requests.manage'), 403);
+
+        if (! $this->ticketChangeRequest->isPending() || ! $this->ticketChangeRequest->requiresApproval()) {
+            return;
+        }
+
+        if (! $this->canApprove()) {
+            try {
+                Flux::toast(__('management.ticket_change_requests.cannot_approve_missing_registration'), variant: 'warning');
+            } catch (\Throwable) {
+                session()->flash('status', __('management.ticket_change_requests.cannot_approve_missing_registration'));
+            }
+
+            return;
+        }
+
+        $this->resetErrorBag();
+        $this->approveCarParkId = '';
+        $this->approveModalOpen = true;
+    }
+
+    public function closeApproveModal(): void
+    {
+        $this->approveModalOpen = false;
+        $this->approveCarParkId = '';
+    }
+
+    /**
+     * Close a pending request without applying its action (e.g. superseded by a cancellation).
+     */
+    public function closeWithoutApplying(): void
+    {
+        abort_unless(auth()->user()?->can('ticket-change-requests.manage'), 403);
+
+        if ($this->ticketChangeRequest->isCompleted()) {
+            return;
+        }
+
+        $this->validate([
+            'adminNotes' => 'nullable|string|max:5000',
+        ]);
+
+        $note = trim($this->adminNotes);
+        if ($note === '') {
+            $note = __('management.ticket_change_requests.closed_without_applying_default_note');
+        }
+
+        $this->ticketChangeRequest->update([
+            'status' => TicketChangeRequest::STATUS_COMPLETED,
+            'actioned_at' => now(),
+            'actioned_by' => auth()->id(),
+            'admin_notes' => $note,
+        ]);
+        $this->ticketChangeRequest->refresh()->load(['actionedByUser:id,name', 'parkingRegistration']);
+        $this->adminNotes = $this->ticketChangeRequest->admin_notes ?? '';
+
+        try {
+            Flux::toast(__('management.ticket_change_requests.closed_without_applying'));
+        } catch (\Throwable) {
+            session()->flash('status', __('management.ticket_change_requests.closed_without_applying'));
+        }
+    }
+
+    public function approve(ApproveTicketChangeRequest $approve): void
+    {
+        abort_unless(auth()->user()?->can('ticket-change-requests.manage'), 403);
+
+        $user = auth()->user();
+        if ($user === null) {
+            abort(403);
+        }
+
+        if (! $this->canApprove()) {
+            $this->addError('approve', __('management.ticket_change_requests.cannot_approve_missing_registration'));
+
+            return;
+        }
+
+        $needsCarPark = in_array($this->ticketChangeRequest->request_type, [
+            TicketChangeRequest::TYPE_CAR_PARK_CHANGE,
+            TicketChangeRequest::TYPE_ADDITION,
+        ], true);
+
+        if ($needsCarPark) {
+            $this->validate([
+                'approveCarParkId' => 'required|exists:car_parks,id',
+                'adminNotes' => 'nullable|string|max:5000',
+            ], [
+                'approveCarParkId.required' => __('management.ticket_change_requests.car_park_required'),
+            ]);
+        } else {
+            $this->validate([
+                'adminNotes' => 'nullable|string|max:5000',
+            ]);
+        }
+
+        try {
+            $this->ticketChangeRequest = $approve->execute(
+                $this->ticketChangeRequest,
+                $user,
+                $needsCarPark ? (int) $this->approveCarParkId : null,
+                trim($this->adminNotes) !== '' ? trim($this->adminNotes) : null,
+            )->load(['actionedByUser:id,name', 'parkingRegistration']);
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $mapped = $field === 'approveCarParkId' ? 'approveCarParkId' : (string) $field;
+                    $this->addError($mapped, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->adminNotes = $this->ticketChangeRequest->admin_notes ?? '';
+        $this->closeApproveModal();
+
+        try {
+            Flux::toast(__('management.ticket_change_requests.approved'));
+        } catch (\Throwable) {
+            session()->flash('status', __('management.ticket_change_requests.approved'));
+        }
+    }
+
     public function markCompleted(): void
     {
         abort_unless(auth()->user()?->can('ticket-change-requests.manage'), 403);
 
         if ($this->ticketChangeRequest->isCompleted()) {
+            return;
+        }
+
+        // Approval-required types must use Approve (apply) or Close without applying.
+        if ($this->ticketChangeRequest->requiresApproval()) {
+            if ($this->canApprove()) {
+                $this->openApproveModal();
+            } else {
+                $this->closeWithoutApplying();
+            }
+
             return;
         }
 
@@ -111,6 +259,9 @@ class TicketChangeRequestDetail extends Component
                 : __('management.ticket_change_requests.status_completed');
             $submitted = $request->created_at?->timezone(config('app.timezone'))->format('d M Y H:i') ?? '';
             $lines[] = ($index + 1).'. ['.$status.'] '.$submitted;
+            if ($request->isStructured()) {
+                $lines[] = __('management.ticket_change_requests.type_'.$request->request_type);
+            }
             $lines[] = $request->notes;
             if (filled($request->admin_notes)) {
                 $lines[] = __('management.ticket_change_requests.admin_notes').': '.$request->admin_notes;
@@ -198,6 +349,31 @@ class TicketChangeRequestDetail extends Component
     }
 
     /**
+     * @return \Illuminate\Support\Collection<int, CarPark>
+     */
+    #[Computed]
+    public function carParks()
+    {
+        return CarPark::query()->orderBy('name')->get(['id', 'name']);
+    }
+
+    public function canApprove(): bool
+    {
+        if (! $this->ticketChangeRequest->requiresApproval()) {
+            return true;
+        }
+
+        // Additions create a new registration — no existing ticket required.
+        if ($this->ticketChangeRequest->request_type === TicketChangeRequest::TYPE_ADDITION) {
+            return true;
+        }
+
+        $registration = $this->ticketChangeRequest->parkingRegistration;
+
+        return $registration !== null && ! $registration->trashed();
+    }
+
+    /**
      * @param  \Illuminate\Support\Collection<int, int>  $pendingIds
      */
     private function completePendingGroup($pendingIds, string $emptyMessage)
@@ -259,7 +435,19 @@ class TicketChangeRequestDetail extends Component
 
     public function render()
     {
-        $this->ticketChangeRequest->refresh()->loadMissing('actionedByUser:id,name');
+        $this->ticketChangeRequest->refresh()->loadMissing([
+            'actionedByUser:id,name',
+            'parkingRegistration',
+        ]);
+
+        $sameTicketRequests = collect();
+        if ($this->ticketChangeRequest->parking_registration_id) {
+            $sameTicketRequests = TicketChangeRequest::query()
+                ->where('parking_registration_id', $this->ticketChangeRequest->parking_registration_id)
+                ->whereKeyNot($this->ticketChangeRequest->id)
+                ->orderByDesc('created_at')
+                ->get();
+        }
 
         $relatedRequests = TicketChangeRequest::query()
             ->forSamePerson(
@@ -301,6 +489,9 @@ class TicketChangeRequestDetail extends Component
             'congregationRequests' => $congregationRequests,
             'congregationPeopleCount' => $congregationPeopleCount,
             'congregationPendingCount' => $congregationPendingCount,
+            'sameTicketRequests' => $sameTicketRequests,
+            'canApprove' => $this->canApprove(),
+            'registrationCancelled' => $this->ticketChangeRequest->parkingRegistration?->trashed() === true,
         ]);
     }
 }

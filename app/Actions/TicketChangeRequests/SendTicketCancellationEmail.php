@@ -1,0 +1,45 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Actions\TicketChangeRequests;
+
+use App\Mail\TicketCancellationMail;
+use App\Support\TicketEmailCcList;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\ValidationException;
+
+class SendTicketCancellationEmail
+{
+    public function execute(
+        string $toEmail,
+        string $ticketNumber,
+        string $congregation,
+        string $driverName,
+    ): array {
+        $to = strtolower(trim($toEmail));
+        if ($to === '' || ! filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            throw ValidationException::withMessages([
+                'notification_email' => __('ticket_change_request.validation.notification_email'),
+            ]);
+        }
+
+        $cc = array_values(array_filter(
+            TicketEmailCcList::all(),
+            fn (string $email): bool => $email !== $to,
+        ));
+
+        Mail::to($to)->send(new TicketCancellationMail(
+            recipientEmail: $to,
+            ticketNumber: $ticketNumber,
+            congregation: $congregation,
+            driverName: $driverName,
+            ccAddresses: $cc,
+        ));
+
+        return [
+            'to' => $to,
+            'cc' => $cc,
+        ];
+    }
+}

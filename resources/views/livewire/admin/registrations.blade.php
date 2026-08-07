@@ -454,6 +454,11 @@
                                     <flux:badge size="sm" color="amber">{{ __('registrations.secretary_acting_for_captain_badge') }}</flux:badge>
                                 </div>
                             @endif
+                            @if(isset($recentlyChangedIds[$reg->id]))
+                                <div class="mt-1">
+                                    <flux:badge size="sm" color="lime">{{ __('registrations.recently_changed_badge') }}</flux:badge>
+                                </div>
+                            @endif
                         </td>
                         <td class="px-6 py-4 text-zinc-600 dark:text-zinc-300">
                             {{ $reg->congregation ?: '—' }}

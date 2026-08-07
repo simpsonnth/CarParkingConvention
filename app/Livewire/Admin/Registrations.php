@@ -5,6 +5,7 @@ namespace App\Livewire\Admin;
 use App\Actions\Registrations\SendCarParkTicketsEmail;
 use App\Models\Congregation;
 use App\Models\ParkingRegistration;
+use App\Models\TicketChangeRequest;
 use App\Services\CongregationNumbersReportMetrics;
 use App\Services\ParkingRegistrationAttendanceByDayMetrics;
 use App\Services\ParkingRegistrationDuplicateSignals;
@@ -762,6 +763,23 @@ class Registrations extends Component
 
         $duplicateSignals = app(ParkingRegistrationDuplicateSignals::class);
 
+        $recentlyChangedIds = [];
+        $pageIds = $registrations->getCollection()->pluck('id')->all();
+        if ($pageIds !== []) {
+            $recentlyChangedIds = TicketChangeRequest::query()
+                ->whereIn('parking_registration_id', $pageIds)
+                ->where('status', TicketChangeRequest::STATUS_COMPLETED)
+                ->whereIn('request_type', [
+                    TicketChangeRequest::TYPE_FIELD_UPDATE,
+                    TicketChangeRequest::TYPE_CAR_PARK_CHANGE,
+                ])
+                ->where('actioned_at', '>=', now()->subDays(7))
+                ->pluck('parking_registration_id')
+                ->unique()
+                ->flip()
+                ->all();
+        }
+
         $congregationCarParkByName = Congregation::query()
             ->with('carPark')
             ->whereNotNull('car_park_id')
@@ -783,6 +801,7 @@ class Registrations extends Component
             'attendanceByDay' => $attendanceByDay,
             'duplicateEmailKeys' => $duplicateSignals->duplicateNormalizedEmailKeys(),
             'duplicateVehicleRegKeys' => $duplicateSignals->duplicateNormalizedVehicleRegKeys(),
+            'recentlyChangedIds' => $recentlyChangedIds,
         ]);
     }
 }

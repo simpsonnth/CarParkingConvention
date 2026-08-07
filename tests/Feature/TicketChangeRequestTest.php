@@ -1,11 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Livewire\Admin\TicketChangeRequestDetail;
 use App\Livewire\Admin\TicketChangeRequests;
 use App\Livewire\Public\TicketChangeRequest;
+use App\Mail\CarParkTicketsMail;
+use App\Mail\TicketCancellationMail;
+use App\Models\CarPark;
 use App\Models\Congregation;
+use App\Models\ParkingRegistration;
+use App\Models\Setting;
 use App\Models\TicketChangeRequest as TicketChangeRequestModel;
 use App\Models\User;
+use App\Services\MasterPassPdfGenerator;
+use App\Support\TicketEmailCcList;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 
 function seedTicketChangeCongregation(string $name = 'Change Req Hall'): Congregation
@@ -16,41 +26,393 @@ function seedTicketChangeCongregation(string $name = 'Change Req Hall'): Congreg
     ]);
 }
 
-test('ticket change request requires name congregation and notes', function () {
+function seedTicketChangeRegistration(Congregation $cong, array $overrides = []): ParkingRegistration
+{
+    return ParkingRegistration::query()->create(array_merge([
+        'name' => 'Alex Driver',
+        'congregation' => $cong->name,
+        'contact_number' => '07700900111',
+        'email' => 'alex@example.test',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'AB12CDE',
+        'days' => ['Friday', 'Saturday'],
+    ], $overrides));
+}
+
+test('email request logs free-text notes and allows organisation sender emails', function () {
+    $cong = seedTicketChangeCongregation('Email Intake Hall');
+
+    Livewire::test(TicketChangeRequest::class)
+        ->set('requestType', 'email_request')
+        ->set('congregationCode', $cong->uuid)
+        ->set('notes', "Dear Nathan,\n\nPlease send the coach ticket separately.\n\nKind regards,\nChristopher Herbert")
+        ->set('notificationEmail', '74HerbertC@jwpub.org')
+        ->call('submit')
+        ->assertHasNoErrors()
+        ->assertSet('submitted', true)
+        ->assertSet('submittedAutoApplied', false);
+
+    $row = TicketChangeRequestModel::query()->first();
+    expect($row)->not->toBeNull()
+        ->and($row->request_type)->toBe(TicketChangeRequestModel::TYPE_EMAIL_REQUEST)
+        ->and($row->status)->toBe(TicketChangeRequestModel::STATUS_PENDING)
+        ->and($row->notification_email)->toBe('74herbertc@jwpub.org')
+        ->and($row->congregation)->toBe($cong->name)
+        ->and($row->notes)->toContain('coach ticket')
+        ->and($row->parking_registration_id)->toBeNull()
+        ->and($row->requiresApproval())->toBeFalse();
+});
+
+test('ticket change request requires structured fields', function () {
     Livewire::test(TicketChangeRequest::class)
         ->call('submit')
-        ->assertHasErrors(['name', 'congregation', 'notes']);
+        ->assertHasErrors(['requestType', 'congregationCode', 'notificationEmail', 'notificationEmailConfirmation']);
+
+    expect(TicketChangeRequestModel::query()->count())->toBe(0);
+});
+
+test('ticket change request rejects mismatched notification email confirmation', function () {
+    $cong = seedTicketChangeCongregation();
+    $registration = seedTicketChangeRegistration($cong);
+
+    Livewire::test(TicketChangeRequest::class)
+        ->set('requestType', 'cancellation')
+        ->set('congregationCode', $cong->uuid)
+        ->set('parkingRegistrationId', (string) $registration->id)
+        ->set('confirmOwnership', 'AB12CDE')
+        ->set('notificationEmail', 'person@example.test')
+        ->set('notificationEmailConfirmation', 'other@example.test')
+        ->call('submit')
+        ->assertHasErrors(['notificationEmailConfirmation']);
 
     expect(TicketChangeRequestModel::query()->count())->toBe(0);
 });
 
 test('ticket change request rejects unknown congregation', function () {
     Livewire::test(TicketChangeRequest::class)
-        ->set('name', 'Alex Driver')
-        ->set('congregation', 'Does Not Exist Hall')
-        ->set('notes', 'Please cancel my car park ticket for AB12CDE.')
+        ->set('requestType', 'cancellation')
+        ->set('congregationCode', 'not-a-real-congregation-code')
+        ->set('parkingRegistrationId', '1')
+        ->set('confirmOwnership', 'AB12CDE')
+        ->set('notificationEmail', 'person@example.test')
+        ->set('notificationEmailConfirmation', 'person@example.test')
         ->call('submit')
-        ->assertHasErrors(['congregation']);
+        ->assertHasErrors(['congregationCode']);
 
     expect(TicketChangeRequestModel::query()->count())->toBe(0);
 });
 
-test('ticket change request persists valid submission', function () {
+test('ticket change request rejects organisation notification emails', function () {
     $cong = seedTicketChangeCongregation();
+    $registration = seedTicketChangeRegistration($cong);
 
     Livewire::test(TicketChangeRequest::class)
-        ->set('name', 'Alex Driver')
-        ->set('congregation', $cong->name)
-        ->set('notes', 'Please change vehicle registration from AB12CDE to XY99ZZZ.')
+        ->set('requestType', 'cancellation')
+        ->set('congregationCode', $cong->uuid)
+        ->set('parkingRegistrationId', (string) $registration->id)
+        ->set('confirmOwnership', 'AB12CDE')
+        ->set('notificationEmail', 'secretary@jwpub.org')
+        ->set('notificationEmailConfirmation', 'secretary@jwpub.org')
+        ->call('submit')
+        ->assertHasErrors(['notificationEmail']);
+
+    Livewire::test(TicketChangeRequest::class)
+        ->set('requestType', 'cancellation')
+        ->set('congregationCode', $cong->uuid)
+        ->set('parkingRegistrationId', (string) $registration->id)
+        ->set('confirmOwnership', 'AB12CDE')
+        ->set('notificationEmail', 'someone@mail.jw.org')
+        ->set('notificationEmailConfirmation', 'someone@mail.jw.org')
+        ->call('submit')
+        ->assertHasErrors(['notificationEmail']);
+
+    expect(TicketChangeRequestModel::query()->count())->toBe(0);
+});
+
+test('ticket change request rejects vehicle registration mismatch', function () {
+    $cong = seedTicketChangeCongregation();
+    $registration = seedTicketChangeRegistration($cong);
+
+    Livewire::test(TicketChangeRequest::class)
+        ->set('requestType', 'cancellation')
+        ->set('congregationCode', $cong->uuid)
+        ->set('parkingRegistrationId', (string) $registration->id)
+        ->set('confirmOwnership', 'WRONGREG')
+        ->set('notificationEmail', 'person@example.test')
+        ->set('notificationEmailConfirmation', 'person@example.test')
+        ->call('submit')
+        ->assertHasErrors(['confirmOwnership']);
+
+    expect(TicketChangeRequestModel::query()->count())->toBe(0);
+});
+
+test('field update applies changes emails ticket and marks completed as auto', function () {
+    Mail::fake();
+
+    $cong = seedTicketChangeCongregation();
+    $registration = seedTicketChangeRegistration($cong);
+
+    Setting::set(TicketEmailCcList::SETTING_KEY, "nathan-simpson@outlook.com\nops@example.com");
+
+    $this->mock(MasterPassPdfGenerator::class, function ($mock) use ($registration): void {
+        $mock->shouldReceive('generateForIds')
+            ->once()
+            ->with([$registration->id])
+            ->andReturn([
+                [
+                    'filename' => 'Alex Driver.pdf',
+                    'content' => '%PDF-fake',
+                    'registration' => $registration,
+                ],
+            ]);
+    });
+
+    Livewire::test(TicketChangeRequest::class)
+        ->set('requestType', 'field_update')
+        ->set('congregationCode', $cong->uuid)
+        ->set('parkingRegistrationId', (string) $registration->id)
+        ->set('confirmOwnership', 'AB12 CDE')
+        ->set('changeVehicleRegistration', true)
+        ->set('newVehicleRegistration', 'XY99ZZZ')
+        ->set('changeName', true)
+        ->set('newName', 'Alex Updated')
+        ->set('notificationEmail', 'person@example.test')
+        ->set('notificationEmailConfirmation', 'person@example.test')
         ->call('submit')
         ->assertHasNoErrors()
-        ->assertSet('submitted', true);
+        ->assertSet('submitted', true)
+        ->assertSet('submittedAutoApplied', true);
+
+    $registration->refresh();
+    expect($registration->vehicle_registration)->toBe('XY99ZZZ')
+        ->and($registration->name)->toBe('Alex Updated');
 
     $row = TicketChangeRequestModel::query()->first();
     expect($row)->not->toBeNull()
-        ->and($row->name)->toBe('Alex Driver')
-        ->and($row->congregation)->toBe($cong->name)
-        ->and($row->notes)->toContain('XY99ZZZ');
+        ->and($row->request_type)->toBe(TicketChangeRequestModel::TYPE_FIELD_UPDATE)
+        ->and($row->status)->toBe(TicketChangeRequestModel::STATUS_COMPLETED)
+        ->and($row->actioned_by)->toBeNull()
+        ->and($row->wasAutoCompleted())->toBeTrue();
+
+    Mail::assertSent(CarParkTicketsMail::class, function (CarParkTicketsMail $mail): bool {
+        return $mail->hasTo('person@example.test')
+            && in_array('nathan-simpson@outlook.com', $mail->ccAddresses, true)
+            && in_array('ops@example.com', $mail->ccAddresses, true);
+    });
+});
+
+test('cancellation stays pending until admin approves then soft deletes and emails', function () {
+    Mail::fake();
+
+    $admin = User::factory()->admin()->create();
+    $cong = seedTicketChangeCongregation();
+    $registration = seedTicketChangeRegistration($cong);
+
+    Livewire::test(TicketChangeRequest::class)
+        ->set('requestType', 'cancellation')
+        ->set('congregationCode', $cong->uuid)
+        ->set('parkingRegistrationId', (string) $registration->id)
+        ->set('confirmOwnership', 'AB12CDE')
+        ->set('notificationEmail', 'person@example.test')
+        ->set('notificationEmailConfirmation', 'person@example.test')
+        ->set('notes', 'Please cancel this ticket.')
+        ->call('submit')
+        ->assertHasNoErrors()
+        ->assertSet('submitted', true)
+        ->assertSet('submittedAutoApplied', false);
+
+    $row = TicketChangeRequestModel::query()->first();
+    expect($row->status)->toBe(TicketChangeRequestModel::STATUS_PENDING)
+        ->and($registration->fresh())->not->toBeNull();
+
+    Livewire::actingAs($admin)
+        ->test(TicketChangeRequestDetail::class, ['ticketChangeRequest' => $row])
+        ->call('openApproveModal')
+        ->call('approve')
+        ->assertHasNoErrors();
+
+    expect($row->fresh()->status)->toBe(TicketChangeRequestModel::STATUS_COMPLETED)
+        ->and($row->fresh()->actioned_by)->toBe($admin->id)
+        ->and(ParkingRegistration::query()->find($registration->id))->toBeNull()
+        ->and(ParkingRegistration::withTrashed()->find($registration->id)?->cancelled_via)->toBe('change_request');
+
+    Mail::assertSent(TicketCancellationMail::class, function (TicketCancellationMail $mail) use ($registration): bool {
+        return $mail->hasTo('person@example.test')
+            && $mail->ticketNumber === $registration->ticketNumber();
+    });
+});
+
+test('car park change and addition require car park on approve', function () {
+    Mail::fake();
+
+    $admin = User::factory()->admin()->create();
+    $park = CarPark::query()->create([
+        'name' => 'South Park',
+        'capacity' => 40,
+        'color' => '#16a34a',
+    ]);
+    $cong = seedTicketChangeCongregation('Approve Park Hall');
+    $registration = seedTicketChangeRegistration($cong, ['name' => 'Park Mover']);
+
+    $this->mock(MasterPassPdfGenerator::class, function ($mock) use ($registration): void {
+        $mock->shouldReceive('generateForIds')->andReturn([
+            [
+                'filename' => 'Park Mover.pdf',
+                'content' => '%PDF-fake',
+                'registration' => $registration,
+            ],
+        ]);
+    });
+
+    Livewire::test(TicketChangeRequest::class)
+        ->set('requestType', 'car_park_change')
+        ->set('congregationCode', $cong->uuid)
+        ->set('parkingRegistrationId', (string) $registration->id)
+        ->set('confirmOwnership', 'AB12CDE')
+        ->set('notes', 'Need closer parking for mobility reasons.')
+        ->set('notificationEmail', 'mover@example.test')
+        ->set('notificationEmailConfirmation', 'mover@example.test')
+        ->call('submit')
+        ->assertHasNoErrors();
+
+    $carParkRequest = TicketChangeRequestModel::query()->where('request_type', 'car_park_change')->first();
+
+    Livewire::actingAs($admin)
+        ->test(TicketChangeRequestDetail::class, ['ticketChangeRequest' => $carParkRequest])
+        ->call('openApproveModal')
+        ->call('approve')
+        ->assertHasErrors(['approveCarParkId']);
+
+    Livewire::actingAs($admin)
+        ->test(TicketChangeRequestDetail::class, ['ticketChangeRequest' => $carParkRequest])
+        ->call('openApproveModal')
+        ->set('approveCarParkId', $park->id)
+        ->call('approve')
+        ->assertHasNoErrors();
+
+    expect($registration->fresh()->car_park_id)->toBe($park->id)
+        ->and($carParkRequest->fresh()->status)->toBe(TicketChangeRequestModel::STATUS_COMPLETED);
+
+    Livewire::test(TicketChangeRequest::class)
+        ->set('requestType', 'addition')
+        ->set('congregationCode', $cong->uuid)
+        ->set('additionName', 'New Person')
+        ->set('additionContactNumber', '07700900999')
+        ->set('additionEmail', 'newperson@example.test')
+        ->set('additionVehicleType', 'car')
+        ->set('additionVehicleRegistration', 'NE11WWW')
+        ->set('additionDays', ['Sunday'])
+        ->set('notificationEmail', 'newperson@example.test')
+        ->set('notificationEmailConfirmation', 'newperson@example.test')
+        ->call('submit')
+        ->assertHasNoErrors();
+
+    $addition = TicketChangeRequestModel::query()->where('request_type', 'addition')->first();
+
+    Livewire::actingAs($admin)
+        ->test(TicketChangeRequestDetail::class, ['ticketChangeRequest' => $addition])
+        ->call('openApproveModal')
+        ->set('approveCarParkId', $park->id)
+        ->call('approve')
+        ->assertHasNoErrors();
+
+    $created = ParkingRegistration::query()->where('name', 'New Person')->first();
+    expect($created)->not->toBeNull()
+        ->and($created->car_park_id)->toBe($park->id)
+        ->and($addition->fresh()->parking_registration_id)->toBe($created->id)
+        ->and($addition->fresh()->actioned_by)->toBe($admin->id);
+});
+
+test('admin list shows completed by name or auto', function () {
+    $admin = User::factory()->admin()->create(['name' => 'Admin Completer']);
+    $cong = seedTicketChangeCongregation('Completer Hall');
+
+    TicketChangeRequestModel::query()->create([
+        'name' => 'Manual Done',
+        'congregation' => $cong->name,
+        'notes' => 'Handled manually.',
+        'status' => TicketChangeRequestModel::STATUS_COMPLETED,
+        'actioned_at' => now(),
+        'actioned_by' => $admin->id,
+    ]);
+
+    TicketChangeRequestModel::query()->create([
+        'request_type' => TicketChangeRequestModel::TYPE_FIELD_UPDATE,
+        'name' => 'Auto Done',
+        'congregation' => $cong->name,
+        'notes' => 'Auto field update.',
+        'notification_email' => 'auto@example.test',
+        'status' => TicketChangeRequestModel::STATUS_COMPLETED,
+        'actioned_at' => now(),
+        'actioned_by' => null,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(TicketChangeRequests::class)
+        ->call('setStatusFilter', 'completed')
+        ->assertSee('Admin Completer')
+        ->assertSee('Auto');
+});
+
+test('admin registrations list shows recently changed badge after field update', function () {
+    $admin = User::factory()->admin()->create();
+    $cong = seedTicketChangeCongregation('Recent Change Hall');
+    $registration = seedTicketChangeRegistration($cong, [
+        'name' => 'Recent Change Person',
+        'vehicle_registration' => 'RC11AAA',
+    ]);
+
+    TicketChangeRequestModel::query()->create([
+        'request_type' => TicketChangeRequestModel::TYPE_FIELD_UPDATE,
+        'parking_registration_id' => $registration->id,
+        'name' => $registration->name,
+        'congregation' => $cong->name,
+        'notification_email' => 'recent@example.test',
+        'notes' => 'Field update',
+        'payload' => ['changes' => ['vehicle_registration' => 'RC22BBB']],
+        'status' => TicketChangeRequestModel::STATUS_COMPLETED,
+        'actioned_at' => now(),
+        'actioned_by' => null,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Admin\Registrations::class)
+        ->set('search', 'Recent Change Person')
+        ->assertSee('Recently changed');
+});
+
+test('pending car park change can be closed without applying when registration already cancelled', function () {
+    $admin = User::factory()->admin()->create();
+    $cong = seedTicketChangeCongregation('Conflict Hall');
+    $registration = seedTicketChangeRegistration($cong, [
+        'name' => 'Conflict Person',
+        'vehicle_registration' => 'CF11AAA',
+    ]);
+
+    $carParkChange = TicketChangeRequestModel::query()->create([
+        'request_type' => TicketChangeRequestModel::TYPE_CAR_PARK_CHANGE,
+        'parking_registration_id' => $registration->id,
+        'name' => $registration->name,
+        'congregation' => $cong->name,
+        'notification_email' => 'conflict@example.test',
+        'notes' => 'Please move car parks for mobility reasons.',
+        'payload' => ['ticket_number' => $registration->ticketNumber()],
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+    ]);
+
+    $registration->update(['cancelled_via' => 'change_request']);
+    $registration->delete();
+
+    Livewire::actingAs($admin)
+        ->test(TicketChangeRequestDetail::class, ['ticketChangeRequest' => $carParkChange])
+        ->assertSee(__('management.ticket_change_requests.cannot_approve_missing_registration'))
+        ->assertSee(__('management.ticket_change_requests.close_without_applying'))
+        ->call('closeWithoutApplying')
+        ->assertHasNoErrors();
+
+    expect($carParkChange->fresh()->status)->toBe(TicketChangeRequestModel::STATUS_COMPLETED)
+        ->and($carParkChange->fresh()->actioned_by)->toBe($admin->id)
+        ->and($carParkChange->fresh()->admin_notes)->not->toBeNull();
 });
 
 test('admin can view ticket change requests list', function () {
