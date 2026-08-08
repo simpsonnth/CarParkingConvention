@@ -31,11 +31,24 @@
                         class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 py-3 px-4 font-mono text-sm"
                         autocomplete="off" placeholder="{{ __('ticket_change_request.congregation_code_placeholder') }}">
                     <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('ticket_change_request.congregation_code_help') }}</p>
-                    <button type="button" wire:click="useRadissonHotelGuest"
-                        class="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-semibold text-indigo-800 transition hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-200 dark:hover:bg-indigo-900/50">
-                        {{ __('ticket_change_request.radisson_shortcut') }}
-                    </button>
-                    <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{{ __('ticket_change_request.radisson_shortcut_help', ['code' => \App\Models\HotelGuestParkingRequest::PUBLIC_CODE]) }}</p>
+
+                    <div class="mt-4 rounded-2xl border-2 border-indigo-300 bg-indigo-50 p-4 shadow-sm dark:border-indigo-700 dark:bg-indigo-950/50">
+                        <p class="text-sm font-bold text-indigo-950 dark:text-indigo-100">
+                            {{ __('ticket_change_request.radisson_prompt') }}
+                        </p>
+                        <button type="button"
+                            wire:click="useRadissonHotelGuest"
+                            class="mt-3 flex w-full min-h-14 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3.5 text-base font-bold text-white shadow-md shadow-indigo-600/25 transition hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:bg-indigo-500 dark:hover:bg-indigo-400 dark:shadow-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 shrink-0" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M4.5 2.25a.75.75 0 0 0-.75.75v18c0 .414.336.75.75.75h15a.75.75 0 0 0 .75-.75V3a.75.75 0 0 0-.75-.75h-15ZM6 5.25A.75.75 0 0 1 6.75 4.5h2.5a.75.75 0 0 1 0 1.5h-2.5A.75.75 0 0 1 6 5.25Zm.75 2.25a.75.75 0 0 0 0 1.5h2.5a.75.75 0 0 0 0-1.5h-2.5ZM6 11.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Zm.75 2.25a.75.75 0 0 0 0 1.5h2.5a.75.75 0 0 0 0-1.5h-2.5ZM12.75 5.25a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Zm.75 2.25a.75.75 0 0 0 0 1.5h2.5a.75.75 0 0 0 0-1.5h-2.5Zm-.75 3a.75.75 0 0 1 .75-.75h2.5a.75.75 0 0 1 0 1.5h-2.5a.75.75 0 0 1-.75-.75Zm.75 2.25a.75.75 0 0 0 0 1.5h2.5a.75.75 0 0 0 0-1.5h-2.5ZM8.25 18a.75.75 0 0 1 .75-.75h6a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
+                            </svg>
+                            <span>{{ __('ticket_change_request.radisson_shortcut') }}</span>
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5 shrink-0" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M8.22 5.22a.75.75 0 0 1 1.06 0l4.25 4.25a.75.75 0 0 1 0 1.06l-4.25 4.25a.75.75 0 0 1-1.06-1.06L11.94 10 8.22 6.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <p class="mt-2 text-xs text-indigo-800/80 dark:text-indigo-200/80">{{ __('ticket_change_request.radisson_shortcut_help', ['code' => \App\Models\HotelGuestParkingRequest::PUBLIC_CODE]) }}</p>
+                    </div>
                     @if ($this->resolvedCongregation)
                         <p class="mt-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
                             {{ __('ticket_change_request.congregation_resolved', ['name' => $this->resolvedCongregation->name]) }}
