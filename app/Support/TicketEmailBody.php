@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Models\HotelGuestParkingRequest;
 use App\Models\Setting;
 
 final class TicketEmailBody
@@ -36,6 +37,16 @@ final class TicketEmailBody
         $paragraphs = preg_split("/\R{2,}/", trim($text)) ?: [];
 
         $html = '';
+
+        if (self::isRadissonHotelGuestCongregation($congregationLabel)) {
+            $printHint = trim((string) __('mail.radisson_ticket_print_hint'));
+            if ($printHint !== '') {
+                $html .= '<p style="margin:0 0 1.25em;padding:12px 14px;border:2px solid #111827;border-radius:6px;background:#fef3c7;color:#111827;font-size:16px;line-height:1.45;">'
+                    .'<strong style="font-size:17px;">'.e($printHint).'</strong>'
+                    .'</p>';
+            }
+        }
+
         foreach ($paragraphs as $paragraph) {
             $paragraph = trim($paragraph);
             if ($paragraph === '') {
@@ -45,5 +56,10 @@ final class TicketEmailBody
         }
 
         return $html !== '' ? $html : '<p>'.e(self::DEFAULT).'</p>';
+    }
+
+    public static function isRadissonHotelGuestCongregation(string $congregationLabel): bool
+    {
+        return mb_strtolower(trim($congregationLabel)) === mb_strtolower(HotelGuestParkingRequest::CONGREGATION_NAME);
     }
 }

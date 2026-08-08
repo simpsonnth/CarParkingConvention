@@ -167,7 +167,9 @@ test('approve creates radisson hotel guest registration emails ticket with ccs',
     Mail::assertSent(CarParkTicketsMail::class, function (CarParkTicketsMail $mail): bool {
         return $mail->hasTo('jordan@example.test')
             && in_array('nathan-simpson@outlook.com', $mail->ccAddresses, true)
-            && in_array('ops@example.com', $mail->ccAddresses, true);
+            && in_array('ops@example.com', $mail->ccAddresses, true)
+            && $mail->congregationLabel === HotelGuestParkingRequest::CONGREGATION_NAME
+            && str_contains($mail->render(), 'Please print the attached car park ticket on A4 paper.');
     });
 });
 

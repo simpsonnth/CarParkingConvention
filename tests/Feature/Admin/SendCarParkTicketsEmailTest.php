@@ -82,7 +82,13 @@ test('settings page saves ticket email body template', function () {
 
     expect(\App\Support\TicketEmailBody::renderHtml(2, 'Alpha Hall'))
         ->toContain('Hello Alpha Hall')
-        ->toContain('Here are 2 tickets');
+        ->toContain('Here are 2 tickets')
+        ->not->toContain('A4');
+
+    expect(\App\Support\TicketEmailBody::renderHtml(1, 'Radisson Hotel Guest'))
+        ->toContain('Radisson Hotel Guest')
+        ->toContain('<strong style="font-size:17px;">Please print the attached car park ticket on A4 paper.</strong>')
+        ->toContain('border:2px solid #111827');
 });
 
 test('send car park tickets shows success popup after sending', function () {

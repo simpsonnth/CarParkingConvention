@@ -13,4 +13,5 @@ return [
         'regards' => 'Atentamente',
         'team' => 'Equipo de Aparcamiento de la Convención',
     ],
+    'radisson_ticket_print_hint' => 'Por favor, imprima el billete de aparcamiento adjunto en papel A4.',
 ];

@@ -13,4 +13,5 @@ return [
         'regards' => 'Kind regards',
         'team' => 'Convention Parking Team',
     ],
+    'radisson_ticket_print_hint' => 'Please print the attached car park ticket on A4 paper.',
 ];
