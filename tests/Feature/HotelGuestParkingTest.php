@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use App\Livewire\Admin\HotelGuestParkingRequestDetail;
+use App\Livewire\Admin\HotelGuestParkingRequests;
 use App\Livewire\Public\RadissonGuestParking;
 use App\Mail\CarParkTicketsMail;
+use App\Mail\HotelGuestParkingRequestDeclinedMail;
 use App\Models\CarPark;
 use App\Models\Congregation;
 use App\Models\HotelGuestParkingRequest;
@@ -169,7 +171,9 @@ test('approve creates radisson hotel guest registration emails ticket with ccs',
     });
 });
 
-test('reject leaves no parking registration', function () {
+test('decline leaves no parking registration', function () {
+    Mail::fake();
+
     $admin = User::factory()->admin()->create();
     seedHotelGuestCarPark('North Car Park');
     $request = seedPendingHotelGuestRequest([
@@ -180,7 +184,7 @@ test('reject leaves no parking registration', function () {
     Livewire::actingAs($admin)
         ->test(HotelGuestParkingRequestDetail::class, ['hotelGuestParkingRequest' => $request])
         ->set('adminNotes', 'No hotel booking found.')
-        ->call('reject')
+        ->call('decline')
         ->assertHasNoErrors();
 
     $request->refresh();
@@ -190,6 +194,11 @@ test('reject leaves no parking registration', function () {
         ->and($request->actioned_by)->toBe($admin->id);
 
     expect(ParkingRegistration::query()->count())->toBe(0);
+
+    Mail::assertSent(HotelGuestParkingRequestDeclinedMail::class, function (HotelGuestParkingRequestDeclinedMail $mail): bool {
+        return $mail->hasTo('rejected@example.test')
+            && $mail->requesterName === 'Rejected Guest';
+    });
 });
 
 test('approve modal defaults to north car park when present', function () {
@@ -323,4 +332,120 @@ test('approve updates existing registration to radisson hotel guest and chosen c
     Mail::assertSent(CarParkTicketsMail::class, function (CarParkTicketsMail $mail): bool {
         return $mail->hasTo('jordan@example.test');
     });
+});
+
+test('delete removes request and soft-deletes linked registration', function () {
+    $admin = User::factory()->admin()->create();
+    $north = seedHotelGuestCarPark('North Car Park');
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Jordan Guest',
+        'congregation' => HotelGuestParkingRequest::CONGREGATION_NAME,
+        'car_park_id' => $north->id,
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'HG12ABC',
+        'contact_number' => '07700900999',
+        'email' => 'jordan@example.test',
+        'days' => ['Friday'],
+        'elderly_infirm_parking' => false,
+        'sharing_with_other_congregations' => false,
+        'coach_captain_to_be_assigned' => false,
+        'is_circuit_overseer' => false,
+    ]);
+
+    $request = seedPendingHotelGuestRequest([
+        'status' => HotelGuestParkingRequest::STATUS_APPROVED,
+        'car_park_id' => $north->id,
+        'parking_registration_id' => $registration->id,
+        'actioned_at' => now(),
+        'actioned_by' => $admin->id,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(HotelGuestParkingRequests::class)
+        ->call('delete', $request->id)
+        ->assertHasNoErrors();
+
+    expect(HotelGuestParkingRequest::query()->find($request->id))->toBeNull()
+        ->and(ParkingRegistration::query()->find($registration->id))->toBeNull()
+        ->and(ParkingRegistration::onlyTrashed()->find($registration->id))->not->toBeNull();
+});
+
+test('list decline marks pending request as rejected', function () {
+    Mail::fake();
+
+    $admin = User::factory()->admin()->create();
+    $request = seedPendingHotelGuestRequest();
+
+    Livewire::actingAs($admin)
+        ->test(HotelGuestParkingRequests::class)
+        ->call('decline', $request->id)
+        ->assertHasNoErrors();
+
+    $request->refresh();
+    expect($request->status)->toBe(HotelGuestParkingRequest::STATUS_REJECTED)
+        ->and($request->actioned_by)->toBe($admin->id);
+
+    Mail::assertSent(HotelGuestParkingRequestDeclinedMail::class, function (HotelGuestParkingRequestDeclinedMail $mail) use ($request): bool {
+        return $mail->hasTo($request->email);
+    });
+});
+
+test('delete does not email the guest', function () {
+    Mail::fake();
+
+    $admin = User::factory()->admin()->create();
+    $request = seedPendingHotelGuestRequest([
+        'email' => 'delete-me@example.test',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(HotelGuestParkingRequests::class)
+        ->call('delete', $request->id)
+        ->assertHasNoErrors();
+
+    expect(HotelGuestParkingRequest::query()->find($request->id))->toBeNull();
+    Mail::assertNothingSent();
+});
+
+test('delete removes a pending duplicate request without touching registrations', function () {
+    $admin = User::factory()->admin()->create();
+    $first = seedPendingHotelGuestRequest([
+        'name' => 'Santy Ortega',
+        'email' => 'guest@example.test',
+        'vehicle_registration' => 'LV25GKC',
+    ]);
+    $duplicate = seedPendingHotelGuestRequest([
+        'name' => 'Santiago Ortega',
+        'email' => 'guest@example.test',
+        'vehicle_registration' => 'LV25GKC',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(HotelGuestParkingRequests::class)
+        ->assertSee(__('management.hotel_guest_parking.duplicate_badge'))
+        ->call('delete', $duplicate->id)
+        ->assertHasNoErrors();
+
+    expect(HotelGuestParkingRequest::query()->find($duplicate->id))->toBeNull()
+        ->and(HotelGuestParkingRequest::query()->find($first->id))->not->toBeNull()
+        ->and(ParkingRegistration::withTrashed()->count())->toBe(0);
+});
+
+test('radisson form blocks a second pending request for the same vehicle', function () {
+    seedPendingHotelGuestRequest([
+        'vehicle_registration' => 'HG12ABC',
+        'email' => 'first@example.test',
+    ]);
+
+    Livewire::test(RadissonGuestParking::class)
+        ->set('name', 'Jordan Guest')
+        ->set('contactNumber', '07700900999')
+        ->set('vehicleReg', 'HG12 ABC')
+        ->set('email', 'jordan@example.test')
+        ->set('days', ['Friday'])
+        ->call('submit')
+        ->assertHasErrors(['vehicleReg']);
+
+    expect(HotelGuestParkingRequest::query()->count())->toBe(1);
 });

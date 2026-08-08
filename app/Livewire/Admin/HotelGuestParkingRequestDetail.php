@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Admin;
 
 use App\Actions\HotelGuestParking\ApproveHotelGuestParkingRequest;
+use App\Actions\HotelGuestParking\DeleteHotelGuestParkingRequest;
 use App\Actions\HotelGuestParking\RejectHotelGuestParkingRequest;
 use App\Models\CarPark;
 use App\Models\HotelGuestParkingRequest;
@@ -119,7 +120,7 @@ class HotelGuestParkingRequestDetail extends Component
         }
     }
 
-    public function reject(RejectHotelGuestParkingRequest $reject): void
+    public function decline(RejectHotelGuestParkingRequest $reject): void
     {
         abort_unless(auth()->user()?->can('hotel-guest-parking.manage'), 403);
 
@@ -151,10 +152,25 @@ class HotelGuestParkingRequestDetail extends Component
         $this->adminNotes = $this->hotelGuestParkingRequest->admin_notes ?? '';
 
         try {
-            Flux::toast(__('management.hotel_guest_parking.rejected'));
+            Flux::toast(__('management.hotel_guest_parking.declined'));
         } catch (\Throwable) {
-            session()->flash('status', __('management.hotel_guest_parking.rejected'));
+            session()->flash('status', __('management.hotel_guest_parking.declined'));
         }
+    }
+
+    public function delete(DeleteHotelGuestParkingRequest $delete): void
+    {
+        abort_unless(auth()->user()?->can('hotel-guest-parking.manage'), 403);
+
+        $delete->execute($this->hotelGuestParkingRequest);
+
+        try {
+            Flux::toast(__('management.hotel_guest_parking.deleted'));
+        } catch (\Throwable) {
+            session()->flash('status', __('management.hotel_guest_parking.deleted'));
+        }
+
+        $this->redirect(route('admin.hotel-guest-parking'), navigate: true);
     }
 
     /**

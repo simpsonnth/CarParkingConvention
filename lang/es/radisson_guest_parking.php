@@ -35,5 +35,6 @@ return [
         'days_required' => 'Seleccione al menos una noche.',
         'vehicle_registration_required' => 'Introduzca la matrícula del vehículo.',
         'personal_email' => 'Use un correo personal (no una dirección jw.org o jwpub.org).',
+        'pending_duplicate' => 'Ya hay una solicitud de aparcamiento pendiente para este vehículo. No necesita enviar otra.',
     ],
 ];

@@ -13,11 +13,15 @@
                     <flux:button variant="primary" wire:click="openApproveModal" icon="check">
                         {{ __('management.hotel_guest_parking.approve') }}
                     </flux:button>
-                    <flux:button variant="danger" wire:click="reject"
-                        wire:confirm="{{ __('management.hotel_guest_parking.confirm_reject') }}">
-                        {{ __('management.hotel_guest_parking.reject') }}
+                    <flux:button variant="danger" wire:click="decline"
+                        wire:confirm="{{ __('management.hotel_guest_parking.confirm_decline') }}">
+                        {{ __('management.hotel_guest_parking.decline') }}
                     </flux:button>
                 @endif
+                <flux:button variant="danger" wire:click="delete"
+                    wire:confirm="{{ $hotelGuestParkingRequest->parking_registration_id ? __('management.hotel_guest_parking.confirm_delete_with_registration') : __('management.hotel_guest_parking.confirm_delete') }}">
+                    {{ __('management.hotel_guest_parking.delete') }}
+                </flux:button>
             @endcan
         </div>
     </div>
@@ -117,7 +121,7 @@
                         {{ __('management.hotel_guest_parking.save_admin_notes') }}
                     </flux:button>
                 </div>
-                @error('reject')
+                @error('decline')
                     <span class="mt-2 block text-xs text-red-500">{{ $message }}</span>
                 @enderror
                 @error('approve')

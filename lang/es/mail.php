@@ -7,4 +7,10 @@ return [
         'regards' => 'Atentamente',
         'team' => 'Equipo de Aparcamiento de la Convención',
     ],
+    'hotel_guest_parking_declined' => [
+        'subject' => 'Actualización de la solicitud de aparcamiento (huésped Radisson)',
+        'body' => 'Gracias por su solicitud de aparcamiento como huésped del Radisson. Lamentablemente no podemos facilitar una plaza de aparcamiento para su estancia.',
+        'regards' => 'Atentamente',
+        'team' => 'Equipo de Aparcamiento de la Convención',
+    ],
 ];

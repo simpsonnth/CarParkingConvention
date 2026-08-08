@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use App\Actions\Registrations\SendCarParkTicketsEmail;
+use App\Actions\HotelGuestParking\SendHotelGuestParkingDeclinedEmail;
 use App\Actions\TicketChangeRequests\SendTicketCancellationEmail;
 use App\Actions\TicketChangeRequests\SendTicketChangeRequestDeclinedEmail;
 use Illuminate\Support\Facades\Log;
@@ -84,6 +85,33 @@ final class DeferredTicketMail
                 );
             } catch (\Throwable $e) {
                 Log::error('Deferred ticket change decline email failed', [
+                    'to' => $toEmail,
+                    'message' => $e->getMessage(),
+                ]);
+            }
+        };
+
+        if (app()->runningUnitTests()) {
+            $send();
+
+            return;
+        }
+
+        dispatch($send)->afterResponse();
+    }
+
+    public static function sendHotelGuestParkingDecline(
+        string $toEmail,
+        string $requesterName,
+    ): void {
+        $send = function () use ($toEmail, $requesterName): void {
+            try {
+                app(SendHotelGuestParkingDeclinedEmail::class)->execute(
+                    toEmail: $toEmail,
+                    requesterName: $requesterName,
+                );
+            } catch (\Throwable $e) {
+                Log::error('Deferred hotel guest parking decline email failed', [
                     'to' => $toEmail,
                     'message' => $e->getMessage(),
                 ]);

@@ -13,19 +13,6 @@
             <p class="text-zinc-500 dark:text-zinc-400">{{ __('radisson_guest_parking.subtitle') }}</p>
         </div>
 
-        <div class="mb-6 rounded-2xl border border-indigo-200 bg-indigo-50 p-4 text-center dark:border-indigo-800 dark:bg-indigo-950/40">
-            <p class="text-sm font-semibold text-indigo-900 dark:text-indigo-100">
-                {{ __('radisson_guest_parking.already_have_ticket') }}
-            </p>
-            <a href="{{ route('management.ticket-change-request', ['guest' => 'radisson']) }}"
-                class="mt-3 inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700">
-                {{ __('radisson_guest_parking.already_have_ticket_link') }}
-            </a>
-            <p class="mt-2 text-xs text-indigo-800/80 dark:text-indigo-200/80">
-                {{ __('radisson_guest_parking.already_have_ticket_help', ['code' => \App\Models\HotelGuestParkingRequest::PUBLIC_CODE]) }}
-            </p>
-        </div>
-
         @if($submitted)
             <div
                 class="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-2xl p-6 text-center">

@@ -58,6 +58,17 @@ class SubmitHotelGuestParkingRequest
             ]);
         }
 
+        $duplicatePending = HotelGuestParkingRequest::query()
+            ->where('status', HotelGuestParkingRequest::STATUS_PENDING)
+            ->where('vehicle_registration', $vehicleReg)
+            ->exists();
+
+        if ($duplicatePending) {
+            throw ValidationException::withMessages([
+                'vehicle_registration' => __('radisson_guest_parking.validation.pending_duplicate'),
+            ]);
+        }
+
         return HotelGuestParkingRequest::query()->create([
             'name' => trim((string) $validated['name']),
             'contact_number' => trim((string) $validated['contact_number']),

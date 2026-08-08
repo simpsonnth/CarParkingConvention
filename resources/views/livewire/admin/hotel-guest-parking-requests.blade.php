@@ -83,6 +83,11 @@
                         </td>
                         <td class="px-4 py-3 font-medium text-zinc-900 dark:text-white">
                             {{ $row->name }}
+                            @if (! empty($duplicateVehicleRegs[$row->vehicle_registration]))
+                                <flux:badge size="sm" color="amber" class="ms-1 align-middle">
+                                    {{ __('management.hotel_guest_parking.duplicate_badge') }}
+                                </flux:badge>
+                            @endif
                             <div class="mt-1 text-xs font-normal text-zinc-500 truncate max-w-[200px]">{{ $row->email }}</div>
                             <div class="mt-0.5 text-xs font-normal text-zinc-500">{{ $row->contact_number }}</div>
                         </td>
@@ -115,7 +120,17 @@
                                             class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
                                             {{ __('management.hotel_guest_parking.approve') }}
                                         </a>
+                                        <button type="button" wire:click="decline({{ $row->id }})"
+                                            wire:confirm="{{ __('management.hotel_guest_parking.confirm_decline') }}"
+                                            class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/40">
+                                            {{ __('management.hotel_guest_parking.decline') }}
+                                        </button>
                                     @endif
+                                    <button type="button" wire:click="delete({{ $row->id }})"
+                                        wire:confirm="{{ $row->parking_registration_id ? __('management.hotel_guest_parking.confirm_delete_with_registration') : __('management.hotel_guest_parking.confirm_delete') }}"
+                                        class="inline-flex items-center rounded-lg bg-rose-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-rose-700">
+                                        {{ __('management.hotel_guest_parking.delete') }}
+                                    </button>
                                 @endcan
                             </div>
                         </td>

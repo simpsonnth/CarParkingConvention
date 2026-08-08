@@ -6,6 +6,7 @@ namespace App\Actions\HotelGuestParking;
 
 use App\Models\HotelGuestParkingRequest;
 use App\Models\User;
+use App\Support\DeferredTicketMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -16,29 +17,43 @@ class RejectHotelGuestParkingRequest
         User $actor,
         ?string $adminNotes = null,
     ): HotelGuestParkingRequest {
-        return DB::transaction(function () use ($request, $actor, $adminNotes): HotelGuestParkingRequest {
+        $completed = DB::transaction(function () use ($request, $actor, $adminNotes): HotelGuestParkingRequest {
             /** @var HotelGuestParkingRequest $locked */
             $locked = HotelGuestParkingRequest::query()->whereKey($request->id)->lockForUpdate()->firstOrFail();
 
             if (! $locked->isPending()) {
                 throw ValidationException::withMessages([
-                    'reject' => __('management.hotel_guest_parking.already_actioned'),
+                    'decline' => __('management.hotel_guest_parking.already_actioned'),
                 ]);
             }
 
+            if (! filled($locked->email) || ! filter_var((string) $locked->email, FILTER_VALIDATE_EMAIL)) {
+                throw ValidationException::withMessages([
+                    'decline' => __('management.hotel_guest_parking.decline_email_required'),
+                ]);
+            }
+
+            $defaultNote = __('management.hotel_guest_parking.declined_default_note');
             $note = $adminNotes !== null ? trim($adminNotes) : '';
-            if ($note === '' && filled($locked->admin_notes)) {
-                $note = (string) $locked->admin_notes;
+            if ($note === '') {
+                $note = filled($locked->admin_notes) ? (string) $locked->admin_notes : $defaultNote;
             }
 
             $locked->update([
                 'status' => HotelGuestParkingRequest::STATUS_REJECTED,
                 'actioned_at' => now(),
                 'actioned_by' => $actor->id,
-                'admin_notes' => $note !== '' ? $note : null,
+                'admin_notes' => $note,
             ]);
 
             return $locked->fresh() ?? $locked;
         });
+
+        DeferredTicketMail::sendHotelGuestParkingDecline(
+            toEmail: (string) $completed->email,
+            requesterName: (string) $completed->name,
+        );
+
+        return $completed;
     }
 }

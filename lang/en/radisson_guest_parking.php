@@ -35,5 +35,6 @@ return [
         'days_required' => 'Please select at least one night.',
         'vehicle_registration_required' => 'Please enter a vehicle registration.',
         'personal_email' => 'Please use a personal email address (not a jw.org or jwpub.org address).',
+        'pending_duplicate' => 'A parking request for this vehicle is already pending review. You do not need to submit again.',
     ],
 ];
