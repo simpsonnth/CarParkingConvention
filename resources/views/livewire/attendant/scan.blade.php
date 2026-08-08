@@ -203,6 +203,112 @@
                     @endif
                 </div>
 
+                @if($editingDetails)
+                    <form wire:submit.prevent="saveRegistrationDetails" class="space-y-6">
+                        <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 p-6 space-y-5">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <div class="text-xs font-bold text-zinc-400 uppercase tracking-widest">Ticket Number</div>
+                                    <div class="text-xl font-mono font-bold text-zinc-900 dark:text-white mt-0.5">
+                                        {{ str_pad((string) $scannedRegistration->id, 6, '0', STR_PAD_LEFT) }}
+                                    </div>
+                                </div>
+                                <div class="text-xs font-bold uppercase tracking-widest text-indigo-500">Edit details</div>
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="block text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                                    Vehicle registration <span class="text-red-500">*</span>
+                                </label>
+                                <flux:input
+                                    wire:model="vehicleReg"
+                                    class="uppercase text-center text-xl h-14 bg-white dark:bg-zinc-900 border-none rounded-xl font-mono tracking-wider"
+                                />
+                                @error('vehicleReg')
+                                    <span class="text-red-500 text-sm block">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="block text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                                    Name
+                                </label>
+                                <flux:input
+                                    wire:model="name"
+                                    class="text-center text-lg h-12 bg-white dark:bg-zinc-900 border-none rounded-xl"
+                                />
+                                @error('name')
+                                    <span class="text-red-500 text-sm block">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="block text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                                    Contact number <span class="text-red-500">*</span>
+                                </label>
+                                <flux:input
+                                    wire:model="contactNumber"
+                                    type="tel"
+                                    class="text-center text-xl h-14 bg-white dark:bg-zinc-900 border-none rounded-xl"
+                                />
+                                @error('contactNumber')
+                                    <span class="text-red-500 text-sm block">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="block text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                                    Email
+                                </label>
+                                <flux:input
+                                    wire:model="email"
+                                    type="email"
+                                    class="text-center text-lg h-12 bg-white dark:bg-zinc-900 border-none rounded-xl"
+                                />
+                                @error('email')
+                                    <span class="text-red-500 text-sm block">{{ $message }}</span>
+                                @enderror
+                            </div>
+
+                            <div class="space-y-3">
+                                <label class="block text-sm font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                                    Days attending
+                                </label>
+                                <div class="flex flex-wrap justify-center gap-2">
+                                    @foreach(['Friday', 'Saturday', 'Sunday'] as $day)
+                                        <button type="button"
+                                            wire:click="toggleDay('{{ $day }}')"
+                                            @class([
+                                                'px-4 py-2 rounded-lg text-sm font-medium transition-all border',
+                                                'bg-indigo-500 text-white border-indigo-600 shadow-md' => in_array($day, $days),
+                                                'bg-white dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700' => ! in_array($day, $days),
+                                            ])
+                                        >
+                                            {{ $day }}
+                                        </button>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            @if(($scannedRegistration->vehicle_type ?? 'car') !== 'coach')
+                                <label class="flex items-center gap-3 cursor-pointer rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-4 py-3">
+                                    <flux:checkbox wire:model="elderlyInfirmParking" />
+                                    <span class="text-sm font-medium text-zinc-700 dark:text-zinc-200">Elderly &amp; Infirm parking</span>
+                                </label>
+                            @endif
+                        </div>
+
+                        <div class="flex flex-col gap-3">
+                            <flux:button type="submit" variant="primary" wire:loading.attr="disabled" class="w-full h-14 text-lg font-bold rounded-xl">
+                                <span wire:loading.remove wire:target="saveRegistrationDetails">Save details</span>
+                                <span wire:loading wire:target="saveRegistrationDetails">Saving...</span>
+                            </flux:button>
+                            <flux:button type="button" variant="ghost" wire:click="cancelEditingDetails" class="w-full h-12">
+                                Cancel
+                            </flux:button>
+                        </div>
+                    </form>
+                @else
                 <form wire:submit.prevent="confirm" class="space-y-6">
                     @if($lastScanResult === 'error' && $lastScanMessage)
                         <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3 text-red-600">
@@ -212,11 +318,16 @@
                     @endif
 
                     <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 p-6 space-y-4">
-                        <div class="text-center">
-                            <div class="text-xs font-bold text-zinc-400 uppercase tracking-widest">Ticket Number</div>
-                            <div class="text-2xl font-mono font-bold text-zinc-900 dark:text-white mt-1">
-                                {{ str_pad((string) $scannedRegistration->id, 6, '0', STR_PAD_LEFT) }}
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="text-center flex-1">
+                                <div class="text-xs font-bold text-zinc-400 uppercase tracking-widest">Ticket Number</div>
+                                <div class="text-2xl font-mono font-bold text-zinc-900 dark:text-white mt-1">
+                                    {{ str_pad((string) $scannedRegistration->id, 6, '0', STR_PAD_LEFT) }}
+                                </div>
                             </div>
+                            <flux:button type="button" size="sm" variant="ghost" wire:click="startEditingDetails" icon="pencil-square" class="shrink-0">
+                                Edit
+                            </flux:button>
                         </div>
 
                         <div class="grid gap-3 text-sm">
@@ -294,6 +405,7 @@
                         </flux:button>
                     </div>
                 </form>
+                @endif
             </div>
         @else
         <div class="bg-white dark:bg-zinc-800 p-4 sm:p-8 rounded-3xl border border-zinc-200 dark:border-zinc-700 shadow-2xl space-y-8 animate-in slide-in-from-bottom-4 duration-300">

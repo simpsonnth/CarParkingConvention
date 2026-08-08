@@ -202,3 +202,75 @@ test('scan accepts decoded payload as method argument from camera', function () 
         ->assertSet('scannedRegistration.id', $registration->id)
         ->assertSee('Ticket Verified');
 });
+
+test('attendant can edit ticket details from scan confirmation', function () {
+    ['attendant' => $attendant, 'registration' => $registration] = createTicketScanFixtures();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class, ['registration' => $registration])
+        ->assertSee('Edit')
+        ->call('startEditingDetails')
+        ->assertSet('editingDetails', true)
+        ->assertSee('Edit details')
+        ->set('vehicleReg', 'AB12CDE')
+        ->set('contactNumber', '07700999888')
+        ->set('name', 'Updated Driver')
+        ->set('email', 'updated@example.test')
+        ->call('saveRegistrationDetails')
+        ->assertSet('editingDetails', false)
+        ->assertSet('vehicleReg', 'AB12CDE')
+        ->assertSet('contactNumber', '07700999888')
+        ->assertSet('name', 'Updated Driver')
+        ->assertHasNoErrors();
+
+    $registration->refresh();
+
+    expect($registration->vehicle_registration)->toBe('AB12CDE')
+        ->and($registration->contact_number)->toBe('07700999888')
+        ->and($registration->name)->toBe('Updated Driver')
+        ->and($registration->email)->toBe('updated@example.test');
+});
+
+test('cancel editing ticket details restores original values', function () {
+    ['attendant' => $attendant, 'registration' => $registration] = createTicketScanFixtures();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class, ['registration' => $registration])
+        ->call('startEditingDetails')
+        ->set('vehicleReg', 'ZZ99ZZZ')
+        ->set('contactNumber', '07000000000')
+        ->call('cancelEditingDetails')
+        ->assertSet('editingDetails', false)
+        ->assertSet('vehicleReg', 'TK12ET')
+        ->assertSet('contactNumber', '07700111222');
+
+    $registration->refresh();
+
+    expect($registration->vehicle_registration)->toBe('TK12ET')
+        ->and($registration->contact_number)->toBe('07700111222');
+});
+
+test('edited ticket details are used when clocking in', function () {
+    ['attendant' => $attendant, 'registration' => $registration, 'congregation' => $congregation] = createTicketScanFixtures();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class, ['registration' => $registration])
+        ->call('startEditingDetails')
+        ->set('vehicleReg', 'NE12WVR')
+        ->set('contactNumber', '07700123456')
+        ->set('name', 'Clock In Name')
+        ->call('saveRegistrationDetails')
+        ->call('confirm')
+        ->assertSet('lastScanResult', 'success');
+
+    $pass = ParkingPass::query()->first();
+    $registration->refresh();
+
+    expect($pass)->not->toBeNull()
+        ->and($pass->vehicle_reg)->toBe('NE12WVR')
+        ->and($pass->contact_number)->toBe('07700123456')
+        ->and($pass->name)->toBe('Clock In Name')
+        ->and($pass->congregation_id)->toBe($congregation->id)
+        ->and($registration->vehicle_registration)->toBe('NE12WVR')
+        ->and(ParkingRegistration::query()->where('vehicle_registration', 'TK12ET')->exists())->toBeFalse();
+});

@@ -51,6 +51,8 @@ class Scan extends Component
 
     public bool $quickCheckIn = false;
 
+    public bool $editingDetails = false;
+
     public bool $walkInMode = false;
 
     public string $walkInVehicleType = 'car';
@@ -218,6 +220,7 @@ class Scan extends Component
         $this->notes = '';
         $this->step = 'confirm';
         $this->walkInMode = false;
+        $this->editingDetails = false;
         $this->quickCheckIn = $this->canQuickCheckIn();
         $this->checkExistingParkedPass();
     }
@@ -234,6 +237,13 @@ class Scan extends Component
     public function updatedVehicleReg(): void
     {
         $this->vehicleReg = strtoupper(str_replace(' ', '', trim($this->vehicleReg)));
+
+        // Ticket scan / edit mode: keep the scanned registration; do not swap in another match.
+        if ($this->scannedRegistration !== null || $this->editingDetails) {
+            $this->checkExistingParkedPass();
+
+            return;
+        }
 
         if (strlen($this->vehicleReg) > 2) {
             $query = ParkingRegistration::query()->where('vehicle_registration', $this->vehicleReg);
@@ -260,6 +270,75 @@ class Scan extends Component
         }
 
         $this->checkExistingParkedPass();
+    }
+
+    public function startEditingDetails(): void
+    {
+        if ($this->scannedRegistration === null) {
+            return;
+        }
+
+        $this->editingDetails = true;
+        $this->resetValidation();
+    }
+
+    public function cancelEditingDetails(): void
+    {
+        if ($this->scannedRegistration === null) {
+            $this->editingDetails = false;
+
+            return;
+        }
+
+        $registration = $this->scannedRegistration->fresh() ?? $this->scannedRegistration;
+        $this->scannedRegistration = $registration;
+        $this->foundRegistration = $registration;
+        $this->vehicleReg = strtoupper(str_replace(' ', '', (string) $registration->vehicle_registration));
+        $this->contactNumber = (string) $registration->contact_number;
+        $this->name = (string) $registration->name;
+        $this->email = (string) ($registration->email ?? '');
+        $this->days = $registration->days ?? [];
+        $this->elderlyInfirmParking = (bool) ($registration->elderly_infirm_parking ?? false);
+        $this->editingDetails = false;
+        $this->quickCheckIn = $this->canQuickCheckIn();
+        $this->checkExistingParkedPass();
+        $this->resetValidation();
+    }
+
+    public function saveRegistrationDetails(): void
+    {
+        if ($this->scannedRegistration === null) {
+            return;
+        }
+
+        $this->validate([
+            'vehicleReg' => 'required|string|min:2|max:20',
+            'contactNumber' => 'required|string|min:6',
+            'name' => 'nullable|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'days' => 'nullable|array',
+            'elderlyInfirmParking' => 'boolean',
+        ]);
+
+        $formattedReg = strtoupper(str_replace(' ', '', trim($this->vehicleReg)));
+
+        $this->scannedRegistration->update([
+            'vehicle_registration' => $formattedReg,
+            'contact_number' => $this->contactNumber,
+            'name' => $this->name ?? '',
+            'email' => $this->email !== '' ? $this->email : null,
+            'days' => $this->days,
+            'elderly_infirm_parking' => $this->elderlyInfirmParking,
+        ]);
+
+        $this->scannedRegistration->refresh();
+        $this->foundRegistration = $this->scannedRegistration;
+        $this->vehicleReg = $formattedReg;
+        $this->editingDetails = false;
+        $this->quickCheckIn = $this->canQuickCheckIn();
+        $this->checkExistingParkedPass();
+
+        Flux::toast('Ticket details updated');
     }
 
     public function updatedSelectedCongregationId(): void
@@ -398,7 +477,7 @@ class Scan extends Component
 
     public function checkInAnotherCar(): void
     {
-        $this->reset('vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass', 'scannedRegistration', 'quickCheckIn', 'coachCaptainToBeAssigned');
+        $this->reset('vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass', 'scannedRegistration', 'quickCheckIn', 'editingDetails', 'coachCaptainToBeAssigned');
     }
 
     public function cancel(): void
@@ -421,6 +500,7 @@ class Scan extends Component
             'existingParkedPass',
             'scannedRegistration',
             'quickCheckIn',
+            'editingDetails',
             'selectedCongregationId',
             'lastScanResult',
             'lastScanMessage',
@@ -520,7 +600,16 @@ class Scan extends Component
             'days' => $this->days,
             'vehicle_type' => $this->isCoachWalkIn() ? 'coach' : 'car',
             'coach_captain_to_be_assigned' => $this->isCoachWalkIn() && $this->coachCaptainToBeAssigned,
+            'elderly_infirm_parking' => $this->isCoachWalkIn() ? false : $this->elderlyInfirmParking,
         ];
+
+        if ($this->scannedRegistration !== null) {
+            $this->scannedRegistration->update(array_merge($payload, [
+                'vehicle_registration' => $formattedReg !== '' ? $formattedReg : $this->scannedRegistration->vehicle_registration,
+            ]));
+
+            return;
+        }
 
         if ($this->isCoachWalkIn() && strlen(strtoupper(str_replace(' ', '', trim($this->vehicleReg)))) < 2) {
             ParkingRegistration::query()->create(array_merge($payload, [
@@ -592,6 +681,7 @@ class Scan extends Component
             'existingParkedPass',
             'scannedRegistration',
             'quickCheckIn',
+            'editingDetails',
             'selectedCongregationId',
             'coachCaptainToBeAssigned',
         );
