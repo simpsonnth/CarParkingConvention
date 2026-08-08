@@ -556,3 +556,69 @@ test('radisson form blocks a second pending request for the same vehicle', funct
 
     expect(HotelGuestParkingRequest::query()->count())->toBe(1);
 });
+
+test('admin can resend approved hotel guest ticket to original or alternate email', function () {
+    Mail::fake();
+
+    $admin = User::factory()->admin()->create();
+    $north = seedHotelGuestCarPark('North Car Park');
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Jordan Guest',
+        'congregation' => HotelGuestParkingRequest::CONGREGATION_NAME,
+        'car_park_id' => $north->id,
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'HG12ABC',
+        'contact_number' => '07700900999',
+        'email' => 'jordan@example.test',
+        'days' => ['Friday'],
+        'elderly_infirm_parking' => false,
+        'sharing_with_other_congregations' => false,
+        'coach_captain_to_be_assigned' => false,
+        'is_circuit_overseer' => false,
+    ]);
+
+    $request = seedPendingHotelGuestRequest([
+        'status' => HotelGuestParkingRequest::STATUS_APPROVED,
+        'email' => 'jordan@example.test',
+        'car_park_id' => $north->id,
+        'parking_registration_id' => $registration->id,
+        'actioned_at' => now(),
+        'actioned_by' => $admin->id,
+    ]);
+
+    $this->mock(MasterPassPdfGenerator::class, function ($mock): void {
+        $mock->shouldReceive('generateForIds')
+            ->once()
+            ->andReturnUsing(function (array $ids): array {
+                $registration = ParkingRegistration::query()->findOrFail($ids[0]);
+
+                return [
+                    [
+                        'filename' => 'Jordan Guest.pdf',
+                        'content' => '%PDF-fake',
+                        'registration' => $registration,
+                    ],
+                ];
+            });
+    });
+
+    Livewire::actingAs($admin)
+        ->test(HotelGuestParkingRequests::class)
+        ->call('setStatusFilter', 'approved')
+        ->call('openResendModal', $request->id)
+        ->assertSet('resendModalOpen', true)
+        ->assertSet('resendEmailTo', 'jordan@example.test')
+        ->set('resendEmailTo', 'alternate@example.test')
+        ->call('useOriginalResendEmail')
+        ->assertSet('resendEmailTo', 'jordan@example.test')
+        ->set('resendEmailTo', 'alternate@example.test')
+        ->call('resendTicket')
+        ->assertHasNoErrors()
+        ->assertSet('resendModalOpen', false);
+
+    Mail::assertSent(CarParkTicketsMail::class, function (CarParkTicketsMail $mail): bool {
+        return $mail->hasTo('alternate@example.test')
+            && $mail->congregationLabel === HotelGuestParkingRequest::CONGREGATION_NAME;
+    });
+});

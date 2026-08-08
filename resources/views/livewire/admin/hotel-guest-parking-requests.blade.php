@@ -181,6 +181,11 @@
                                             class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/40">
                                             {{ __('management.hotel_guest_parking.decline') }}
                                         </button>
+                                    @elseif ($row->isApproved() && $row->parking_registration_id)
+                                        <button type="button" wire:click="openResendModal({{ $row->id }})"
+                                            class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                                            {{ __('management.hotel_guest_parking.resend') }}
+                                        </button>
                                     @endif
                                     <button type="button" wire:click="delete({{ $row->id }})"
                                         wire:confirm="{{ $row->parking_registration_id ? __('management.hotel_guest_parking.confirm_delete_with_registration') : __('management.hotel_guest_parking.confirm_delete') }}"
@@ -205,4 +210,63 @@
     <div>
         {{ $rows->links() }}
     </div>
+
+    <flux:modal wire:model="resendModalOpen" class="w-[calc(100vw-2rem)] max-w-md">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ __('management.hotel_guest_parking.resend_title') }}</flux:heading>
+                <flux:subheading>
+                    {{ __('management.hotel_guest_parking.resend_help', ['name' => $resendGuestName !== '' ? $resendGuestName : '—']) }}
+                </flux:subheading>
+            </div>
+
+            @if ($resendOriginalEmail !== '')
+                <div class="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900/50">
+                    <p class="text-zinc-600 dark:text-zinc-300">
+                        {{ __('management.hotel_guest_parking.resend_original_label') }}:
+                        <span class="font-medium text-zinc-900 dark:text-white">{{ $resendOriginalEmail }}</span>
+                    </p>
+                    <button type="button" wire:click="useOriginalResendEmail"
+                        class="mt-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+                        {{ __('management.hotel_guest_parking.resend_use_original') }}
+                    </button>
+                </div>
+            @endif
+
+            <div class="space-y-2">
+                <flux:input
+                    wire:model="resendEmailTo"
+                    id="hotelGuestResendEmailTo"
+                    type="text"
+                    inputmode="email"
+                    label="{{ __('management.hotel_guest_parking.resend_email_label') }}"
+                    placeholder="guest@example.com"
+                    autocomplete="off"
+                    data-1p-ignore
+                    data-lpignore="true"
+                    data-bwignore
+                    data-form-type="other"
+                />
+                @error('resendEmailTo')
+                    <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+                @if (count($this->ticketEmailCcs) > 0)
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                        {{ __('management.hotel_guest_parking.resend_cc_label') }}:
+                        <span class="font-medium text-zinc-700 dark:text-zinc-200">{{ implode(', ', $this->ticketEmailCcs) }}</span>
+                    </p>
+                @endif
+            </div>
+
+            <div class="flex justify-end gap-2">
+                <flux:button variant="ghost" wire:click="closeResendModal" wire:loading.attr="disabled">
+                    {{ __('management.hotel_guest_parking.close') }}
+                </flux:button>
+                <flux:button variant="primary" wire:click="resendTicket" wire:loading.attr="disabled" wire:target="resendTicket">
+                    <span wire:loading.remove wire:target="resendTicket">{{ __('management.hotel_guest_parking.resend_send') }}</span>
+                    <span wire:loading wire:target="resendTicket">{{ __('management.hotel_guest_parking.resend_sending') }}</span>
+                </flux:button>
+            </div>
+        </div>
+    </flux:modal>
 </div>

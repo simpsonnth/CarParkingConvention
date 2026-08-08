@@ -6,15 +6,19 @@ namespace App\Livewire\Admin;
 
 use App\Actions\HotelGuestParking\DeleteHotelGuestParkingRequest;
 use App\Actions\HotelGuestParking\RejectHotelGuestParkingRequest;
+use App\Actions\Registrations\SendCarParkTicketsEmail;
 use App\Models\CarPark;
 use App\Models\Congregation;
 use App\Models\HotelGuestParkingRequest;
 use App\Models\ParkingRegistration;
+use App\Support\TicketEmailCcList;
 use Flux\Flux;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Throwable;
 
 #[Layout('components.layouts.app')]
 class HotelGuestParkingRequests extends Component
@@ -30,6 +34,16 @@ class HotelGuestParkingRequests extends Component
 
     /** any | has_ticket | no_ticket */
     public string $ticketFilter = 'any';
+
+    public bool $resendModalOpen = false;
+
+    public ?int $resendRequestId = null;
+
+    public string $resendEmailTo = '';
+
+    public string $resendOriginalEmail = '';
+
+    public string $resendGuestName = '';
 
     public function updatedSearch(): void
     {
@@ -114,6 +128,116 @@ class HotelGuestParkingRequests extends Component
             Flux::toast(__('management.hotel_guest_parking.deleted'));
         } catch (\Throwable) {
             session()->flash('status', __('management.hotel_guest_parking.deleted'));
+        }
+    }
+
+    public function openResendModal(int $id): void
+    {
+        abort_unless(auth()->user()?->can('hotel-guest-parking.manage'), 403);
+
+        $request = HotelGuestParkingRequest::query()->findOrFail($id);
+
+        if (! $request->isApproved() || $request->parking_registration_id === null) {
+            try {
+                Flux::toast(__('management.hotel_guest_parking.resend_unavailable'), variant: 'warning');
+            } catch (\Throwable) {
+                session()->flash('error', __('management.hotel_guest_parking.resend_unavailable'));
+            }
+
+            return;
+        }
+
+        $this->resetErrorBag('resendEmailTo');
+        $this->resendRequestId = (int) $request->id;
+        $this->resendOriginalEmail = (string) $request->email;
+        $this->resendEmailTo = (string) $request->email;
+        $this->resendGuestName = (string) $request->name;
+        $this->resendModalOpen = true;
+    }
+
+    public function closeResendModal(): void
+    {
+        $this->resendModalOpen = false;
+        $this->resendRequestId = null;
+        $this->resendEmailTo = '';
+        $this->resendOriginalEmail = '';
+        $this->resendGuestName = '';
+        $this->resetErrorBag('resendEmailTo');
+    }
+
+    public function useOriginalResendEmail(): void
+    {
+        $this->resendEmailTo = $this->resendOriginalEmail;
+        $this->resetErrorBag('resendEmailTo');
+    }
+
+    /**
+     * @return list<string>
+     */
+    #[Computed]
+    public function ticketEmailCcs(): array
+    {
+        return TicketEmailCcList::all();
+    }
+
+    public function resendTicket(SendCarParkTicketsEmail $sender): void
+    {
+        abort_unless(auth()->user()?->can('hotel-guest-parking.manage'), 403);
+
+        $this->validate([
+            'resendEmailTo' => 'required|email|max:255',
+        ], [
+            'resendEmailTo.required' => __('management.hotel_guest_parking.resend_email_required'),
+            'resendEmailTo.email' => __('management.hotel_guest_parking.resend_email_invalid'),
+        ]);
+
+        if ($this->resendRequestId === null) {
+            $this->closeResendModal();
+
+            return;
+        }
+
+        $request = HotelGuestParkingRequest::query()->findOrFail($this->resendRequestId);
+
+        if (! $request->isApproved() || $request->parking_registration_id === null) {
+            $this->addError('resendEmailTo', __('management.hotel_guest_parking.resend_unavailable'));
+
+            return;
+        }
+
+        try {
+            $result = $sender->execute(
+                [(int) $request->parking_registration_id],
+                $this->resendEmailTo,
+            );
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $messages) {
+                foreach ($messages as $message) {
+                    $this->addError('resendEmailTo', $message);
+                }
+            }
+
+            return;
+        } catch (Throwable $e) {
+            try {
+                Flux::toast($e->getMessage(), variant: 'danger');
+            } catch (\Throwable) {
+                session()->flash('error', $e->getMessage());
+            }
+
+            return;
+        }
+
+        $this->closeResendModal();
+
+        try {
+            Flux::toast(__('management.hotel_guest_parking.resend_sent', [
+                'email' => $result['to'],
+            ]));
+        } catch (\Throwable) {
+            session()->flash('status', __('management.hotel_guest_parking.resend_sent', [
+                'email' => $result['to'],
+            ]));
         }
     }
 
