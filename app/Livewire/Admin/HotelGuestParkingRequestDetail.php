@@ -8,6 +8,8 @@ use App\Actions\HotelGuestParking\ApproveHotelGuestParkingRequest;
 use App\Actions\HotelGuestParking\RejectHotelGuestParkingRequest;
 use App\Models\CarPark;
 use App\Models\HotelGuestParkingRequest;
+use App\Models\ParkingRegistration;
+use App\Services\ParkingRegistrationDuplicateSignals;
 use Flux\Flux;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
@@ -30,7 +32,7 @@ class HotelGuestParkingRequestDetail extends Component
         $this->hotelGuestParkingRequest = $hotelGuestParkingRequest->load([
             'actionedByUser:id,name',
             'carPark:id,name',
-            'parkingRegistration',
+            'parkingRegistration.carPark:id,name',
         ]);
         $this->adminNotes = $hotelGuestParkingRequest->admin_notes ?? '';
     }
@@ -153,6 +155,26 @@ class HotelGuestParkingRequestDetail extends Component
         } catch (\Throwable) {
             session()->flash('status', __('management.hotel_guest_parking.rejected'));
         }
+    }
+
+    /**
+     * Existing parking registration for this request's vehicle (if any).
+     * When present, approve updates that ticket instead of creating a duplicate.
+     */
+    #[Computed]
+    public function existingRegistrationMatch(): ?ParkingRegistration
+    {
+        if (! $this->hotelGuestParkingRequest->isPending()) {
+            return null;
+        }
+
+        $signals = app(ParkingRegistrationDuplicateSignals::class);
+
+        $match = $signals->findActiveByNormalizedVehicleReg(
+            $signals->normalizeVehicleRegistration($this->hotelGuestParkingRequest->vehicle_registration),
+        );
+
+        return $match?->loadMissing('carPark:id,name');
     }
 
     /**

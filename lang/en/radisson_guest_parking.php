@@ -29,6 +29,8 @@ return [
     'already_have_ticket_help' => 'Use “I am a Radisson hotel guest” on that form (code :code).',
     'submit_another' => 'Submit another request',
     'footer' => 'Convention Car Parking',
+    'existing_ticket_title' => 'You already have a car park ticket',
+    'existing_ticket_body' => 'We already have a ticket for this vehicle under :name (:congregation). You can still submit this request. Once approved, that existing ticket will be updated to Radisson Hotel Guest and moved to the assigned car park (usually North), and a fresh ticket will be emailed to you.',
     'validation' => [
         'days_required' => 'Please select at least one night.',
         'vehicle_registration_required' => 'Please enter a vehicle registration.',

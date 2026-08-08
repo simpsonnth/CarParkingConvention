@@ -103,8 +103,11 @@
 
                 @if($this->duplicateVehicleRegistrationConflict)
                     <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-900/20" role="status">
-                        <p class="text-sm font-semibold text-amber-900 dark:text-amber-100">{{ __('register.duplicate_vehicle_registration_live_title') }}</p>
-                        <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">{{ __('register.duplicate_vehicle_registration_live_body', ['name' => $this->duplicateVehicleRegistrationConflict->name, 'congregation' => $this->duplicateVehicleRegistrationConflict->congregation ?: '—']) }}</p>
+                        <p class="text-sm font-semibold text-amber-900 dark:text-amber-100">{{ __('radisson_guest_parking.existing_ticket_title') }}</p>
+                        <p class="mt-1 text-sm text-amber-800 dark:text-amber-200">{{ __('radisson_guest_parking.existing_ticket_body', [
+                            'name' => $this->duplicateVehicleRegistrationConflict->name,
+                            'congregation' => $this->duplicateVehicleRegistrationConflict->congregation ?: '—',
+                        ]) }}</p>
                     </div>
                 @endif
 

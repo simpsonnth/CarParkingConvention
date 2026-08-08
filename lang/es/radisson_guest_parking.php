@@ -29,6 +29,8 @@ return [
     'already_have_ticket_help' => 'En ese formulario elija “Soy huésped del hotel Radisson” (código :code).',
     'submit_another' => 'Enviar otra solicitud',
     'footer' => 'Aparcamiento de la Convención',
+    'existing_ticket_title' => 'Ya tiene un billete de aparcamiento',
+    'existing_ticket_body' => 'Ya tenemos un billete para este vehículo a nombre de :name (:congregation). Aun así puede enviar esta solicitud. Una vez aprobada, ese billete se actualizará a Radisson Hotel Guest y al aparcamiento asignado (normalmente North), y se le enviará un billete nuevo por correo.',
     'validation' => [
         'days_required' => 'Seleccione al menos una noche.',
         'vehicle_registration_required' => 'Introduzca la matrícula del vehículo.',

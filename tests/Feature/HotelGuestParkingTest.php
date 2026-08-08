@@ -218,3 +218,109 @@ test('approve modal falls back to first car park when no north park exists', fun
         ->call('openApproveModal')
         ->assertSet('approveCarParkId', (string) $expected->id);
 });
+
+test('radisson form allows submit when vehicle already has a ticket and shows existing-ticket notice', function () {
+    $west = seedHotelGuestCarPark('West Car Park');
+
+    ParkingRegistration::query()->create([
+        'name' => 'Existing Guest',
+        'congregation' => 'London, Balham',
+        'car_park_id' => $west->id,
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'HG12ABC',
+        'contact_number' => '07700900111',
+        'email' => 'existing@example.test',
+        'days' => ['Friday', 'Saturday'],
+        'elderly_infirm_parking' => false,
+        'sharing_with_other_congregations' => false,
+        'coach_captain_to_be_assigned' => false,
+        'is_circuit_overseer' => false,
+    ]);
+
+    Livewire::test(RadissonGuestParking::class)
+        ->set('name', 'Jordan Guest')
+        ->set('contactNumber', '07700900999')
+        ->set('vehicleReg', 'HG12 ABC')
+        ->set('email', 'jordan@example.test')
+        ->set('days', ['Wednesday', 'Thursday'])
+        ->assertSee(__('radisson_guest_parking.existing_ticket_title'))
+        ->call('submit')
+        ->assertHasNoErrors()
+        ->assertSet('submitted', true);
+
+    expect(HotelGuestParkingRequest::query()->count())->toBe(1)
+        ->and(ParkingRegistration::query()->count())->toBe(1);
+});
+
+test('approve updates existing registration to radisson hotel guest and chosen car park', function () {
+    Mail::fake();
+
+    $admin = User::factory()->admin()->create();
+    $west = seedHotelGuestCarPark('West Car Park');
+    $north = seedHotelGuestCarPark('North Car Park');
+
+    $existing = ParkingRegistration::query()->create([
+        'name' => 'Existing Guest',
+        'congregation' => 'London, Balham',
+        'car_park_id' => $west->id,
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'HG12ABC',
+        'contact_number' => '07700900111',
+        'email' => 'existing@example.test',
+        'days' => ['Friday'],
+        'elderly_infirm_parking' => false,
+        'sharing_with_other_congregations' => false,
+        'coach_captain_to_be_assigned' => false,
+        'is_circuit_overseer' => false,
+    ]);
+
+    $request = seedPendingHotelGuestRequest([
+        'name' => 'Jordan Guest',
+        'contact_number' => '07700900999',
+        'vehicle_registration' => 'HG12ABC',
+        'email' => 'jordan@example.test',
+        'days' => ['Wednesday', 'Friday', 'Sunday'],
+    ]);
+
+    $this->mock(MasterPassPdfGenerator::class, function ($mock): void {
+        $mock->shouldReceive('generateForIds')
+            ->once()
+            ->andReturnUsing(function (array $ids): array {
+                $registration = ParkingRegistration::query()->findOrFail($ids[0]);
+
+                return [
+                    [
+                        'filename' => 'Jordan Guest.pdf',
+                        'content' => '%PDF-fake',
+                        'registration' => $registration,
+                    ],
+                ];
+            });
+    });
+
+    Livewire::actingAs($admin)
+        ->test(HotelGuestParkingRequestDetail::class, ['hotelGuestParkingRequest' => $request])
+        ->assertSee(__('management.hotel_guest_parking.existing_ticket_title'))
+        ->call('openApproveModal')
+        ->set('approveCarParkId', (string) $north->id)
+        ->call('approve')
+        ->assertHasNoErrors();
+
+    $request->refresh();
+    expect($request->status)->toBe(HotelGuestParkingRequest::STATUS_APPROVED)
+        ->and($request->parking_registration_id)->toBe($existing->id)
+        ->and(ParkingRegistration::query()->count())->toBe(1);
+
+    $existing->refresh();
+    expect($existing->congregation)->toBe(HotelGuestParkingRequest::CONGREGATION_NAME)
+        ->and($existing->car_park_id)->toBe($north->id)
+        ->and($existing->name)->toBe('Jordan Guest')
+        ->and($existing->contact_number)->toBe('07700900999')
+        ->and($existing->email)->toBe('jordan@example.test')
+        ->and($existing->days)->toBe(['Wednesday', 'Friday', 'Sunday'])
+        ->and($existing->ticket_sent_at)->not->toBeNull();
+
+    Mail::assertSent(CarParkTicketsMail::class, function (CarParkTicketsMail $mail): bool {
+        return $mail->hasTo('jordan@example.test');
+    });
+});

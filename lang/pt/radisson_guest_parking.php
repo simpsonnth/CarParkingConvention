@@ -29,6 +29,8 @@ return [
     'already_have_ticket_help' => 'Nesse formulário escolha “Sou hóspede do hotel Radisson” (código :code).',
     'submit_another' => 'Enviar outro pedido',
     'footer' => 'Estacionamento da Convenção',
+    'existing_ticket_title' => 'Já tem um bilhete de estacionamento',
+    'existing_ticket_body' => 'Já temos um bilhete para este veículo em nome de :name (:congregation). Pode mesmo assim enviar este pedido. Depois de aprovado, esse bilhete será atualizado para Radisson Hotel Guest e para o parque atribuído (normalmente North), e receberá um bilhete novo por email.',
     'validation' => [
         'days_required' => 'Selecione pelo menos uma noite.',
         'vehicle_registration_required' => 'Introduza a matrícula do veículo.',

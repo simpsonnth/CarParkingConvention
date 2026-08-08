@@ -8,12 +8,17 @@ use App\Models\CarPark;
 use App\Models\HotelGuestParkingRequest;
 use App\Models\ParkingRegistration;
 use App\Models\User;
+use App\Services\ParkingRegistrationDuplicateSignals;
 use App\Support\DeferredTicketMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ApproveHotelGuestParkingRequest
 {
+    public function __construct(
+        private readonly ParkingRegistrationDuplicateSignals $duplicateSignals,
+    ) {}
+
     public function execute(
         HotelGuestParkingRequest $request,
         User $actor,
@@ -38,21 +43,7 @@ class ApproveHotelGuestParkingRequest
 
             HotelGuestParkingRequest::ensureCongregation($carParkId);
 
-            $registration = ParkingRegistration::query()->create([
-                'name' => $locked->name,
-                'congregation' => HotelGuestParkingRequest::CONGREGATION_NAME,
-                'car_park_id' => $carParkId,
-                'vehicle_type' => 'car',
-                'vehicle_registration' => $locked->vehicle_registration,
-                'contact_number' => $locked->contact_number,
-                'email' => $locked->email,
-                'days' => is_array($locked->days) ? $locked->days : [],
-                'elderly_infirm_parking' => false,
-                'sharing_with_other_congregations' => false,
-                'sharing_congregations_notes' => null,
-                'coach_captain_to_be_assigned' => false,
-                'is_circuit_overseer' => false,
-            ]);
+            $registration = $this->resolveRegistration($locked, $carParkId);
 
             $locked->update([
                 'status' => HotelGuestParkingRequest::STATUS_APPROVED,
@@ -74,6 +65,40 @@ class ApproveHotelGuestParkingRequest
         }
 
         return $completed;
+    }
+
+    /**
+     * Update an existing ticket for the same VRN, or create a new Radisson Hotel Guest registration.
+     */
+    private function resolveRegistration(HotelGuestParkingRequest $locked, int $carParkId): ParkingRegistration
+    {
+        $payload = [
+            'name' => $locked->name,
+            'congregation' => HotelGuestParkingRequest::CONGREGATION_NAME,
+            'car_park_id' => $carParkId,
+            'vehicle_type' => 'car',
+            'vehicle_registration' => $locked->vehicle_registration,
+            'contact_number' => $locked->contact_number,
+            'email' => $locked->email,
+            'days' => is_array($locked->days) ? $locked->days : [],
+            'elderly_infirm_parking' => false,
+            'sharing_with_other_congregations' => false,
+            'sharing_congregations_notes' => null,
+            'coach_captain_to_be_assigned' => false,
+            'is_circuit_overseer' => false,
+        ];
+
+        $existing = $this->duplicateSignals->findActiveByNormalizedVehicleReg(
+            $this->duplicateSignals->normalizeVehicleRegistration($locked->vehicle_registration),
+        );
+
+        if ($existing !== null) {
+            $existing->update($payload);
+
+            return $existing->fresh() ?? $existing;
+        }
+
+        return ParkingRegistration::query()->create($payload);
     }
 
     private function resolveAdminNotes(?string $adminNotes, HotelGuestParkingRequest $request): ?string

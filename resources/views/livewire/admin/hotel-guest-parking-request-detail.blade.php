@@ -61,6 +61,19 @@
                     <dt class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('management.hotel_guest_parking.col_vehicle') }}</dt>
                     <dd class="mt-1 font-mono text-zinc-800 dark:text-zinc-200">{{ $hotelGuestParkingRequest->vehicle_registration }}</dd>
                 </div>
+                @if ($hotelGuestParkingRequest->isPending() && $this->existingRegistrationMatch)
+                    <div class="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-800 dark:bg-amber-950/30">
+                        <dt class="font-medium text-amber-900 dark:text-amber-100">{{ __('management.hotel_guest_parking.existing_ticket_title') }}</dt>
+                        <dd class="mt-1 text-sm text-amber-800 dark:text-amber-200">
+                            {{ __('management.hotel_guest_parking.existing_ticket_body', [
+                                'ticket' => $this->existingRegistrationMatch->ticketNumber(),
+                                'name' => $this->existingRegistrationMatch->name,
+                                'congregation' => $this->existingRegistrationMatch->congregation ?: '—',
+                                'car_park' => $this->existingRegistrationMatch->carPark?->name ?: '—',
+                            ]) }}
+                        </dd>
+                    </div>
+                @endif
                 <div>
                     <dt class="font-medium text-zinc-500 dark:text-zinc-400">{{ __('management.hotel_guest_parking.col_days') }}</dt>
                     <dd class="mt-1 flex flex-wrap gap-1">
@@ -118,7 +131,13 @@
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">{{ __('management.hotel_guest_parking.approve_title') }}</flux:heading>
-                <flux:subheading>{{ __('management.hotel_guest_parking.approve_help') }}</flux:subheading>
+                <flux:subheading>
+                    @if ($this->existingRegistrationMatch)
+                        {{ __('management.hotel_guest_parking.approve_help_update') }}
+                    @else
+                        {{ __('management.hotel_guest_parking.approve_help') }}
+                    @endif
+                </flux:subheading>
             </div>
 
             <div>
@@ -143,7 +162,7 @@
                     {{ __('management.hotel_guest_parking.close') }}
                 </flux:button>
                 <flux:button variant="primary" wire:click="approve"
-                    wire:confirm="{{ __('management.hotel_guest_parking.confirm_approve') }}">
+                    wire:confirm="{{ $this->existingRegistrationMatch ? __('management.hotel_guest_parking.confirm_approve_update') : __('management.hotel_guest_parking.confirm_approve') }}">
                     {{ __('management.hotel_guest_parking.approve_confirm') }}
                 </flux:button>
             </div>
