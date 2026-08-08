@@ -21,22 +21,45 @@
         </div>
     </div>
 
-    <div class="flex flex-wrap gap-2">
-        <flux:button size="sm" variant="{{ $statusFilter === 'pending' ? 'primary' : 'ghost' }}"
-            wire:click="setStatusFilter('pending')">
-            {{ __('management.ticket_change_requests.filter_pending') }}
-            <span class="ms-1 tabular-nums opacity-80">({{ $pendingCount }})</span>
-        </flux:button>
-        <flux:button size="sm" variant="{{ $statusFilter === 'completed' ? 'primary' : 'ghost' }}"
-            wire:click="setStatusFilter('completed')">
-            {{ __('management.ticket_change_requests.filter_completed') }}
-            <span class="ms-1 tabular-nums opacity-80">({{ $completedCount }})</span>
-        </flux:button>
-        <flux:button size="sm" variant="{{ $statusFilter === 'all' ? 'primary' : 'ghost' }}"
-            wire:click="setStatusFilter('all')">
-            {{ __('management.ticket_change_requests.filter_all') }}
-            <span class="ms-1 tabular-nums opacity-80">({{ $total }})</span>
-        </flux:button>
+    <div class="space-y-3">
+        <div class="flex flex-wrap gap-2">
+            <flux:button size="sm" variant="{{ $statusFilter === 'pending' ? 'primary' : 'ghost' }}"
+                wire:click="setStatusFilter('pending')">
+                {{ __('management.ticket_change_requests.filter_pending') }}
+                <span class="ms-1 tabular-nums opacity-80">({{ $pendingCount }})</span>
+            </flux:button>
+            <flux:button size="sm" variant="{{ $statusFilter === 'completed' ? 'primary' : 'ghost' }}"
+                wire:click="setStatusFilter('completed')">
+                {{ __('management.ticket_change_requests.filter_completed') }}
+                <span class="ms-1 tabular-nums opacity-80">({{ $completedCount }})</span>
+            </flux:button>
+            <flux:button size="sm" variant="{{ $statusFilter === 'all' ? 'primary' : 'ghost' }}"
+                wire:click="setStatusFilter('all')">
+                {{ __('management.ticket_change_requests.filter_all') }}
+                <span class="ms-1 tabular-nums opacity-80">({{ $total }})</span>
+            </flux:button>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <flux:button size="sm" variant="{{ $typeFilter === 'all' ? 'primary' : 'ghost' }}"
+                wire:click="setTypeFilter('all')">
+                {{ __('management.ticket_change_requests.filter_type_all') }}
+                <span class="ms-1 tabular-nums opacity-80">({{ $typeCounts['all'] }})</span>
+            </flux:button>
+            @foreach ([
+                'cancellation',
+                'addition',
+                'field_update',
+                'car_park_change',
+                'email_request',
+            ] as $type)
+                <flux:button size="sm" variant="{{ $typeFilter === $type ? 'primary' : 'ghost' }}"
+                    wire:click="setTypeFilter('{{ $type }}')">
+                    {{ __('management.ticket_change_requests.filter_type_'.$type) }}
+                    <span class="ms-1 tabular-nums opacity-80">({{ $typeCounts[$type] ?? 0 }})</span>
+                </flux:button>
+            @endforeach
+        </div>
     </div>
 
     <div class="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900/50">
@@ -46,6 +69,11 @@
             {{ __('management.ticket_change_requests.total_completed', ['count' => $completedCount]) }}
         @else
             {{ __('management.ticket_change_requests.total', ['count' => $total]) }}
+        @endif
+        @if ($typeFilter !== 'all')
+            <span class="text-zinc-500 dark:text-zinc-400">
+                · {{ __('management.ticket_change_requests.filter_type_'.$typeFilter) }}
+            </span>
         @endif
     </div>
 

@@ -26,6 +26,9 @@ class TicketChangeRequests extends Component
     /** pending | completed | all */
     public string $statusFilter = 'pending';
 
+    /** all | cancellation | addition | field_update | car_park_change | email_request */
+    public string $typeFilter = 'all';
+
     public bool $createModalOpen = false;
 
     public string $createName = '';
@@ -51,6 +54,11 @@ class TicketChangeRequests extends Component
         $this->resetPage();
     }
 
+    public function updatedTypeFilter(): void
+    {
+        $this->resetPage();
+    }
+
     public function setStatusFilter(string $status): void
     {
         if (! in_array($status, ['pending', 'completed', 'all'], true)) {
@@ -58,6 +66,18 @@ class TicketChangeRequests extends Component
         }
 
         $this->statusFilter = $status;
+        $this->resetPage();
+    }
+
+    public function setTypeFilter(string $type): void
+    {
+        $allowed = ['all', ...TicketChangeRequest::TYPES];
+
+        if (! in_array($type, $allowed, true)) {
+            return;
+        }
+
+        $this->typeFilter = $type;
         $this->resetPage();
     }
 
@@ -218,11 +238,8 @@ class TicketChangeRequests extends Component
             'parkingRegistration:id,vehicle_registration',
         ]);
 
-        if ($this->statusFilter === 'pending') {
-            $query->where('status', TicketChangeRequest::STATUS_PENDING);
-        } elseif ($this->statusFilter === 'completed') {
-            $query->where('status', TicketChangeRequest::STATUS_COMPLETED);
-        }
+        $this->applyStatusFilter($query);
+        $this->applyTypeFilter($query);
 
         if ($this->search !== '') {
             $term = '%'.addcslashes($this->search, '%_\\').'%';
@@ -242,13 +259,26 @@ class TicketChangeRequests extends Component
             ->orderByDesc('created_at')
             ->paginate($this->perPage);
 
-        $pendingCount = TicketChangeRequest::query()
+        $statusBase = TicketChangeRequest::query();
+        $this->applyTypeFilter($statusBase);
+
+        $pendingCount = (clone $statusBase)
             ->where('status', TicketChangeRequest::STATUS_PENDING)
             ->count();
-        $completedCount = TicketChangeRequest::query()
+        $completedCount = (clone $statusBase)
             ->where('status', TicketChangeRequest::STATUS_COMPLETED)
             ->count();
         $total = $pendingCount + $completedCount;
+
+        $typeCounts = [];
+        $allForStatus = TicketChangeRequest::query();
+        $this->applyStatusFilter($allForStatus);
+        $typeCounts['all'] = $allForStatus->count();
+        foreach (TicketChangeRequest::TYPES as $type) {
+            $typeQuery = TicketChangeRequest::query()->where('request_type', $type);
+            $this->applyStatusFilter($typeQuery);
+            $typeCounts[$type] = $typeQuery->count();
+        }
 
         $personPendingCounts = [];
         $congregationStats = [];
@@ -295,8 +325,31 @@ class TicketChangeRequests extends Component
             'total' => $total,
             'pendingCount' => $pendingCount,
             'completedCount' => $completedCount,
+            'typeCounts' => $typeCounts,
             'personPendingCounts' => $personPendingCounts,
             'congregationStats' => $congregationStats,
         ]);
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<TicketChangeRequest>  $query
+     */
+    protected function applyStatusFilter($query): void
+    {
+        if ($this->statusFilter === 'pending') {
+            $query->where('status', TicketChangeRequest::STATUS_PENDING);
+        } elseif ($this->statusFilter === 'completed') {
+            $query->where('status', TicketChangeRequest::STATUS_COMPLETED);
+        }
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<TicketChangeRequest>  $query
+     */
+    protected function applyTypeFilter($query): void
+    {
+        if ($this->typeFilter !== 'all' && in_array($this->typeFilter, TicketChangeRequest::TYPES, true)) {
+            $query->where('request_type', $this->typeFilter);
+        }
     }
 }

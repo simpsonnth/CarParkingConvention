@@ -869,3 +869,53 @@ test('ticket change request auto fills radisson code from code query param', fun
         ->test(TicketChangeRequest::class)
         ->assertSet('congregationCode', 'RADISSON');
 });
+
+test('admin can filter ticket change requests by type', function () {
+    $admin = User::factory()->admin()->create();
+    $cong = seedTicketChangeCongregation('Type Filter Hall');
+
+    TicketChangeRequestModel::query()->create([
+        'name' => 'Cancel Person',
+        'congregation' => $cong->name,
+        'notes' => 'Please cancel my ticket.',
+        'request_type' => TicketChangeRequestModel::TYPE_CANCELLATION,
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+    ]);
+
+    TicketChangeRequestModel::query()->create([
+        'name' => 'Addition Person',
+        'congregation' => $cong->name,
+        'notes' => 'Need another ticket for a second car.',
+        'request_type' => TicketChangeRequestModel::TYPE_ADDITION,
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+    ]);
+
+    TicketChangeRequestModel::query()->create([
+        'name' => 'Field Person',
+        'congregation' => $cong->name,
+        'notes' => 'Update vehicle registration.',
+        'request_type' => TicketChangeRequestModel::TYPE_FIELD_UPDATE,
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(TicketChangeRequests::class)
+        ->assertSee('Cancel Person')
+        ->assertSee('Addition Person')
+        ->assertSee('Field Person')
+        ->assertSee('Cancellation requests')
+        ->assertSee('Additional ticket requests')
+        ->call('setTypeFilter', 'cancellation')
+        ->assertSet('typeFilter', 'cancellation')
+        ->assertSee('Cancel Person')
+        ->assertDontSee('Addition Person')
+        ->assertDontSee('Field Person')
+        ->call('setTypeFilter', 'addition')
+        ->assertSee('Addition Person')
+        ->assertDontSee('Cancel Person')
+        ->assertDontSee('Field Person')
+        ->call('setTypeFilter', 'all')
+        ->assertSee('Cancel Person')
+        ->assertSee('Addition Person')
+        ->assertSee('Field Person');
+});
