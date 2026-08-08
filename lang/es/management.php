@@ -298,6 +298,8 @@ return [
         'confirm_delete' => '¿Eliminar permanentemente esta solicitud? No se enviará correo. Úselo para duplicados — no se eliminará ningún registro de aparcamiento.',
         'confirm_delete_with_registration' => '¿Eliminar permanentemente esta solicitud y eliminar (soft-delete) el registro de aparcamiento vinculado (irá a la papelera de registros)? No se enviará correo.',
         'duplicate_badge' => 'Duplicado',
+        'has_ticket_badge' => 'Ya tiene billete',
+        'has_ticket_detail' => '#:ticket · :congregation · :car_park',
         'confirm_reject' => '¿Rechazar esta solicitud y enviar un correo al huésped indicando que no se puede facilitar aparcamiento?',
         'approved' => 'Solicitud aprobada y billete enviado.',
         'declined' => 'Solicitud rechazada y huésped notificado por correo.',

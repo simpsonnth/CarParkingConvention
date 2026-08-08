@@ -7,6 +7,7 @@ namespace App\Livewire\Admin;
 use App\Actions\HotelGuestParking\DeleteHotelGuestParkingRequest;
 use App\Actions\HotelGuestParking\RejectHotelGuestParkingRequest;
 use App\Models\HotelGuestParkingRequest;
+use App\Models\ParkingRegistration;
 use Flux\Flux;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
@@ -151,6 +152,22 @@ class HotelGuestParkingRequests extends Component
             $duplicateVehicleRegs = array_fill_keys($duplicateVehicleRegs, true);
         }
 
+        /** @var array<string, ParkingRegistration> $existingTicketsByVehicleReg */
+        $existingTicketsByVehicleReg = [];
+        if ($pageVehicleRegs !== []) {
+            ParkingRegistration::query()
+                ->with('carPark:id,name')
+                ->whereIn('vehicle_registration', $pageVehicleRegs)
+                ->orderBy('id')
+                ->get()
+                ->each(function (ParkingRegistration $registration) use (&$existingTicketsByVehicleReg): void {
+                    $key = (string) $registration->vehicle_registration;
+                    if ($key !== '' && ! isset($existingTicketsByVehicleReg[$key])) {
+                        $existingTicketsByVehicleReg[$key] = $registration;
+                    }
+                });
+        }
+
         return view('livewire.admin.hotel-guest-parking-requests', [
             'rows' => $rows,
             'pendingCount' => $pendingCount,
@@ -158,6 +175,7 @@ class HotelGuestParkingRequests extends Component
             'rejectedCount' => $rejectedCount,
             'total' => $total,
             'duplicateVehicleRegs' => $duplicateVehicleRegs,
+            'existingTicketsByVehicleReg' => $existingTicketsByVehicleReg,
         ]);
     }
 }

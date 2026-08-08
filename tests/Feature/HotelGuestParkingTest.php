@@ -408,6 +408,38 @@ test('delete does not email the guest', function () {
     Mail::assertNothingSent();
 });
 
+test('pending list shows existing car park ticket for matching vehicle', function () {
+    $admin = User::factory()->admin()->create();
+    $west = seedHotelGuestCarPark('West Car Park');
+
+    ParkingRegistration::query()->create([
+        'name' => 'Existing Guest',
+        'congregation' => 'London, Balham',
+        'car_park_id' => $west->id,
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'HG12ABC',
+        'contact_number' => '07700900111',
+        'email' => 'existing@example.test',
+        'days' => ['Friday'],
+        'elderly_infirm_parking' => false,
+        'sharing_with_other_congregations' => false,
+        'coach_captain_to_be_assigned' => false,
+        'is_circuit_overseer' => false,
+    ]);
+
+    seedPendingHotelGuestRequest([
+        'name' => 'Jordan Guest',
+        'vehicle_registration' => 'HG12ABC',
+        'email' => 'jordan@example.test',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(HotelGuestParkingRequests::class)
+        ->assertSee(__('management.hotel_guest_parking.has_ticket_badge'))
+        ->assertSee('London, Balham')
+        ->assertSee('West Car Park');
+});
+
 test('delete removes a pending duplicate request without touching registrations', function () {
     $admin = User::factory()->admin()->create();
     $first = seedPendingHotelGuestRequest([

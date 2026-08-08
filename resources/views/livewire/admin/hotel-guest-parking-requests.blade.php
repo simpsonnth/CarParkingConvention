@@ -93,6 +93,23 @@
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap font-mono text-zinc-700 dark:text-zinc-200">
                             {{ $row->vehicle_registration }}
+                            @php
+                                $existingTicket = $existingTicketsByVehicleReg[$row->vehicle_registration] ?? null;
+                            @endphp
+                            @if ($row->isPending() && $existingTicket)
+                                <div class="mt-1.5 max-w-[220px] space-y-0.5 font-sans normal-case tracking-normal">
+                                    <flux:badge size="sm" color="sky">
+                                        {{ __('management.hotel_guest_parking.has_ticket_badge') }}
+                                    </flux:badge>
+                                    <div class="text-xs text-sky-800 dark:text-sky-200">
+                                        {{ __('management.hotel_guest_parking.has_ticket_detail', [
+                                            'ticket' => $existingTicket->ticketNumber(),
+                                            'congregation' => $existingTicket->congregation ?: '—',
+                                            'car_park' => $existingTicket->carPark?->name ?: '—',
+                                        ]) }}
+                                    </div>
+                                </div>
+                            @endif
                         </td>
                         <td class="px-4 py-3 text-zinc-600 dark:text-zinc-300">
                             <div class="flex flex-wrap gap-1">

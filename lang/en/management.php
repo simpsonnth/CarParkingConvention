@@ -298,6 +298,8 @@ return [
         'confirm_delete' => 'Permanently delete this request? No email will be sent. Use this for duplicates — no parking registration will be removed.',
         'confirm_delete_with_registration' => 'Permanently delete this request and soft-delete the linked car park registration (it will go to registrations trash)? No email will be sent.',
         'duplicate_badge' => 'Duplicate',
+        'has_ticket_badge' => 'Has ticket',
+        'has_ticket_detail' => '#:ticket · :congregation · :car_park',
         'confirm_reject' => 'Decline this request and email the guest that parking cannot be provided?',
         'approved' => 'Request approved and ticket emailed.',
         'declined' => 'Request declined and guest emailed.',

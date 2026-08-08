@@ -298,6 +298,8 @@ return [
         'confirm_delete' => 'Eliminar permanentemente este pedido? Não será enviado email. Use isto para duplicados — nenhuma inscrição de estacionamento será removida.',
         'confirm_delete_with_registration' => 'Eliminar permanentemente este pedido e eliminar (soft-delete) a inscrição de estacionamento associada (vai para o lixo de inscrições)? Não será enviado email.',
         'duplicate_badge' => 'Duplicado',
+        'has_ticket_badge' => 'Já tem bilhete',
+        'has_ticket_detail' => '#:ticket · :congregation · :car_park',
         'confirm_reject' => 'Recusar este pedido e enviar email ao hóspede a informar que não é possível disponibilizar estacionamento?',
         'approved' => 'Pedido aprovado e bilhete enviado.',
         'declined' => 'Pedido recusado e hóspede notificado por email.',
