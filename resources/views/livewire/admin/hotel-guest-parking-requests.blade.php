@@ -39,15 +39,44 @@
         </flux:button>
     </div>
 
+    <div class="flex flex-wrap gap-2">
+        <flux:button size="sm" variant="{{ $ticketFilter === 'any' ? 'primary' : 'ghost' }}"
+            wire:click="setTicketFilter('any')">
+            {{ __('management.hotel_guest_parking.filter_ticket_any') }}
+        </flux:button>
+        <flux:button size="sm" variant="{{ $ticketFilter === 'has_ticket' ? 'primary' : 'ghost' }}"
+            wire:click="setTicketFilter('has_ticket')">
+            {{ __('management.hotel_guest_parking.filter_has_ticket') }}
+            <span class="ms-1 tabular-nums opacity-80">({{ $hasTicketPendingCount }})</span>
+        </flux:button>
+        <flux:button size="sm" variant="{{ $ticketFilter === 'no_ticket' ? 'primary' : 'ghost' }}"
+            wire:click="setTicketFilter('no_ticket')">
+            {{ __('management.hotel_guest_parking.filter_no_ticket') }}
+            <span class="ms-1 tabular-nums opacity-80">({{ $noTicketPendingCount }})</span>
+        </flux:button>
+    </div>
+
     <div class="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm dark:border-zinc-700 dark:bg-zinc-900/50">
-        @if ($statusFilter === 'pending')
+        @if ($ticketFilter === 'has_ticket')
+            {{ __('management.hotel_guest_parking.total_has_ticket_pending', ['count' => $hasTicketPendingCount]) }}
+            @if ($statusFilter !== 'pending' && $statusFilter !== 'all')
+                <span class="text-zinc-500">· {{ __('management.hotel_guest_parking.filter_combined_hint') }}</span>
+            @endif
+        @elseif ($ticketFilter === 'no_ticket')
+            {{ __('management.hotel_guest_parking.total_no_ticket_pending', ['count' => $noTicketPendingCount]) }}
+            @if ($statusFilter !== 'pending' && $statusFilter !== 'all')
+                <span class="text-zinc-500">· {{ __('management.hotel_guest_parking.filter_combined_hint') }}</span>
+            @endif
+        @elseif ($statusFilter === 'pending')
             {{ __('management.hotel_guest_parking.total_pending', ['count' => $pendingCount]) }}
+            <span class="text-zinc-500">· {{ __('management.hotel_guest_parking.total_has_ticket_pending', ['count' => $hasTicketPendingCount]) }}</span>
         @elseif ($statusFilter === 'approved')
             {{ __('management.hotel_guest_parking.total_approved', ['count' => $approvedCount]) }}
         @elseif ($statusFilter === 'rejected')
             {{ __('management.hotel_guest_parking.total_rejected', ['count' => $rejectedCount]) }}
         @else
             {{ __('management.hotel_guest_parking.total', ['count' => $total]) }}
+            <span class="text-zinc-500">· {{ __('management.hotel_guest_parking.total_has_ticket_pending', ['count' => $hasTicketPendingCount]) }}</span>
         @endif
     </div>
 

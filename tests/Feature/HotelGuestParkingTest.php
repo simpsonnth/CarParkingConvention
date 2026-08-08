@@ -470,6 +470,49 @@ test('pending list shows existing car park ticket for matching vehicle', functio
         ->assertSee('West Car Park');
 });
 
+test('hotel guest list can filter pending requests that already have tickets', function () {
+    $admin = User::factory()->admin()->create();
+    $north = seedHotelGuestCarPark('North Car Park');
+
+    ParkingRegistration::query()->create([
+        'name' => 'Existing Guest',
+        'congregation' => 'London, Balham',
+        'car_park_id' => $north->id,
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'HAS1TIK',
+        'contact_number' => '07700900111',
+        'email' => 'existing@example.test',
+        'days' => ['Friday'],
+        'elderly_infirm_parking' => false,
+        'sharing_with_other_congregations' => false,
+        'coach_captain_to_be_assigned' => false,
+        'is_circuit_overseer' => false,
+    ]);
+
+    seedPendingHotelGuestRequest([
+        'name' => 'Has Ticket Guest',
+        'vehicle_registration' => 'HAS1TIK',
+        'email' => 'has@example.test',
+    ]);
+    seedPendingHotelGuestRequest([
+        'name' => 'New Guest',
+        'vehicle_registration' => 'NEW2TIK',
+        'email' => 'new@example.test',
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(HotelGuestParkingRequests::class)
+        ->assertSee(__('management.hotel_guest_parking.filter_has_ticket'))
+        ->assertSee(__('management.hotel_guest_parking.total_has_ticket_pending', ['count' => 1]))
+        ->call('setTicketFilter', 'has_ticket')
+        ->assertSet('ticketFilter', 'has_ticket')
+        ->assertSee('Has Ticket Guest')
+        ->assertDontSee('New Guest')
+        ->call('setTicketFilter', 'no_ticket')
+        ->assertSee('New Guest')
+        ->assertDontSee('Has Ticket Guest');
+});
+
 test('delete removes a pending duplicate request without touching registrations', function () {
     $admin = User::factory()->admin()->create();
     $first = seedPendingHotelGuestRequest([

@@ -28,6 +28,9 @@ class HotelGuestParkingRequests extends Component
     /** pending | approved | rejected | all */
     public string $statusFilter = 'pending';
 
+    /** any | has_ticket | no_ticket */
+    public string $ticketFilter = 'any';
+
     public function updatedSearch(): void
     {
         $this->resetPage();
@@ -43,6 +46,11 @@ class HotelGuestParkingRequests extends Component
         $this->resetPage();
     }
 
+    public function updatedTicketFilter(): void
+    {
+        $this->resetPage();
+    }
+
     public function setStatusFilter(string $status): void
     {
         if (! in_array($status, ['pending', 'approved', 'rejected', 'all'], true)) {
@@ -50,6 +58,16 @@ class HotelGuestParkingRequests extends Component
         }
 
         $this->statusFilter = $status;
+        $this->resetPage();
+    }
+
+    public function setTicketFilter(string $filter): void
+    {
+        if (! in_array($filter, ['any', 'has_ticket', 'no_ticket'], true)) {
+            return;
+        }
+
+        $this->ticketFilter = $filter;
         $this->resetPage();
     }
 
@@ -108,6 +126,13 @@ class HotelGuestParkingRequests extends Component
         $rejectedCount = (clone $base)->where('status', HotelGuestParkingRequest::STATUS_REJECTED)->count();
         $total = (clone $base)->count();
 
+        $hasTicketPendingQuery = HotelGuestParkingRequest::query()
+            ->where('status', HotelGuestParkingRequest::STATUS_PENDING);
+        $this->scopeWhereHasExistingTicket($hasTicketPendingQuery);
+        $hasTicketPendingCount = $hasTicketPendingQuery->count();
+
+        $noTicketPendingCount = max(0, $pendingCount - $hasTicketPendingCount);
+
         $query = HotelGuestParkingRequest::query()
             ->with(['actionedByUser:id,name', 'carPark:id,name']);
 
@@ -117,6 +142,12 @@ class HotelGuestParkingRequests extends Component
             $query->where('status', HotelGuestParkingRequest::STATUS_APPROVED);
         } elseif ($this->statusFilter === 'rejected') {
             $query->where('status', HotelGuestParkingRequest::STATUS_REJECTED);
+        }
+
+        if ($this->ticketFilter === 'has_ticket') {
+            $this->scopeWhereHasExistingTicket($query);
+        } elseif ($this->ticketFilter === 'no_ticket') {
+            $this->scopeWhereMissingExistingTicket($query);
         }
 
         $search = trim($this->search);
@@ -204,9 +235,45 @@ class HotelGuestParkingRequests extends Component
             'approvedCount' => $approvedCount,
             'rejectedCount' => $rejectedCount,
             'total' => $total,
+            'hasTicketPendingCount' => $hasTicketPendingCount,
+            'noTicketPendingCount' => $noTicketPendingCount,
             'duplicateVehicleRegs' => $duplicateVehicleRegs,
             'existingTicketsByVehicleReg' => $existingTicketsByVehicleReg,
             'existingTicketCarParkByVehicleReg' => $existingTicketCarParkByVehicleReg,
         ]);
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\HotelGuestParkingRequest>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<\App\Models\HotelGuestParkingRequest>
+     */
+    private function scopeWhereHasExistingTicket($query)
+    {
+        return $query->whereExists(function ($q): void {
+            $q->selectRaw('1')
+                ->from('parking_registrations')
+                ->whereColumn(
+                    'parking_registrations.vehicle_registration',
+                    'hotel_guest_parking_requests.vehicle_registration',
+                )
+                ->whereNull('parking_registrations.deleted_at');
+        });
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\HotelGuestParkingRequest>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<\App\Models\HotelGuestParkingRequest>
+     */
+    private function scopeWhereMissingExistingTicket($query)
+    {
+        return $query->whereNotExists(function ($q): void {
+            $q->selectRaw('1')
+                ->from('parking_registrations')
+                ->whereColumn(
+                    'parking_registrations.vehicle_registration',
+                    'hotel_guest_parking_requests.vehicle_registration',
+                )
+                ->whereNull('parking_registrations.deleted_at');
+        });
     }
 }
