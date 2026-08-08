@@ -8,6 +8,7 @@ use App\Actions\HotelGuestParking\ApproveHotelGuestParkingRequest;
 use App\Actions\HotelGuestParking\DeleteHotelGuestParkingRequest;
 use App\Actions\HotelGuestParking\RejectHotelGuestParkingRequest;
 use App\Models\CarPark;
+use App\Models\Congregation;
 use App\Models\HotelGuestParkingRequest;
 use App\Models\ParkingRegistration;
 use App\Services\ParkingRegistrationDuplicateSignals;
@@ -190,7 +191,34 @@ class HotelGuestParkingRequestDetail extends Component
             $signals->normalizeVehicleRegistration($this->hotelGuestParkingRequest->vehicle_registration),
         );
 
-        return $match?->loadMissing('carPark:id,name');
+        return $match?->loadMissing('carPark:id,name,color');
+    }
+
+    /**
+     * Effective car park for the existing registration (override or congregation default).
+     */
+    #[Computed]
+    public function existingRegistrationCarPark(): ?CarPark
+    {
+        $match = $this->existingRegistrationMatch;
+        if ($match === null) {
+            return null;
+        }
+
+        if ($match->carPark !== null) {
+            return $match->carPark;
+        }
+
+        $congregationName = trim((string) $match->congregation);
+        if ($congregationName === '') {
+            return null;
+        }
+
+        return Congregation::query()
+            ->with('carPark:id,name,color')
+            ->whereRaw('TRIM(name) = ?', [$congregationName])
+            ->first()
+            ?->carPark;
     }
 
     /**

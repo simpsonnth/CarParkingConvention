@@ -73,9 +73,15 @@
                                 'ticket' => $this->existingRegistrationMatch->ticketNumber(),
                                 'name' => $this->existingRegistrationMatch->name,
                                 'congregation' => $this->existingRegistrationMatch->congregation ?: '—',
-                                'car_park' => $this->existingRegistrationMatch->carPark?->name ?: '—',
+                                'car_park' => $this->existingRegistrationCarPark?->name ?: '—',
                             ]) }}
                         </dd>
+                        @if ($this->existingRegistrationCarPark)
+                            <dd class="mt-2">
+                                <span class="text-sm font-medium text-amber-900 dark:text-amber-100">{{ __('management.hotel_guest_parking.has_ticket_car_park') }}:</span>
+                                <x-car-park-badge :park="$this->existingRegistrationCarPark" class="ms-1 align-middle" />
+                            </dd>
+                        @endif
                     </div>
                 @endif
                 <div>

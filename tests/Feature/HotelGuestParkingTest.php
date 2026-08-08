@@ -411,13 +411,21 @@ test('delete does not email the guest', function () {
 test('pending list shows existing car park ticket for matching vehicle', function () {
     $admin = User::factory()->admin()->create();
     $west = seedHotelGuestCarPark('West Car Park');
+    $rosebine = seedHotelGuestCarPark('Rosebine 2');
 
+    Congregation::query()->create([
+        'name' => 'Leatherhead',
+        'uuid' => 'LEATHERHEAD',
+        'car_park_id' => $rosebine->id,
+    ]);
+
+    // Inherited congregation car park (no registration override)
     ParkingRegistration::query()->create([
         'name' => 'Existing Guest',
-        'congregation' => 'London, Balham',
-        'car_park_id' => $west->id,
+        'congregation' => 'Leatherhead',
+        'car_park_id' => null,
         'vehicle_type' => 'car',
-        'vehicle_registration' => 'HG12ABC',
+        'vehicle_registration' => 'LP14KWF',
         'contact_number' => '07700900111',
         'email' => 'existing@example.test',
         'days' => ['Friday'],
@@ -427,16 +435,38 @@ test('pending list shows existing car park ticket for matching vehicle', functio
         'is_circuit_overseer' => false,
     ]);
 
+    // Explicit registration override
+    ParkingRegistration::query()->create([
+        'name' => 'Override Guest',
+        'congregation' => 'Leatherhead',
+        'car_park_id' => $west->id,
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'HG12ABC',
+        'contact_number' => '07700900112',
+        'email' => 'override@example.test',
+        'days' => ['Saturday'],
+        'elderly_infirm_parking' => false,
+        'sharing_with_other_congregations' => false,
+        'coach_captain_to_be_assigned' => false,
+        'is_circuit_overseer' => false,
+    ]);
+
     seedPendingHotelGuestRequest([
         'name' => 'Jordan Guest',
-        'vehicle_registration' => 'HG12ABC',
+        'vehicle_registration' => 'LP14KWF',
         'email' => 'jordan@example.test',
+    ]);
+    seedPendingHotelGuestRequest([
+        'name' => 'Other Guest',
+        'vehicle_registration' => 'HG12ABC',
+        'email' => 'other@example.test',
     ]);
 
     Livewire::actingAs($admin)
         ->test(HotelGuestParkingRequests::class)
         ->assertSee(__('management.hotel_guest_parking.has_ticket_badge'))
-        ->assertSee('London, Balham')
+        ->assertSee(__('management.hotel_guest_parking.has_ticket_car_park'))
+        ->assertSee('Rosebine 2')
         ->assertSee('West Car Park');
 });
 

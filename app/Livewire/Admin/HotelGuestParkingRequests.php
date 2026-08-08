@@ -6,6 +6,8 @@ namespace App\Livewire\Admin;
 
 use App\Actions\HotelGuestParking\DeleteHotelGuestParkingRequest;
 use App\Actions\HotelGuestParking\RejectHotelGuestParkingRequest;
+use App\Models\CarPark;
+use App\Models\Congregation;
 use App\Models\HotelGuestParkingRequest;
 use App\Models\ParkingRegistration;
 use Flux\Flux;
@@ -156,7 +158,7 @@ class HotelGuestParkingRequests extends Component
         $existingTicketsByVehicleReg = [];
         if ($pageVehicleRegs !== []) {
             ParkingRegistration::query()
-                ->with('carPark:id,name')
+                ->with('carPark:id,name,color')
                 ->whereIn('vehicle_registration', $pageVehicleRegs)
                 ->orderBy('id')
                 ->get()
@@ -168,6 +170,34 @@ class HotelGuestParkingRequests extends Component
                 });
         }
 
+        /** @var array<string, CarPark> $congregationCarParkByName */
+        $congregationCarParkByName = [];
+        $congregationNames = collect($existingTicketsByVehicleReg)
+            ->map(fn (ParkingRegistration $registration): string => trim((string) $registration->congregation))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($congregationNames !== []) {
+            Congregation::query()
+                ->with('carPark:id,name,color')
+                ->whereIn('name', $congregationNames)
+                ->get(['id', 'name', 'car_park_id'])
+                ->each(function (Congregation $congregation) use (&$congregationCarParkByName): void {
+                    if ($congregation->carPark !== null) {
+                        $congregationCarParkByName[trim((string) $congregation->name)] = $congregation->carPark;
+                    }
+                });
+        }
+
+        /** @var array<string, CarPark|null> $existingTicketCarParkByVehicleReg */
+        $existingTicketCarParkByVehicleReg = [];
+        foreach ($existingTicketsByVehicleReg as $vehicleReg => $registration) {
+            $existingTicketCarParkByVehicleReg[$vehicleReg] = $registration->carPark
+                ?? ($congregationCarParkByName[trim((string) $registration->congregation)] ?? null);
+        }
+
         return view('livewire.admin.hotel-guest-parking-requests', [
             'rows' => $rows,
             'pendingCount' => $pendingCount,
@@ -176,6 +206,7 @@ class HotelGuestParkingRequests extends Component
             'total' => $total,
             'duplicateVehicleRegs' => $duplicateVehicleRegs,
             'existingTicketsByVehicleReg' => $existingTicketsByVehicleReg,
+            'existingTicketCarParkByVehicleReg' => $existingTicketCarParkByVehicleReg,
         ]);
     }
 }

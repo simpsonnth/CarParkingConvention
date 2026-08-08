@@ -97,7 +97,10 @@
                                 $existingTicket = $existingTicketsByVehicleReg[$row->vehicle_registration] ?? null;
                             @endphp
                             @if ($row->isPending() && $existingTicket)
-                                <div class="mt-1.5 max-w-[220px] space-y-0.5 font-sans normal-case tracking-normal">
+                                @php
+                                    $existingCarPark = $existingTicketCarParkByVehicleReg[$row->vehicle_registration] ?? null;
+                                @endphp
+                                <div class="mt-1.5 max-w-[240px] space-y-1 font-sans normal-case tracking-normal">
                                     <flux:badge size="sm" color="sky">
                                         {{ __('management.hotel_guest_parking.has_ticket_badge') }}
                                     </flux:badge>
@@ -105,8 +108,15 @@
                                         {{ __('management.hotel_guest_parking.has_ticket_detail', [
                                             'ticket' => $existingTicket->ticketNumber(),
                                             'congregation' => $existingTicket->congregation ?: '—',
-                                            'car_park' => $existingTicket->carPark?->name ?: '—',
                                         ]) }}
+                                    </div>
+                                    <div class="text-xs font-semibold text-zinc-800 dark:text-zinc-100">
+                                        {{ __('management.hotel_guest_parking.has_ticket_car_park') }}:
+                                        @if ($existingCarPark)
+                                            <x-car-park-badge :park="$existingCarPark" class="ms-1 align-middle" />
+                                        @else
+                                            <span class="font-normal text-zinc-500">—</span>
+                                        @endif
                                     </div>
                                 </div>
                             @endif
