@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin;
 
+use App\Actions\TicketChangeRequests\DeclineTicketChangeRequest;
 use App\Models\Congregation;
 use App\Models\TicketChangeRequest;
 use Flux\Flux;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -127,6 +129,38 @@ class TicketChangeRequests extends Component
     public function congregations(): array
     {
         return Congregation::query()->orderBy('name')->pluck('name')->all();
+    }
+
+    public function decline(int $id, DeclineTicketChangeRequest $decline): void
+    {
+        abort_unless(auth()->user()?->can('ticket-change-requests.manage'), 403);
+
+        $user = auth()->user();
+        if ($user === null) {
+            abort(403);
+        }
+
+        $request = TicketChangeRequest::query()->findOrFail($id);
+
+        try {
+            $decline->execute($request, $user);
+        } catch (ValidationException $e) {
+            $message = collect($e->errors())->flatten()->first()
+                ?? __('management.ticket_change_requests.already_completed');
+            try {
+                Flux::toast($message, variant: 'danger');
+            } catch (\Throwable) {
+                session()->flash('error', $message);
+            }
+
+            return;
+        }
+
+        try {
+            Flux::toast(__('management.ticket_change_requests.declined'));
+        } catch (\Throwable) {
+            session()->flash('status', __('management.ticket_change_requests.declined'));
+        }
     }
 
     public function markCompleted(int $id): void

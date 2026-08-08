@@ -168,6 +168,13 @@
                                                 {{ __('management.ticket_change_requests.mark_completed') }}
                                             </flux:button>
                                         @endif
+                                        @if (filled($row->notification_email))
+                                            <button type="button" wire:click="decline({{ $row->id }})"
+                                                wire:confirm="{{ __('management.ticket_change_requests.confirm_decline') }}"
+                                                class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-950/40">
+                                                {{ __('management.ticket_change_requests.decline') }}
+                                            </button>
+                                        @endif
                                     @else
                                         <flux:button variant="ghost" size="sm" wire:click="markPending({{ $row->id }})">
                                             {{ __('management.ticket_change_requests.mark_pending') }}

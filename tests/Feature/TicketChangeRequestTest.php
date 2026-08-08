@@ -741,6 +741,47 @@ test('admin can decline ticket change request and email inability to fulfil', fu
     });
 });
 
+test('admin can decline an addition request from the list page', function () {
+    Mail::fake();
+
+    $admin = User::factory()->admin()->create();
+    $cong = seedTicketChangeCongregation('List Decline Hall');
+
+    $row = TicketChangeRequestModel::query()->create([
+        'request_type' => TicketChangeRequestModel::TYPE_ADDITION,
+        'name' => 'Extra Space Seeker',
+        'congregation' => $cong->name,
+        'notification_email' => 'list-seeker@example.test',
+        'notes' => 'Need an additional car park ticket for a visitor.',
+        'payload' => [
+            'addition' => [
+                'name' => 'Extra Space Seeker',
+                'contact_number' => '07700900222',
+                'email' => 'list-seeker@example.test',
+                'vehicle_type' => 'car',
+                'vehicle_registration' => 'LS12ADD',
+                'days' => ['Saturday'],
+                'elderly_infirm_parking' => false,
+            ],
+        ],
+        'status' => TicketChangeRequestModel::STATUS_PENDING,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(TicketChangeRequests::class)
+        ->assertSee(__('management.ticket_change_requests.decline'))
+        ->call('decline', $row->id)
+        ->assertHasNoErrors();
+
+    $row->refresh();
+    expect($row->status)->toBe(TicketChangeRequestModel::STATUS_COMPLETED)
+        ->and($row->actioned_by)->toBe($admin->id);
+
+    Mail::assertSent(\App\Mail\TicketChangeRequestDeclinedMail::class, function (\App\Mail\TicketChangeRequestDeclinedMail $mail): bool {
+        return $mail->hasTo('list-seeker@example.test');
+    });
+});
+
 test('decline requires a notification email', function () {
     $admin = User::factory()->admin()->create();
     $cong = seedTicketChangeCongregation('No Email Decline Hall');
