@@ -901,7 +901,7 @@ test('admin can filter ticket change requests by type', function () {
     Livewire::actingAs($admin)
         ->test(TicketChangeRequests::class)
         ->assertSee('Cancel Person')
-        ->assertSee('Addition Person')
+        ->assertDontSee('Addition Person')
         ->assertSee('Field Person')
         ->assertSee('Cancellation requests')
         ->assertSee('Additional ticket requests')
@@ -916,6 +916,6 @@ test('admin can filter ticket change requests by type', function () {
         ->assertDontSee('Field Person')
         ->call('setTypeFilter', 'all')
         ->assertSee('Cancel Person')
-        ->assertSee('Addition Person')
+        ->assertDontSee('Addition Person')
         ->assertSee('Field Person');
 });

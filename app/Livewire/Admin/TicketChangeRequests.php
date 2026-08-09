@@ -273,6 +273,10 @@ class TicketChangeRequests extends Component
         $typeCounts = [];
         $allForStatus = TicketChangeRequest::query();
         $this->applyStatusFilter($allForStatus);
+        $allForStatus->where(function ($q): void {
+            $q->whereNull('request_type')
+                ->orWhere('request_type', '!=', TicketChangeRequest::TYPE_ADDITION);
+        });
         $typeCounts['all'] = $allForStatus->count();
         foreach (TicketChangeRequest::TYPES as $type) {
             $typeQuery = TicketChangeRequest::query()->where('request_type', $type);
@@ -348,7 +352,17 @@ class TicketChangeRequests extends Component
      */
     protected function applyTypeFilter($query): void
     {
-        if ($this->typeFilter !== 'all' && in_array($this->typeFilter, TicketChangeRequest::TYPES, true)) {
+        if ($this->typeFilter === 'all') {
+            // Additions are actioned from their own tab only.
+            $query->where(function ($q): void {
+                $q->whereNull('request_type')
+                    ->orWhere('request_type', '!=', TicketChangeRequest::TYPE_ADDITION);
+            });
+
+            return;
+        }
+
+        if (in_array($this->typeFilter, TicketChangeRequest::TYPES, true)) {
             $query->where('request_type', $this->typeFilter);
         }
     }
