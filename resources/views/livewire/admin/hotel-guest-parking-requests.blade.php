@@ -251,6 +251,17 @@
                                             <span class="font-normal text-zinc-500">—</span>
                                         @endif
                                     </div>
+                                    <div class="text-xs font-semibold">
+                                        @if ($existingTicket->elderly_infirm_parking)
+                                            <flux:badge size="sm" color="amber">
+                                                {{ __('management.hotel_guest_parking.has_ticket_elderly_yes') }}
+                                            </flux:badge>
+                                        @else
+                                            <flux:badge size="sm" color="zinc">
+                                                {{ __('management.hotel_guest_parking.has_ticket_elderly_no') }}
+                                            </flux:badge>
+                                        @endif
+                                    </div>
                                 </div>
                             @endif
                         </td>

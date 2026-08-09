@@ -317,6 +317,8 @@ return [
         'has_ticket_badge' => 'Ya tiene billete',
         'has_ticket_detail' => '#:ticket · :congregation',
         'has_ticket_car_park' => 'Aparcamiento',
+        'has_ticket_elderly_yes' => 'Ancianos / enfermos: Sí',
+        'has_ticket_elderly_no' => 'Ancianos / enfermos: No',
         'confirm_reject' => '¿Rechazar esta solicitud y enviar un correo al huésped indicando que no se puede facilitar aparcamiento?',
         'approved' => 'Solicitud aprobada y billete enviado.',
         'declined' => 'Solicitud rechazada y huésped notificado por correo.',

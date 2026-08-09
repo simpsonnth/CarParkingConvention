@@ -86,6 +86,17 @@
                                 <x-car-park-badge :park="$this->existingRegistrationCarPark" class="ms-1 align-middle" />
                             </dd>
                         @endif
+                        <dd class="mt-2">
+                            @if ($this->existingRegistrationMatch->elderly_infirm_parking)
+                                <flux:badge size="sm" color="amber">
+                                    {{ __('management.hotel_guest_parking.has_ticket_elderly_yes') }}
+                                </flux:badge>
+                            @else
+                                <flux:badge size="sm" color="zinc">
+                                    {{ __('management.hotel_guest_parking.has_ticket_elderly_no') }}
+                                </flux:badge>
+                            @endif
+                        </dd>
                     </div>
                 @endif
                 <div>

@@ -431,7 +431,7 @@ test('pending list shows existing car park ticket for matching vehicle', functio
         'contact_number' => '07700900111',
         'email' => 'existing@example.test',
         'days' => ['Friday'],
-        'elderly_infirm_parking' => false,
+        'elderly_infirm_parking' => true,
         'sharing_with_other_congregations' => false,
         'coach_captain_to_be_assigned' => false,
         'is_circuit_overseer' => false,
@@ -468,6 +468,8 @@ test('pending list shows existing car park ticket for matching vehicle', functio
         ->test(HotelGuestParkingRequests::class)
         ->assertSee(__('management.hotel_guest_parking.has_ticket_badge'))
         ->assertSee(__('management.hotel_guest_parking.has_ticket_car_park'))
+        ->assertSee(__('management.hotel_guest_parking.has_ticket_elderly_yes'))
+        ->assertSee(__('management.hotel_guest_parking.has_ticket_elderly_no'))
         ->assertSee('Rosebine 2')
         ->assertSee('West Car Park');
 });

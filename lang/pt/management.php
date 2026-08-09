@@ -317,6 +317,8 @@ return [
         'has_ticket_badge' => 'Já tem bilhete',
         'has_ticket_detail' => '#:ticket · :congregation',
         'has_ticket_car_park' => 'Parque',
+        'has_ticket_elderly_yes' => 'Idosos / enfermidade: Sim',
+        'has_ticket_elderly_no' => 'Idosos / enfermidade: Não',
         'confirm_reject' => 'Recusar este pedido e enviar email ao hóspede a informar que não é possível disponibilizar estacionamento?',
         'approved' => 'Pedido aprovado e bilhete enviado.',
         'declined' => 'Pedido recusado e hóspede notificado por email.',

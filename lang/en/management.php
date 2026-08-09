@@ -317,6 +317,8 @@ return [
         'has_ticket_badge' => 'Has ticket',
         'has_ticket_detail' => '#:ticket · :congregation',
         'has_ticket_car_park' => 'Car park',
+        'has_ticket_elderly_yes' => 'Elderly / infirm: Yes',
+        'has_ticket_elderly_no' => 'Elderly / infirm: No',
         'confirm_reject' => 'Decline this request and email the guest that parking cannot be provided?',
         'approved' => 'Request approved and ticket emailed.',
         'declined' => 'Request declined and guest emailed.',
