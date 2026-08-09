@@ -4,6 +4,7 @@ use App\Livewire\Admin\CarParks;
 use App\Livewire\Attendant\Scan;
 use App\Models\CarPark;
 use App\Models\Congregation;
+use App\Models\HotelGuestParkingRequest;
 use App\Models\ParkingPass;
 use App\Models\ParkingRegistration;
 use App\Models\User;
@@ -12,6 +13,46 @@ use Livewire\Livewire;
 
 test('guest cannot access car parks page', function () {
     $this->get(route('admin.car-parks'))->assertRedirect();
+});
+
+test('car parks capacity counts radisson guests toward all convention days', function () {
+    $admin = User::factory()->admin()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Radisson Count Park',
+        'capacity' => 10,
+        'capacity_friday' => 10,
+        'capacity_saturday' => 10,
+        'capacity_sunday' => 10,
+        'color' => '#2563eb',
+    ]);
+
+    HotelGuestParkingRequest::ensureCongregation($park->id);
+
+    ParkingRegistration::query()->create([
+        'name' => 'Hotel Guest',
+        'congregation' => HotelGuestParkingRequest::CONGREGATION_NAME,
+        'car_park_id' => $park->id,
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'RD01AAA',
+        'contact_number' => '07700000001',
+        'email' => 'hotel@example.test',
+        'days' => ['Thursday', 'Friday', 'Saturday'],
+        'elderly_infirm_parking' => false,
+        'sharing_with_other_congregations' => false,
+        'coach_captain_to_be_assigned' => false,
+        'is_circuit_overseer' => false,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(\App\Livewire\Admin\CarParks::class)
+        ->assertSee('Radisson Count Park')
+        ->assertSee('1 / 10');
+
+    $html = Livewire::actingAs($admin)->test(\App\Livewire\Admin\CarParks::class)->html();
+
+    // Guest nights omit Sunday, but capacity still treats them as Fri+Sat+Sun.
+    expect(substr_count($html, '1 / 10'))->toBeGreaterThanOrEqual(3);
 });
 
 test('car parks page shows per-day assigned demand against day capacity', function () {

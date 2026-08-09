@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Models\HotelGuestParkingRequest;
 use App\Models\ParkingPass;
 use App\Models\ParkingRegistration;
 use App\Support\ConventionDay;
@@ -42,7 +43,7 @@ class CarParkDayCapacityMetrics
         foreach (ConventionDay::singleDayKeys() as $day) {
             $counts[strtolower($day)] = ParkingRegistration::query()
                 ->assignedToCarPark($carParkId)
-                ->whereJsonContains('days', $day)
+                ->where(fn ($q) => $this->scopeAttendingConventionDay($q, $day))
                 ->where(fn ($q) => $this->scopeExcludingDropOffCoaches($q))
                 ->count();
         }
@@ -62,7 +63,7 @@ class CarParkDayCapacityMetrics
         foreach (ConventionDay::singleDayKeys() as $day) {
             $counts[strtolower($day)] = ParkingRegistration::query()
                 ->assignedToCarPark($carParkId)
-                ->whereJsonContains('days', $day)
+                ->where(fn ($q) => $this->scopeAttendingConventionDay($q, $day))
                 ->where(fn ($q) => $this->scopeOnlyDropOffCoaches($q))
                 ->count();
         }
@@ -93,7 +94,7 @@ class CarParkDayCapacityMetrics
     {
         return ParkingRegistration::query()->selectRaw('count(*)')
             ->leftJoin('congregations', fn ($join) => $join->whereRaw('TRIM(congregations.name) = TRIM(parking_registrations.congregation)'))
-            ->whereJsonContains('parking_registrations.days', $day)
+            ->where(fn ($q) => $this->scopeAttendingConventionDay($q, $day, 'parking_registrations'))
             ->where(fn ($q) => $this->scopeExcludingDropOffCoaches($q, 'parking_registrations'))
             ->where(function ($q) {
                 $q->whereColumn('parking_registrations.car_park_id', 'car_parks.id')
@@ -122,7 +123,7 @@ class CarParkDayCapacityMetrics
     {
         return ParkingRegistration::query()->selectRaw('count(*)')
             ->leftJoin('congregations', fn ($join) => $join->whereRaw('TRIM(congregations.name) = TRIM(parking_registrations.congregation)'))
-            ->whereJsonContains('parking_registrations.days', $day)
+            ->where(fn ($q) => $this->scopeAttendingConventionDay($q, $day, 'parking_registrations'))
             ->where(fn ($q) => $this->scopeOnlyDropOffCoaches($q, 'parking_registrations'))
             ->where(function ($q) {
                 $q->whereColumn('parking_registrations.car_park_id', 'car_parks.id')
@@ -131,6 +132,22 @@ class CarParkDayCapacityMetrics
                             ->whereColumn('congregations.car_park_id', 'car_parks.id');
                     });
             });
+    }
+
+    /**
+     * Convention-day demand: registration lists that day, or Radisson hotel guests
+     * (assumed to attend all three convention days regardless of hotel nights booked).
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\ParkingRegistration>  $query
+     */
+    protected function scopeAttendingConventionDay($query, string $day, string $table = 'parking_registrations')
+    {
+        $radisson = mb_strtolower(HotelGuestParkingRequest::CONGREGATION_NAME);
+
+        return $query->where(function ($q) use ($day, $table, $radisson): void {
+            $q->whereJsonContains($table.'.days', $day)
+                ->orWhereRaw('LOWER(TRIM('.$table.'.congregation)) = ?', [$radisson]);
+        });
     }
 
     /**

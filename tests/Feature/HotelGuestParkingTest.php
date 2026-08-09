@@ -157,7 +157,7 @@ test('approve creates radisson hotel guest registration emails ticket with ccs',
         ->and($registration->contact_number)->toBe('07700900999')
         ->and($registration->email)->toBe('jordan@example.test')
         ->and($registration->vehicle_registration)->toBe('HG12ABC')
-        ->and($registration->days)->toBe(['Wednesday', 'Friday', 'Sunday'])
+        ->and($registration->days)->toBe(['Wednesday', 'Friday', 'Saturday', 'Sunday'])
         ->and($registration->vehicle_type)->toBe('car')
         ->and($registration->is_circuit_overseer)->toBeFalse()
         ->and($registration->ticket_sent_at)->not->toBeNull();
@@ -328,7 +328,7 @@ test('approve updates existing registration to radisson hotel guest and chosen c
         ->and($existing->name)->toBe('Jordan Guest')
         ->and($existing->contact_number)->toBe('07700900999')
         ->and($existing->email)->toBe('jordan@example.test')
-        ->and($existing->days)->toBe(['Wednesday', 'Friday', 'Sunday'])
+        ->and($existing->days)->toBe(['Wednesday', 'Friday', 'Saturday', 'Sunday'])
         ->and($existing->ticket_sent_at)->not->toBeNull();
 
     Mail::assertSent(CarParkTicketsMail::class, function (CarParkTicketsMail $mail): bool {
