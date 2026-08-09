@@ -9,7 +9,6 @@ use App\Models\HotelGuestParkingRequest;
 use App\Models\ParkingRegistration;
 use App\Models\User;
 use App\Services\ParkingRegistrationDuplicateSignals;
-use App\Support\ConventionDay;
 use App\Support\DeferredTicketMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -81,7 +80,7 @@ class ApproveHotelGuestParkingRequest
             'vehicle_registration' => $locked->vehicle_registration,
             'contact_number' => $locked->contact_number,
             'email' => $locked->email,
-            'days' => $this->registrationDaysForHotelStay(
+            'days' => HotelGuestParkingRequest::registrationDaysForHotelStay(
                 is_array($locked->days) ? $locked->days : [],
             ),
             'elderly_infirm_parking' => false,
@@ -113,23 +112,5 @@ class ApproveHotelGuestParkingRequest
         $trimmed = trim($adminNotes);
 
         return $trimmed !== '' ? $trimmed : null;
-    }
-
-    /**
-     * Hotel nights stay on the ticket, and Fri/Sat/Sun are always included because
-     * Radisson guests are assumed to attend all three convention days.
-     *
-     * @param  list<string>  $hotelNights
-     * @return list<string>
-     */
-    private function registrationDaysForHotelStay(array $hotelNights): array
-    {
-        $allowed = HotelGuestParkingRequest::ALLOWED_DAYS;
-        $merged = array_unique([
-            ...array_intersect($allowed, $hotelNights),
-            ...ConventionDay::singleDayKeys(),
-        ]);
-
-        return array_values(array_intersect($allowed, $merged));
     }
 }

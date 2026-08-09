@@ -6,12 +6,13 @@ namespace App\Livewire\Admin;
 
 use App\Actions\HotelGuestParking\DeleteHotelGuestParkingRequest;
 use App\Actions\HotelGuestParking\RejectHotelGuestParkingRequest;
-use App\Actions\Registrations\SendCarParkTicketsEmail;
+use App\Actions\HotelGuestParking\UpdateHotelGuestParkingRequest;
 use App\Models\CarPark;
 use App\Models\Congregation;
 use App\Models\HotelGuestParkingRequest;
 use App\Models\ParkingRegistration;
 use App\Services\CarParkDayCapacityMetrics;
+use App\Services\OutboundEmailProcessor;
 use App\Support\TicketEmailCcList;
 use Flux\Flux;
 use Illuminate\Validation\ValidationException;
@@ -50,6 +51,21 @@ class HotelGuestParkingRequests extends Component
     public string $resendOriginalEmail = '';
 
     public string $resendGuestName = '';
+
+    public bool $editModalOpen = false;
+
+    public ?int $editRequestId = null;
+
+    public string $editName = '';
+
+    public string $editContactNumber = '';
+
+    public string $editVehicleRegistration = '';
+
+    public string $editEmail = '';
+
+    /** @var list<string> */
+    public array $editDays = [];
 
     public function updatedSearch(): void
     {
@@ -153,6 +169,114 @@ class HotelGuestParkingRequests extends Component
         }
     }
 
+    public function openEditModal(int $id): void
+    {
+        abort_unless(auth()->user()?->can('hotel-guest-parking.manage'), 403);
+
+        $request = HotelGuestParkingRequest::query()->findOrFail($id);
+
+        $this->resetErrorBag([
+            'editName',
+            'editContactNumber',
+            'editVehicleRegistration',
+            'editEmail',
+            'editDays',
+        ]);
+        $this->editRequestId = (int) $request->id;
+        $this->editName = (string) $request->name;
+        $this->editContactNumber = (string) $request->contact_number;
+        $this->editVehicleRegistration = (string) $request->vehicle_registration;
+        $this->editEmail = (string) $request->email;
+        $this->editDays = array_values(array_intersect(
+            HotelGuestParkingRequest::ALLOWED_DAYS,
+            is_array($request->days) ? $request->days : [],
+        ));
+        $this->editModalOpen = true;
+    }
+
+    public function closeEditModal(): void
+    {
+        $this->editModalOpen = false;
+        $this->editRequestId = null;
+        $this->editName = '';
+        $this->editContactNumber = '';
+        $this->editVehicleRegistration = '';
+        $this->editEmail = '';
+        $this->editDays = [];
+        $this->resetErrorBag([
+            'editName',
+            'editContactNumber',
+            'editVehicleRegistration',
+            'editEmail',
+            'editDays',
+        ]);
+    }
+
+    public function saveEdit(UpdateHotelGuestParkingRequest $update): void
+    {
+        abort_unless(auth()->user()?->can('hotel-guest-parking.manage'), 403);
+
+        if ($this->editRequestId === null) {
+            $this->closeEditModal();
+
+            return;
+        }
+
+        $this->validate([
+            'editName' => 'required|string|max:255',
+            'editContactNumber' => 'required|string|max:50',
+            'editVehicleRegistration' => 'required|string|max:20',
+            'editEmail' => 'required|email|max:255',
+            'editDays' => 'required|array|min:1',
+            'editDays.*' => 'string|in:'.implode(',', HotelGuestParkingRequest::ALLOWED_DAYS),
+        ], [
+            'editName.required' => __('management.hotel_guest_parking.edit_name_required'),
+            'editContactNumber.required' => __('management.hotel_guest_parking.edit_phone_required'),
+            'editVehicleRegistration.required' => __('management.hotel_guest_parking.edit_vehicle_required'),
+            'editEmail.required' => __('management.hotel_guest_parking.edit_email_required'),
+            'editEmail.email' => __('management.hotel_guest_parking.edit_email_invalid'),
+            'editDays.required' => __('management.hotel_guest_parking.edit_days_required'),
+            'editDays.min' => __('management.hotel_guest_parking.edit_days_required'),
+        ]);
+
+        $request = HotelGuestParkingRequest::query()->findOrFail($this->editRequestId);
+
+        try {
+            $update->execute($request, [
+                'name' => $this->editName,
+                'contact_number' => $this->editContactNumber,
+                'vehicle_registration' => $this->editVehicleRegistration,
+                'email' => $this->editEmail,
+                'days' => $this->editDays,
+            ]);
+        } catch (ValidationException $e) {
+            $fieldMap = [
+                'name' => 'editName',
+                'contact_number' => 'editContactNumber',
+                'vehicle_registration' => 'editVehicleRegistration',
+                'email' => 'editEmail',
+                'days' => 'editDays',
+            ];
+            foreach ($e->errors() as $field => $messages) {
+                $base = explode('.', (string) $field)[0];
+                $target = $fieldMap[$base] ?? (string) $field;
+                foreach ($messages as $message) {
+                    $this->addError($target, $message);
+                }
+            }
+
+            return;
+        }
+
+        $this->closeEditModal();
+
+        try {
+            Flux::toast(__('management.hotel_guest_parking.edit_saved'));
+        } catch (\Throwable) {
+            session()->flash('status', __('management.hotel_guest_parking.edit_saved'));
+        }
+    }
+
     public function openResendModal(int $id): void
     {
         abort_unless(auth()->user()?->can('hotel-guest-parking.manage'), 403);
@@ -202,7 +326,7 @@ class HotelGuestParkingRequests extends Component
         return TicketEmailCcList::all();
     }
 
-    public function resendTicket(SendCarParkTicketsEmail $sender): void
+    public function resendTicket(OutboundEmailProcessor $outbound): void
     {
         abort_unless(auth()->user()?->can('hotel-guest-parking.manage'), 403);
 
@@ -228,7 +352,7 @@ class HotelGuestParkingRequests extends Component
         }
 
         try {
-            $result = $sender->execute(
+            $result = $outbound->sendCarParkTicketsNowOrQueue(
                 [(int) $request->parking_registration_id],
                 $this->resendEmailTo,
             );
@@ -252,14 +376,17 @@ class HotelGuestParkingRequests extends Component
 
         $this->closeResendModal();
 
+        $message = $result['status'] === 'sent'
+            ? __('management.hotel_guest_parking.resend_sent', ['email' => $result['to']])
+            : __('management.hotel_guest_parking.resend_queued', [
+                'email' => $result['to'],
+                'when' => $result['available_at']?->timezone(config('app.timezone'))->format('d M Y H:i') ?? 'soon',
+            ]);
+
         try {
-            Flux::toast(__('management.hotel_guest_parking.resend_sent', [
-                'email' => $result['to'],
-            ]));
+            Flux::toast($message, variant: $result['status'] === 'sent' ? 'success' : 'warning');
         } catch (\Throwable) {
-            session()->flash('status', __('management.hotel_guest_parking.resend_sent', [
-                'email' => $result['to'],
-            ]));
+            session()->flash('status', $message);
         }
     }
 

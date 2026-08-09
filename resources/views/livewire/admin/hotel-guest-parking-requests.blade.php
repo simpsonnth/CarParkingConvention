@@ -286,6 +286,10 @@
                                     {{ __('management.hotel_guest_parking.view') }}
                                 </a>
                                 @can('hotel-guest-parking.manage')
+                                    <button type="button" wire:click="openEditModal({{ $row->id }})"
+                                        class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-700">
+                                        {{ __('management.hotel_guest_parking.edit') }}
+                                    </button>
                                     @if ($row->isPending())
                                         <a href="{{ route('admin.hotel-guest-parking.show', $row) }}" wire:navigate
                                             class="inline-flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
@@ -325,6 +329,10 @@
     <div>
         {{ $rows->links() }}
     </div>
+
+    <flux:modal wire:model="editModalOpen" class="w-[calc(100vw-2rem)] max-w-lg">
+        @include('livewire.admin.partials.hotel-guest-parking-edit-fields')
+    </flux:modal>
 
     <flux:modal wire:model="resendModalOpen" class="w-[calc(100vw-2rem)] max-w-md">
         <div class="space-y-6">

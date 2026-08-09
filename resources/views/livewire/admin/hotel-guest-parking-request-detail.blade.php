@@ -9,6 +9,9 @@
         </div>
         <div class="flex flex-wrap gap-2">
             @can('hotel-guest-parking.manage')
+                <flux:button variant="ghost" wire:click="openEditModal" icon="pencil-square">
+                    {{ __('management.hotel_guest_parking.edit') }}
+                </flux:button>
                 @if ($hotelGuestParkingRequest->isPending())
                     <flux:button variant="primary" wire:click="openApproveModal" icon="check">
                         {{ __('management.hotel_guest_parking.approve') }}
@@ -192,6 +195,10 @@
                 </flux:button>
             </div>
         </div>
+    </flux:modal>
+
+    <flux:modal wire:model="editModalOpen" class="w-[calc(100vw-2rem)] max-w-lg">
+        @include('livewire.admin.partials.hotel-guest-parking-edit-fields')
     </flux:modal>
 
     <flux:modal wire:model="resendModalOpen" class="w-[calc(100vw-2rem)] max-w-md">

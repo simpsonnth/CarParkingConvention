@@ -2,11 +2,11 @@
 
 namespace App\Livewire\Admin;
 
-use App\Actions\Registrations\SendCarParkTicketsEmail;
 use App\Models\Congregation;
 use App\Models\ParkingRegistration;
 use App\Models\TicketChangeRequest;
 use App\Services\CongregationNumbersReportMetrics;
+use App\Services\OutboundEmailProcessor;
 use App\Services\ParkingRegistrationAttendanceByDayMetrics;
 use App\Services\ParkingRegistrationDuplicateSignals;
 use App\Services\ParkingRegistrationListQuery;
@@ -716,7 +716,7 @@ class Registrations extends Component
         return TicketEmailCcList::all();
     }
 
-    public function resendTicket(SendCarParkTicketsEmail $sender): void
+    public function resendTicket(OutboundEmailProcessor $outbound): void
     {
         abort_unless(auth()->user()?->can('registrations.print'), 403);
 
@@ -737,7 +737,7 @@ class Registrations extends Component
         $registration = ParkingRegistration::query()->findOrFail($this->resendRegistrationId);
 
         try {
-            $result = $sender->execute(
+            $result = $outbound->sendCarParkTicketsNowOrQueue(
                 [(int) $registration->id],
                 $this->resendEmailTo,
                 $this->resendNote !== '' ? $this->resendNote : null,
@@ -758,13 +758,16 @@ class Registrations extends Component
 
         $this->closeResendTicketModal();
 
-        $this->ticketsSentSuccessMessage = __('registrations.resend_sent', [
-            'email' => $result['to'],
-        ]);
+        $this->ticketsSentSuccessMessage = $result['status'] === 'sent'
+            ? __('registrations.resend_sent', ['email' => $result['to']])
+            : __('registrations.resend_queued', [
+                'email' => $result['to'],
+                'when' => $result['available_at']?->timezone(config('app.timezone'))->format('d M Y H:i') ?? 'soon',
+            ]);
         $this->ticketsSentSuccessOpen = true;
     }
 
-    public function sendCarParkTickets(SendCarParkTicketsEmail $sender): void
+    public function sendCarParkTickets(OutboundEmailProcessor $outbound): void
     {
         abort_unless(auth()->user()?->can('registrations.print'), 403);
 
@@ -782,19 +785,22 @@ class Registrations extends Component
         $this->sendingTickets = true;
 
         try {
-            $result = $sender->execute(
-                array_values(array_map('intval', $this->selectedIds)),
-                $this->ticketEmailTo,
-            );
+            $ids = array_values(array_map('intval', $this->selectedIds));
+            $result = $outbound->sendCarParkTicketsNowOrQueue($ids, $this->ticketEmailTo);
 
             $this->sendTicketsModalOpen = false;
             $this->ticketEmailTo = '';
             $this->selectedIds = [];
 
-            $this->ticketsSentSuccessMessage = __('registrations.tickets_email_sent', [
-                'count' => $result['sent'],
-                'email' => $result['to'],
-            ]);
+            $this->ticketsSentSuccessMessage = $result['status'] === 'sent'
+                ? __('registrations.tickets_email_sent', [
+                    'count' => count($ids),
+                    'email' => $result['to'],
+                ])
+                : __('registrations.tickets_email_queued', [
+                    'email' => $result['to'],
+                    'when' => $result['available_at']?->timezone(config('app.timezone'))->format('d M Y H:i') ?? 'soon',
+                ]);
             $this->ticketsSentSuccessOpen = true;
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;

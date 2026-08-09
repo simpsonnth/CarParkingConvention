@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\ConventionDay;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -117,5 +118,22 @@ class HotelGuestParkingRequest extends Model
     public function isRejected(): bool
     {
         return $this->status === self::STATUS_REJECTED;
+    }
+
+    /**
+     * Hotel nights stay on the ticket, and Fri/Sat/Sun are always included because
+     * Radisson guests are assumed to attend all three convention days.
+     *
+     * @param  list<string>  $hotelNights
+     * @return list<string>
+     */
+    public static function registrationDaysForHotelStay(array $hotelNights): array
+    {
+        $merged = array_unique([
+            ...array_intersect(self::ALLOWED_DAYS, $hotelNights),
+            ...ConventionDay::singleDayKeys(),
+        ]);
+
+        return array_values(array_intersect(self::ALLOWED_DAYS, $merged));
     }
 }

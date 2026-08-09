@@ -393,6 +393,94 @@ test('list decline marks pending request as rejected', function () {
     });
 });
 
+test('admin can edit pending hotel guest request details from the list', function () {
+    $admin = User::factory()->admin()->create();
+    $request = seedPendingHotelGuestRequest([
+        'name' => 'Wrong Name',
+        'contact_number' => '07000000000',
+        'vehicle_registration' => 'AA11AAA',
+        'email' => 'wrong@example.test',
+        'days' => ['Thursday', 'Friday'],
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(HotelGuestParkingRequests::class)
+        ->call('openEditModal', $request->id)
+        ->assertSet('editModalOpen', true)
+        ->assertSet('editName', 'Wrong Name')
+        ->set('editName', 'Corrected Guest')
+        ->set('editContactNumber', '07700900111')
+        ->set('editVehicleRegistration', 'bb22 bbb')
+        ->set('editEmail', 'corrected@example.test')
+        ->set('editDays', ['Wednesday', 'Saturday', 'Sunday'])
+        ->call('saveEdit')
+        ->assertHasNoErrors()
+        ->assertSet('editModalOpen', false);
+
+    $request->refresh();
+    expect($request->name)->toBe('Corrected Guest')
+        ->and($request->contact_number)->toBe('07700900111')
+        ->and($request->vehicle_registration)->toBe('BB22BBB')
+        ->and($request->email)->toBe('corrected@example.test')
+        ->and($request->days)->toBe(['Wednesday', 'Saturday', 'Sunday'])
+        ->and($request->status)->toBe(HotelGuestParkingRequest::STATUS_PENDING);
+});
+
+test('editing an approved request also updates the linked registration', function () {
+    $admin = User::factory()->admin()->create();
+    $park = seedHotelGuestCarPark();
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Old Guest',
+        'congregation' => HotelGuestParkingRequest::CONGREGATION_NAME,
+        'car_park_id' => $park->id,
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'OLD11REG',
+        'contact_number' => '07000000001',
+        'email' => 'old@example.test',
+        'days' => ['Thursday', 'Friday', 'Saturday', 'Sunday'],
+        'elderly_infirm_parking' => false,
+        'sharing_with_other_congregations' => false,
+        'coach_captain_to_be_assigned' => false,
+        'is_circuit_overseer' => false,
+    ]);
+    $request = seedPendingHotelGuestRequest([
+        'name' => 'Old Guest',
+        'contact_number' => '07000000001',
+        'vehicle_registration' => 'OLD11REG',
+        'email' => 'old@example.test',
+        'days' => ['Thursday', 'Friday'],
+        'status' => HotelGuestParkingRequest::STATUS_APPROVED,
+        'car_park_id' => $park->id,
+        'parking_registration_id' => $registration->id,
+        'actioned_at' => now(),
+        'actioned_by' => $admin->id,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(HotelGuestParkingRequestDetail::class, ['hotelGuestParkingRequest' => $request])
+        ->call('openEditModal')
+        ->set('editName', 'Updated Guest')
+        ->set('editContactNumber', '07700900988')
+        ->set('editVehicleRegistration', 'NEW22REG')
+        ->set('editEmail', 'updated@example.test')
+        ->set('editDays', ['Wednesday', 'Thursday'])
+        ->call('saveEdit')
+        ->assertHasNoErrors();
+
+    $request->refresh();
+    $registration->refresh();
+
+    expect($request->name)->toBe('Updated Guest')
+        ->and($request->vehicle_registration)->toBe('NEW22REG')
+        ->and($request->email)->toBe('updated@example.test')
+        ->and($request->days)->toBe(['Wednesday', 'Thursday'])
+        ->and($registration->name)->toBe('Updated Guest')
+        ->and($registration->vehicle_registration)->toBe('NEW22REG')
+        ->and($registration->email)->toBe('updated@example.test')
+        ->and($registration->contact_number)->toBe('07700900988')
+        ->and($registration->days)->toBe(['Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+});
+
 test('delete does not email the guest', function () {
     Mail::fake();
 

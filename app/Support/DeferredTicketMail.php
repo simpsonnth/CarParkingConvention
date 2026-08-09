@@ -4,39 +4,34 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use App\Actions\Registrations\SendCarParkTicketsEmail;
-use App\Actions\HotelGuestParking\SendHotelGuestParkingDeclinedEmail;
-use App\Actions\TicketChangeRequests\SendTicketCancellationEmail;
-use App\Actions\TicketChangeRequests\SendTicketChangeRequestDeclinedEmail;
+use App\Models\OutboundEmail;
+use App\Services\OutboundEmailProcessor;
 use Illuminate\Support\Facades\Log;
 
 final class DeferredTicketMail
 {
     /**
-     * Run immediately in tests; after the HTTP response in production so Livewire
-     * can return success before slow PDF generation finishes.
+     * Persist the outbound email, then attempt delivery after the HTTP response
+     * (or immediately in tests). Quota failures stay queued until Resend resets.
+     *
+     * @param  list<int>  $registrationIds
      */
-    public static function sendCarParkTickets(array $registrationIds, string $toEmail): void
-    {
-        $send = function () use ($registrationIds, $toEmail): void {
-            try {
-                app(SendCarParkTicketsEmail::class)->execute($registrationIds, $toEmail);
-            } catch (\Throwable $e) {
-                Log::error('Deferred car park ticket email failed', [
-                    'to' => $toEmail,
-                    'registration_ids' => $registrationIds,
-                    'message' => $e->getMessage(),
-                ]);
-            }
-        };
+    public static function sendCarParkTickets(
+        array $registrationIds,
+        string $toEmail,
+        ?string $note = null,
+    ): void {
+        $processor = app(OutboundEmailProcessor::class);
+        $email = $processor->enqueue(
+            OutboundEmail::TYPE_CAR_PARK_TICKETS,
+            $toEmail,
+            [
+                'registration_ids' => array_values(array_unique(array_map('intval', $registrationIds))),
+                'note' => $note,
+            ],
+        );
 
-        if (app()->runningUnitTests()) {
-            $send();
-
-            return;
-        }
-
-        dispatch($send)->afterResponse();
+        self::runAfterResponse($email->id);
     }
 
     public static function sendCancellation(
@@ -45,30 +40,18 @@ final class DeferredTicketMail
         string $congregation,
         string $driverName,
     ): void {
-        $send = function () use ($toEmail, $ticketNumber, $congregation, $driverName): void {
-            try {
-                app(SendTicketCancellationEmail::class)->execute(
-                    toEmail: $toEmail,
-                    ticketNumber: $ticketNumber,
-                    congregation: $congregation,
-                    driverName: $driverName,
-                );
-            } catch (\Throwable $e) {
-                Log::error('Deferred cancellation email failed', [
-                    'to' => $toEmail,
-                    'ticket_number' => $ticketNumber,
-                    'message' => $e->getMessage(),
-                ]);
-            }
-        };
+        $processor = app(OutboundEmailProcessor::class);
+        $email = $processor->enqueue(
+            OutboundEmail::TYPE_CANCELLATION,
+            $toEmail,
+            [
+                'ticket_number' => $ticketNumber,
+                'congregation' => $congregation,
+                'driver_name' => $driverName,
+            ],
+        );
 
-        if (app()->runningUnitTests()) {
-            $send();
-
-            return;
-        }
-
-        dispatch($send)->afterResponse();
+        self::runAfterResponse($email->id);
     }
 
     public static function sendDecline(
@@ -76,43 +59,48 @@ final class DeferredTicketMail
         string $requesterName,
         string $congregation,
     ): void {
-        $send = function () use ($toEmail, $requesterName, $congregation): void {
-            try {
-                app(SendTicketChangeRequestDeclinedEmail::class)->execute(
-                    toEmail: $toEmail,
-                    requesterName: $requesterName,
-                    congregation: $congregation,
-                );
-            } catch (\Throwable $e) {
-                Log::error('Deferred ticket change decline email failed', [
-                    'to' => $toEmail,
-                    'message' => $e->getMessage(),
-                ]);
-            }
-        };
+        $processor = app(OutboundEmailProcessor::class);
+        $email = $processor->enqueue(
+            OutboundEmail::TYPE_CHANGE_DECLINE,
+            $toEmail,
+            [
+                'requester_name' => $requesterName,
+                'congregation' => $congregation,
+            ],
+        );
 
-        if (app()->runningUnitTests()) {
-            $send();
-
-            return;
-        }
-
-        dispatch($send)->afterResponse();
+        self::runAfterResponse($email->id);
     }
 
     public static function sendHotelGuestParkingDecline(
         string $toEmail,
         string $requesterName,
     ): void {
-        $send = function () use ($toEmail, $requesterName): void {
+        $processor = app(OutboundEmailProcessor::class);
+        $email = $processor->enqueue(
+            OutboundEmail::TYPE_HOTEL_DECLINE,
+            $toEmail,
+            [
+                'requester_name' => $requesterName,
+            ],
+        );
+
+        self::runAfterResponse($email->id);
+    }
+
+    private static function runAfterResponse(int $outboundEmailId): void
+    {
+        $send = function () use ($outboundEmailId): void {
             try {
-                app(SendHotelGuestParkingDeclinedEmail::class)->execute(
-                    toEmail: $toEmail,
-                    requesterName: $requesterName,
-                );
+                $processor = app(OutboundEmailProcessor::class);
+                $email = OutboundEmail::query()->find($outboundEmailId);
+                if ($email !== null) {
+                    $processor->process($email);
+                }
+                $processor->processDue(20);
             } catch (\Throwable $e) {
-                Log::error('Deferred hotel guest parking decline email failed', [
-                    'to' => $toEmail,
+                Log::error('Deferred outbound email runner failed', [
+                    'outbound_email_id' => $outboundEmailId,
                     'message' => $e->getMessage(),
                 ]);
             }
