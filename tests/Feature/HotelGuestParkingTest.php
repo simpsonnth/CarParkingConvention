@@ -622,3 +622,84 @@ test('admin can resend approved hotel guest ticket to original or alternate emai
             && $mail->congregationLabel === HotelGuestParkingRequest::CONGREGATION_NAME;
     });
 });
+
+test('admin can sort hotel guest parking requests by name and vehicle registration', function () {
+    $admin = User::factory()->admin()->create();
+
+    seedPendingHotelGuestRequest([
+        'name' => 'Zoe Guest',
+        'email' => 'zoe@example.test',
+        'vehicle_registration' => 'ZZ99ZZZ',
+    ]);
+    seedPendingHotelGuestRequest([
+        'name' => 'Amy Guest',
+        'email' => 'amy@example.test',
+        'vehicle_registration' => 'AA11AAA',
+    ]);
+    seedPendingHotelGuestRequest([
+        'name' => 'Mia Guest',
+        'email' => 'mia@example.test',
+        'vehicle_registration' => 'MM55MMM',
+    ]);
+
+    $component = Livewire::actingAs($admin)
+        ->test(HotelGuestParkingRequests::class)
+        ->call('setStatusFilter', 'all')
+        ->call('setSort', 'name')
+        ->assertSet('sortBy', 'name')
+        ->assertSet('sortDir', 'asc');
+
+    expect($component->viewData('rows')->pluck('name')->all())
+        ->toBe(['Amy Guest', 'Mia Guest', 'Zoe Guest']);
+
+    $component
+        ->call('setSort', 'name')
+        ->assertSet('sortDir', 'desc');
+
+    expect($component->viewData('rows')->pluck('name')->all())
+        ->toBe(['Zoe Guest', 'Mia Guest', 'Amy Guest']);
+
+    $component
+        ->call('setSort', 'vehicle_registration')
+        ->assertSet('sortBy', 'vehicle_registration')
+        ->assertSet('sortDir', 'asc');
+
+    expect($component->viewData('rows')->pluck('vehicle_registration')->all())
+        ->toBe(['AA11AAA', 'MM55MMM', 'ZZ99ZZZ']);
+});
+
+test('hotel guest parking list shows how much a car park is over capacity', function () {
+    $admin = User::factory()->admin()->create();
+
+    $park = seedHotelGuestCarPark('North Car Park', [
+        'capacity' => 2,
+        'capacity_friday' => 2,
+        'capacity_saturday' => 2,
+        'capacity_sunday' => 2,
+    ]);
+
+    HotelGuestParkingRequest::ensureCongregation();
+    $congregation = Congregation::query()
+        ->where('name', HotelGuestParkingRequest::CONGREGATION_NAME)
+        ->firstOrFail();
+    $congregation->update(['car_park_id' => $park->id]);
+
+    foreach (['AA11AAA', 'BB22BBB', 'CC33CCC'] as $i => $reg) {
+        ParkingRegistration::query()->create([
+            'name' => 'Guest '.$i,
+            'congregation' => HotelGuestParkingRequest::CONGREGATION_NAME,
+            'contact_number' => '0770000000'.$i,
+            'email' => "guest{$i}@example.test",
+            'vehicle_type' => 'car',
+            'vehicle_registration' => $reg,
+            'days' => ['Friday'],
+            'car_park_id' => $park->id,
+        ]);
+    }
+
+    Livewire::actingAs($admin)
+        ->test(HotelGuestParkingRequests::class)
+        ->assertSee('Car park capacity')
+        ->assertSee('3 / 2')
+        ->assertSee('Over by 1');
+});

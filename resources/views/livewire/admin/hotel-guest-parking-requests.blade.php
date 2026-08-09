@@ -80,6 +80,72 @@
         @endif
     </div>
 
+    @if ($carParkCapacityRows->isNotEmpty())
+        <div class="rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-800">
+            <div class="mb-3 flex flex-wrap items-end justify-between gap-2">
+                <div>
+                    <h2 class="text-sm font-semibold text-zinc-900 dark:text-white">
+                        {{ __('management.hotel_guest_parking.capacity_heading') }}
+                    </h2>
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                        {{ __('management.hotel_guest_parking.capacity_help') }}
+                    </p>
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full min-w-[640px] text-left text-sm">
+                    <thead class="text-xs uppercase text-zinc-500 dark:text-zinc-400">
+                        <tr>
+                            <th class="pb-2 pe-4 font-medium">{{ __('management.hotel_guest_parking.col_car_park') }}</th>
+                            <th class="pb-2 pe-4 font-medium">{{ __('management.convention_day.friday') }}</th>
+                            <th class="pb-2 pe-4 font-medium">{{ __('management.convention_day.saturday') }}</th>
+                            <th class="pb-2 font-medium">{{ __('management.convention_day.sunday') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-zinc-100 dark:divide-zinc-700/80">
+                        @foreach ($carParkCapacityRows as $park)
+                            @php
+                                $dayColumns = [
+                                    'friday' => ['assigned' => (int) $park->assigned_friday, 'capacity' => (int) $park->capacity_friday],
+                                    'saturday' => ['assigned' => (int) $park->assigned_saturday, 'capacity' => (int) $park->capacity_saturday],
+                                    'sunday' => ['assigned' => (int) $park->assigned_sunday, 'capacity' => (int) $park->capacity_sunday],
+                                ];
+                            @endphp
+                            <tr wire:key="hgp-capacity-{{ $park->id }}">
+                                <td class="py-2.5 pe-4 font-medium text-zinc-900 dark:text-white">
+                                    <span class="inline-flex items-center gap-2">
+                                        <span class="h-2.5 w-2.5 shrink-0 rounded-full border border-zinc-200 dark:border-zinc-600"
+                                            style="background-color: {{ $park->color }}"></span>
+                                        {{ $park->name }}
+                                    </span>
+                                </td>
+                                @foreach ($dayColumns as $day)
+                                    @php
+                                        $assigned = $day['assigned'];
+                                        $capacity = $day['capacity'];
+                                        $overBy = max(0, $assigned - $capacity);
+                                    @endphp
+                                    <td class="py-2.5 pe-4 last:pe-0">
+                                        <div class="flex flex-wrap items-center gap-1.5">
+                                            <flux:badge size="sm" color="{{ $overBy > 0 ? 'red' : 'zinc' }}">
+                                                {{ $assigned }} / {{ $capacity }}
+                                            </flux:badge>
+                                            @if ($overBy > 0)
+                                                <span class="text-xs font-semibold text-red-600 dark:text-red-400">
+                                                    {{ __('management.hotel_guest_parking.capacity_over_by', ['count' => $overBy]) }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </td>
+                                @endforeach
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
     <flux:separator />
 
     <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700">
@@ -88,8 +154,22 @@
                 <tr>
                     <th class="px-4 py-3">{{ __('management.hotel_guest_parking.col_status') }}</th>
                     <th class="px-4 py-3">{{ __('management.hotel_guest_parking.col_submitted') }}</th>
-                    <th class="px-4 py-3">{{ __('management.hotel_guest_parking.col_name') }}</th>
-                    <th class="px-4 py-3">{{ __('management.hotel_guest_parking.col_vehicle') }}</th>
+                    <th class="px-4 py-3">
+                        <button type="button" wire:click="setSort('name')" class="inline-flex items-center gap-1 font-medium uppercase hover:text-zinc-700 dark:hover:text-zinc-300">
+                            {{ __('management.hotel_guest_parking.col_name') }}
+                            @if ($sortBy === 'name')
+                                <flux:icon name="{{ $sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
+                            @endif
+                        </button>
+                    </th>
+                    <th class="px-4 py-3">
+                        <button type="button" wire:click="setSort('vehicle_registration')" class="inline-flex items-center gap-1 font-medium uppercase hover:text-zinc-700 dark:hover:text-zinc-300">
+                            {{ __('management.hotel_guest_parking.col_vehicle') }}
+                            @if ($sortBy === 'vehicle_registration')
+                                <flux:icon name="{{ $sortDir === 'asc' ? 'chevron-up' : 'chevron-down' }}" class="size-4" />
+                            @endif
+                        </button>
+                    </th>
                     <th class="px-4 py-3">{{ __('management.hotel_guest_parking.col_days') }}</th>
                     <th class="px-4 py-3">{{ __('management.hotel_guest_parking.col_actioned_by') }}</th>
                     <th class="px-4 py-3 text-end">{{ __('management.hotel_guest_parking.col_actions') }}</th>

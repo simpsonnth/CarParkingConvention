@@ -102,7 +102,7 @@
                                             {{ $assigned }} / {{ $dayCapacity }}
                                         </flux:badge>
                                         @if ($dayOver)
-                                            <span class="block text-xs font-medium text-red-600 dark:text-red-400">Over</span>
+                                            <span class="block text-xs font-medium text-red-600 dark:text-red-400">Over by {{ $assigned - $dayCapacity }}</span>
                                         @endif
                                         <div class="flex h-1.5 w-28 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700"
                                             role="progressbar"

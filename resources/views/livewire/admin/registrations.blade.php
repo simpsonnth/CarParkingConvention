@@ -547,6 +547,9 @@
                                 <flux:menu>
                                     <flux:menu.item wire:click="edit({{ $reg->id }})" icon="pencil">{{ __('registrations.edit') }}</flux:menu.item>
                                     <flux:menu.item href="{{ route('admin.registrations.print', $reg->id) }}" target="_blank" icon="qr-code">{{ __('registrations.view_master_pass') }}</flux:menu.item>
+                                    @can('registrations.print')
+                                        <flux:menu.item wire:click="openResendTicketModal({{ $reg->id }})" icon="envelope">{{ __('registrations.resend') }}</flux:menu.item>
+                                    @endcan
                                     <flux:menu.item wire:click="delete({{ $reg->id }})"
                                         wire:confirm="{{ __('registrations.delete_confirm') }}" icon="trash"
                                         variant="danger">{{ __('registrations.delete') }}</flux:menu.item>
@@ -805,6 +808,91 @@
                 <flux:button variant="primary" wire:click="sendCarParkTickets" wire:loading.attr="disabled" wire:target="sendCarParkTickets">
                     <span wire:loading.remove wire:target="sendCarParkTickets">{{ __('registrations.send_tickets_button') }}</span>
                     <span wire:loading wire:target="sendCarParkTickets">{{ __('registrations.sending_tickets') }}</span>
+                </flux:button>
+            </div>
+        </div>
+    </flux:modal>
+
+    {{-- Resend single registration ticket --}}
+    <flux:modal wire:model="resendModalOpen" class="w-[calc(100vw-2rem)] max-w-md">
+        <div class="space-y-6">
+            <div>
+                <flux:heading size="lg">{{ __('registrations.resend_title') }}</flux:heading>
+                <flux:subheading>
+                    {{ __('registrations.resend_help', ['name' => $resendRegistrationName !== '' ? $resendRegistrationName : '—']) }}
+                </flux:subheading>
+            </div>
+
+            @if ($resendOriginalEmail !== '')
+                <div class="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900/50">
+                    <p class="text-zinc-600 dark:text-zinc-300">
+                        {{ __('registrations.resend_original_label') }}:
+                        <span class="font-medium text-zinc-900 dark:text-white">{{ $resendOriginalEmail }}</span>
+                    </p>
+                    <button type="button" wire:click="useResendOriginalEmail"
+                        class="mt-2 text-sm font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+                        {{ __('registrations.resend_use_original') }}
+                    </button>
+                </div>
+            @endif
+
+            <div class="space-y-2">
+                <flux:input
+                    wire:model="resendEmailTo"
+                    id="registrationResendEmailTo"
+                    type="text"
+                    inputmode="email"
+                    label="{{ __('registrations.resend_email_label') }}"
+                    placeholder="guest@example.com"
+                    autocomplete="off"
+                    data-1p-ignore
+                    data-lpignore="true"
+                    data-bwignore
+                    data-form-type="other"
+                />
+                @error('resendEmailTo')
+                    <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="space-y-2">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <label for="registrationResendNote" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                        {{ __('registrations.resend_note_label') }}
+                        <span class="font-normal text-zinc-500">({{ __('registrations.resend_note_optional') }})</span>
+                    </label>
+                    <button type="button" wire:click="applyResendNoteTemplate"
+                        class="text-sm font-semibold text-indigo-600 hover:text-indigo-700 dark:text-indigo-400">
+                        {{ __('registrations.resend_note_use_template') }}
+                    </button>
+                </div>
+                <textarea
+                    id="registrationResendNote"
+                    wire:model="resendNote"
+                    rows="10"
+                    class="w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+                    placeholder="{{ __('registrations.resend_note_placeholder') }}"
+                ></textarea>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('registrations.resend_note_help') }}</p>
+                @error('resendNote')
+                    <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
+
+            @if (count($this->ticketEmailCcs) > 0)
+                <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    {{ __('registrations.resend_cc_label') }}:
+                    <span class="font-medium text-zinc-700 dark:text-zinc-200">{{ implode(', ', $this->ticketEmailCcs) }}</span>
+                </p>
+            @endif
+
+            <div class="flex justify-end gap-2">
+                <flux:button variant="ghost" wire:click="closeResendTicketModal" wire:loading.attr="disabled">
+                    {{ __('registrations.cancel') }}
+                </flux:button>
+                <flux:button variant="primary" wire:click="resendTicket" wire:loading.attr="disabled" wire:target="resendTicket">
+                    <span wire:loading.remove wire:target="resendTicket">{{ __('registrations.resend_send') }}</span>
+                    <span wire:loading wire:target="resendTicket">{{ __('registrations.resend_sending') }}</span>
                 </flux:button>
             </div>
         </div>

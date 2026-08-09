@@ -24,7 +24,7 @@ final class TicketEmailBody
         return (string) $stored;
     }
 
-    public static function renderHtml(int $ticketCount, string $congregationLabel): string
+    public static function renderHtml(int $ticketCount, string $congregationLabel, ?string $note = null): string
     {
         $congregation = $congregationLabel !== '' ? $congregationLabel : 'selected registrations';
 
@@ -53,6 +53,15 @@ final class TicketEmailBody
                 continue;
             }
             $html .= '<p>'.nl2br(e($paragraph)).'</p>';
+        }
+
+        $note = $note !== null ? trim($note) : '';
+        if ($note !== '') {
+            $label = trim((string) __('mail.ticket_note_label'));
+            $html .= '<p style="margin:1.25em 0 0;padding:12px 14px;border:1px solid #d4d4d8;border-radius:6px;background:#fafafa;color:#18181b;font-size:15px;line-height:1.5;">'
+                .($label !== '' ? '<strong>'.e($label).'</strong><br>' : '')
+                .nl2br(e($note))
+                .'</p>';
         }
 
         return $html !== '' ? $html : '<p>'.e(self::DEFAULT).'</p>';

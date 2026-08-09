@@ -163,7 +163,7 @@
                     class="mt-2 block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
                     <option value="">{{ __('management.hotel_guest_parking.select_car_park') }}</option>
                     @foreach ($this->carParks as $park)
-                        <option value="{{ $park->id }}">{{ $park->name }}</option>
+                        <option value="{{ $park->id }}">{{ $park->label }}</option>
                     @endforeach
                 </select>
                 @error('approveCarParkId')

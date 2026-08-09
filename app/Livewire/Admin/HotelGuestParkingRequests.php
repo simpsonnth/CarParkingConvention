@@ -11,6 +11,7 @@ use App\Models\CarPark;
 use App\Models\Congregation;
 use App\Models\HotelGuestParkingRequest;
 use App\Models\ParkingRegistration;
+use App\Services\CarParkDayCapacityMetrics;
 use App\Support\TicketEmailCcList;
 use Flux\Flux;
 use Illuminate\Validation\ValidationException;
@@ -34,6 +35,11 @@ class HotelGuestParkingRequests extends Component
 
     /** any | has_ticket | no_ticket */
     public string $ticketFilter = 'any';
+
+    /** created_at | name | vehicle_registration */
+    public string $sortBy = 'created_at';
+
+    public string $sortDir = 'desc';
 
     public bool $resendModalOpen = false;
 
@@ -82,6 +88,22 @@ class HotelGuestParkingRequests extends Component
         }
 
         $this->ticketFilter = $filter;
+        $this->resetPage();
+    }
+
+    public function setSort(string $column): void
+    {
+        if (! in_array($column, ['created_at', 'name', 'vehicle_registration'], true)) {
+            return;
+        }
+
+        if ($this->sortBy === $column) {
+            $this->sortDir = $this->sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortBy = $column;
+            $this->sortDir = 'asc';
+        }
+
         $this->resetPage();
     }
 
@@ -241,7 +263,7 @@ class HotelGuestParkingRequests extends Component
         }
     }
 
-    public function render()
+    public function render(CarParkDayCapacityMetrics $dayCapacityMetrics)
     {
         $base = HotelGuestParkingRequest::query();
 
@@ -286,8 +308,7 @@ class HotelGuestParkingRequests extends Component
         }
 
         $rows = $query
-            ->orderByRaw("CASE status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END")
-            ->orderByDesc('created_at')
+            ->tap(fn ($q) => $this->applySort($q))
             ->paginate($this->perPage);
 
         $pageVehicleRegs = $rows->getCollection()
@@ -364,7 +385,37 @@ class HotelGuestParkingRequests extends Component
             'duplicateVehicleRegs' => $duplicateVehicleRegs,
             'existingTicketsByVehicleReg' => $existingTicketsByVehicleReg,
             'existingTicketCarParkByVehicleReg' => $existingTicketCarParkByVehicleReg,
+            'carParkCapacityRows' => CarPark::query()
+                ->addSelect($dayCapacityMetrics->listSelectSubqueries())
+                ->orderBy('name')
+                ->get(),
         ]);
+    }
+
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<\App\Models\HotelGuestParkingRequest>  $query
+     */
+    private function applySort($query): void
+    {
+        $dir = $this->sortDir === 'asc' ? 'asc' : 'desc';
+
+        if ($this->sortBy === 'name') {
+            $query->orderByRaw('LOWER(TRIM(name)) '.$dir)
+                ->orderByDesc('created_at');
+
+            return;
+        }
+
+        if ($this->sortBy === 'vehicle_registration') {
+            $query->orderByRaw('LOWER(TRIM(vehicle_registration)) '.$dir)
+                ->orderByDesc('created_at');
+
+            return;
+        }
+
+        $query
+            ->orderByRaw("CASE status WHEN 'pending' THEN 0 WHEN 'approved' THEN 1 ELSE 2 END")
+            ->orderBy('created_at', $dir);
     }
 
     /**

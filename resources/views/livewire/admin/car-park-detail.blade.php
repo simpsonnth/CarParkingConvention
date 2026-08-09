@@ -90,7 +90,7 @@
                     <span class="text-sm text-zinc-500">/ {{ $dayCapacity }}</span>
                 </div>
                 @if ($dayOver)
-                    <p class="mt-1 text-xs font-medium text-red-600 dark:text-red-400">Over capacity</p>
+                    <p class="mt-1 text-xs font-medium text-red-600 dark:text-red-400">Over by {{ $assigned - $dayCapacity }}</p>
                 @endif
                 <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700">
                     <div class="h-full rounded-full bg-yellow-400 transition-all duration-500 dark:bg-yellow-500"

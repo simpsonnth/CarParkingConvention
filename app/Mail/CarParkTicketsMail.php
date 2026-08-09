@@ -28,6 +28,7 @@ class CarParkTicketsMail extends Mailable
         public string $congregationLabel,
         public array $pdfAttachments,
         public array $ccAddresses = [],
+        public ?string $note = null,
     ) {}
 
     public function envelope(): Envelope
@@ -45,7 +46,7 @@ class CarParkTicketsMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            htmlString: TicketEmailBody::renderHtml($this->ticketCount, $this->congregationLabel),
+            htmlString: TicketEmailBody::renderHtml($this->ticketCount, $this->congregationLabel, $this->note),
         );
     }
 

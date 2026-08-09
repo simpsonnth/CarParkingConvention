@@ -11,7 +11,9 @@ use App\Services\ParkingRegistrationAttendanceByDayMetrics;
 use App\Services\ParkingRegistrationDuplicateSignals;
 use App\Services\ParkingRegistrationListQuery;
 use App\Support\ParkingRegistrationListFilters;
+use App\Support\TicketEmailCcList;
 use Flux\Flux;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -85,6 +87,18 @@ class Registrations extends Component
     public bool $bulkAssignCarParkModalOpen = false;
 
     public bool $sendTicketsModalOpen = false;
+
+    public bool $resendModalOpen = false;
+
+    public ?int $resendRegistrationId = null;
+
+    public string $resendRegistrationName = '';
+
+    public string $resendOriginalEmail = '';
+
+    public string $resendEmailTo = '';
+
+    public string $resendNote = '';
 
     public bool $downloadPassesModalOpen = false;
 
@@ -616,6 +630,138 @@ class Registrations extends Component
         $this->ticketEmailTo = '';
         $this->resetErrorBag('ticketEmailTo');
         $this->sendTicketsModalOpen = true;
+    }
+
+    public function openResendTicketModal(int $id): void
+    {
+        abort_unless(auth()->user()?->can('registrations.print'), 403);
+
+        $registration = ParkingRegistration::query()
+            ->with('carPark')
+            ->findOrFail($id);
+
+        $this->resetErrorBag(['resendEmailTo', 'resendNote']);
+        $this->resendRegistrationId = (int) $registration->id;
+        $this->resendRegistrationName = (string) $registration->name;
+        $this->resendOriginalEmail = trim((string) ($registration->email ?? ''));
+        $this->resendEmailTo = $this->resendOriginalEmail;
+        $this->resendNote = $this->defaultResendNoteFor($registration);
+        $this->resendModalOpen = true;
+    }
+
+    public function closeResendTicketModal(): void
+    {
+        $this->resendModalOpen = false;
+        $this->resendRegistrationId = null;
+        $this->resendRegistrationName = '';
+        $this->resendOriginalEmail = '';
+        $this->resendEmailTo = '';
+        $this->resendNote = '';
+        $this->resetErrorBag(['resendEmailTo', 'resendNote']);
+    }
+
+    public function useResendOriginalEmail(): void
+    {
+        $this->resendEmailTo = $this->resendOriginalEmail;
+        $this->resetErrorBag('resendEmailTo');
+    }
+
+    public function applyResendNoteTemplate(): void
+    {
+        if ($this->resendRegistrationId === null) {
+            return;
+        }
+
+        $registration = ParkingRegistration::query()
+            ->with('carPark')
+            ->find($this->resendRegistrationId);
+
+        if ($registration === null) {
+            return;
+        }
+
+        $this->resendNote = $this->defaultResendNoteFor($registration);
+        $this->resetErrorBag('resendNote');
+    }
+
+    protected function defaultResendNoteFor(ParkingRegistration $registration): string
+    {
+        $carParkName = trim((string) ($registration->carPark?->name ?? ''));
+
+        if ($carParkName === '') {
+            $congregation = Congregation::query()
+                ->with('carPark')
+                ->where('name', $registration->congregation)
+                ->first();
+            $carParkName = trim((string) ($congregation?->carPark?->name ?? ''));
+        }
+
+        if ($carParkName === '') {
+            $carParkName = (string) __('registrations.resend_note_template_car_park_placeholder');
+        }
+
+        return str_replace(
+            ':car_park',
+            $carParkName,
+            (string) __('registrations.resend_note_template'),
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    #[Computed]
+    public function ticketEmailCcs(): array
+    {
+        return TicketEmailCcList::all();
+    }
+
+    public function resendTicket(SendCarParkTicketsEmail $sender): void
+    {
+        abort_unless(auth()->user()?->can('registrations.print'), 403);
+
+        $this->validate([
+            'resendEmailTo' => 'required|email|max:255',
+            'resendNote' => 'nullable|string|max:5000',
+        ], [
+            'resendEmailTo.required' => __('registrations.resend_email_required'),
+            'resendEmailTo.email' => __('registrations.resend_email_invalid'),
+        ]);
+
+        if ($this->resendRegistrationId === null) {
+            $this->closeResendTicketModal();
+
+            return;
+        }
+
+        $registration = ParkingRegistration::query()->findOrFail($this->resendRegistrationId);
+
+        try {
+            $result = $sender->execute(
+                [(int) $registration->id],
+                $this->resendEmailTo,
+                $this->resendNote !== '' ? $this->resendNote : null,
+            );
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $messages) {
+                foreach ($messages as $message) {
+                    $this->addError('resendEmailTo', $message);
+                }
+            }
+
+            return;
+        } catch (Throwable $e) {
+            Flux::toast($e->getMessage(), variant: 'danger');
+
+            return;
+        }
+
+        $this->closeResendTicketModal();
+
+        $this->ticketsSentSuccessMessage = __('registrations.resend_sent', [
+            'email' => $result['to'],
+        ]);
+        $this->ticketsSentSuccessOpen = true;
     }
 
     public function sendCarParkTickets(SendCarParkTicketsEmail $sender): void

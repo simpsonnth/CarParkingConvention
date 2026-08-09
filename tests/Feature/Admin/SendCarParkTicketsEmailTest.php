@@ -182,3 +182,209 @@ test('send car park tickets validates email in livewire modal', function () {
         ->call('sendCarParkTickets')
         ->assertHasErrors(['ticketEmailTo']);
 });
+
+test('ticket email body includes optional note', function () {
+    Setting::set(\App\Support\TicketEmailBody::SETTING_KEY, "Hello {{congregation}}.\n\n{{count}} ticket(s).");
+
+    $html = \App\Support\TicketEmailBody::renderHtml(1, 'Note Hall', "Please use gate B.\nThanks.");
+
+    expect($html)
+        ->toContain('Hello Note Hall')
+        ->toContain('Note from the parking team:')
+        ->toContain('Please use gate B.')
+        ->toContain('Thanks.');
+});
+
+test('resend registration ticket uses registration email note and settings cc', function () {
+    Mail::fake();
+
+    $admin = User::factory()->admin()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Resend Park',
+        'capacity' => 50,
+        'color' => '#2563eb',
+    ]);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Resend Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $park->id,
+    ]);
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Bob Example',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700999888',
+        'email' => 'bob@example.test',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'BB22CCC',
+        'days' => ['Saturday'],
+    ]);
+
+    Setting::set(TicketEmailCcList::SETTING_KEY, "nathan-simpson@outlook.com\nops@jwconv.uk");
+
+    $this->mock(MasterPassPdfGenerator::class, function ($mock) use ($registration) {
+        $mock->shouldReceive('generateForIds')
+            ->once()
+            ->with([$registration->id])
+            ->andReturn([
+                [
+                    'filename' => 'Bob Example.pdf',
+                    'content' => '%PDF-1.4 fake',
+                    'registration' => $registration,
+                ],
+            ]);
+    });
+
+    Livewire::actingAs($admin)
+        ->test(Registrations::class)
+        ->call('openResendTicketModal', $registration->id)
+        ->assertSet('resendModalOpen', true)
+        ->assertSet('resendEmailTo', 'bob@example.test')
+        ->assertSet('resendNote', function (string $note): bool {
+            return str_contains($note, 'Due to limitations in the stadium car parks')
+                && str_contains($note, 'Resend Park')
+                && str_contains($note, 'Parking Team Twickenham');
+        })
+        ->assertSee('Also CC’d (from Settings)')
+        ->set('resendNote', 'Corrected vehicle registration as discussed.')
+        ->call('resendTicket')
+        ->assertHasNoErrors()
+        ->assertSet('resendModalOpen', false)
+        ->assertSet('ticketsSentSuccessOpen', true);
+
+    Mail::assertSent(CarParkTicketsMail::class, function (CarParkTicketsMail $mail) {
+        expect($mail->recipientEmail)->toBe('bob@example.test')
+            ->and($mail->ticketCount)->toBe(1)
+            ->and($mail->congregationLabel)->toBe('Resend Hall')
+            ->and($mail->note)->toBe('Corrected vehicle registration as discussed.')
+            ->and($mail->ccAddresses)->toBe([
+                'nathan-simpson@outlook.com',
+                'ops@jwconv.uk',
+            ]);
+
+        $html = $mail->content()->htmlString;
+        expect($html)
+            ->toContain('Corrected vehicle registration as discussed.')
+            ->toContain('Note from the parking team:');
+
+        return true;
+    });
+
+    expect($registration->fresh()->ticket_sent_at)->not->toBeNull();
+});
+
+test('resend registration ticket can use alternate email', function () {
+    Mail::fake();
+
+    $admin = User::factory()->admin()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Alt Park',
+        'capacity' => 20,
+        'color' => '#dc2626',
+    ]);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Alt Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $park->id,
+    ]);
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Carol Example',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700123456',
+        'email' => 'carol@example.test',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'CC33DDD',
+        'days' => ['Sunday'],
+    ]);
+
+    $this->mock(MasterPassPdfGenerator::class, function ($mock) use ($registration) {
+        $mock->shouldReceive('generateForIds')
+            ->once()
+            ->with([$registration->id])
+            ->andReturn([
+                [
+                    'filename' => 'Carol Example.pdf',
+                    'content' => '%PDF-1.4 fake',
+                    'registration' => $registration,
+                ],
+            ]);
+    });
+
+    Livewire::actingAs($admin)
+        ->test(Registrations::class)
+        ->call('openResendTicketModal', $registration->id)
+        ->set('resendEmailTo', 'alternate@example.test')
+        ->set('resendNote', '')
+        ->call('resendTicket')
+        ->assertHasNoErrors();
+
+    Mail::assertSent(CarParkTicketsMail::class, function (CarParkTicketsMail $mail) {
+        return $mail->recipientEmail === 'alternate@example.test' && $mail->note === null;
+    });
+});
+
+test('resend note template fills registration car park and can be reset', function () {
+    $admin = User::factory()->admin()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Rosebine 1',
+        'capacity' => 40,
+        'color' => '#16a34a',
+    ]);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Template Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $park->id,
+    ]);
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'Dana Example',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700777777',
+        'email' => 'dana@example.test',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'DD44EEE',
+        'days' => ['Friday'],
+        'car_park_id' => $park->id,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(Registrations::class)
+        ->call('openResendTicketModal', $registration->id)
+        ->assertSet('resendNote', function (string $note): bool {
+            return str_contains($note, 'free parking ticket in Rosebine 1.')
+                && str_contains($note, 'Dear delegate');
+        })
+        ->set('resendNote', 'custom note')
+        ->call('applyResendNoteTemplate')
+        ->assertSet('resendNote', function (string $note): bool {
+            return str_contains($note, 'Rosebine 1')
+                && str_contains($note, 'Parking Team Twickenham');
+        });
+});
+
+test('resend registration ticket requires print permission', function () {
+    $viewer = User::factory()->attendant()->create();
+    $viewer->givePermissionTo('registrations.view');
+
+    $registration = ParkingRegistration::query()->create([
+        'name' => 'No Print',
+        'congregation' => 'Some Hall',
+        'contact_number' => '07700000000',
+        'email' => 'noprint@example.test',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'NP11PRT',
+        'days' => ['Friday'],
+    ]);
+
+    Livewire::actingAs($viewer)
+        ->test(Registrations::class)
+        ->call('openResendTicketModal', $registration->id)
+        ->assertForbidden();
+});

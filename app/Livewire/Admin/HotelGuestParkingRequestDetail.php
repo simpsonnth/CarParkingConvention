@@ -12,9 +12,12 @@ use App\Models\CarPark;
 use App\Models\Congregation;
 use App\Models\HotelGuestParkingRequest;
 use App\Models\ParkingRegistration;
+use App\Services\CarParkDayCapacityMetrics;
 use App\Services\ParkingRegistrationDuplicateSignals;
+use App\Support\ConventionDay;
 use App\Support\TicketEmailCcList;
 use Flux\Flux;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
@@ -323,12 +326,55 @@ class HotelGuestParkingRequestDetail extends Component
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, CarPark>
+     * @return Collection<int, object{id: int, name: string, label: string}>
      */
     #[Computed]
-    public function carParks()
+    public function carParks(): Collection
     {
-        return CarPark::query()->orderBy('name')->get(['id', 'name']);
+        $dayCapacityMetrics = app(CarParkDayCapacityMetrics::class);
+        $requestDays = collect($this->hotelGuestParkingRequest->days ?? [])
+            ->map(fn ($day): string => (string) $day)
+            ->filter(fn (string $day): bool => in_array($day, ConventionDay::singleDayKeys(), true))
+            ->unique()
+            ->values();
+
+        return CarPark::query()
+            ->orderBy('name')
+            ->get()
+            ->map(function (CarPark $park) use ($dayCapacityMetrics, $requestDays) {
+                $assigned = $dayCapacityMetrics->assignedCountsForPark((int) $park->id);
+                $parts = [];
+
+                foreach ($requestDays as $day) {
+                    $key = strtolower($day);
+                    $count = (int) ($assigned[$key] ?? 0);
+                    $capacity = $park->capacityForDay($day);
+                    $overBy = max(0, $count - $capacity);
+                    $short = match ($day) {
+                        ConventionDay::FRIDAY => 'Fri',
+                        ConventionDay::SATURDAY => 'Sat',
+                        ConventionDay::SUNDAY => 'Sun',
+                        default => $day,
+                    };
+                    $part = $short.' '.$count.'/'.$capacity;
+                    if ($overBy > 0) {
+                        $part .= ' (+'.$overBy.')';
+                    }
+                    $parts[] = $part;
+                }
+
+                $label = $park->name;
+                if ($parts !== []) {
+                    $label .= ' — '.implode(', ', $parts);
+                }
+
+                return (object) [
+                    'id' => (int) $park->id,
+                    'name' => (string) $park->name,
+                    'label' => $label,
+                ];
+            })
+            ->values();
     }
 
     public function defaultCarParkId(): ?int

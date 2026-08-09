@@ -21,7 +21,7 @@ class SendCarParkTicketsEmail
      * @param  list<int>  $registrationIds
      * @return array{sent: int, to: string, cc: list<string>}
      */
-    public function execute(array $registrationIds, string $toEmail): array
+    public function execute(array $registrationIds, string $toEmail, ?string $note = null): array
     {
         // Large batches of Chrome PDFs need more than the default 30s.
         @set_time_limit(300);
@@ -58,12 +58,15 @@ class SendCarParkTicketsEmail
             fn (string $email): bool => $email !== $to,
         ));
 
+        $trimmedNote = $note !== null ? trim($note) : '';
+
         Mail::to($to)->send(new CarParkTicketsMail(
             recipientEmail: $to,
             ticketCount: count($pdfPayload),
             congregationLabel: $congregationLabel,
             pdfAttachments: $pdfPayload,
             ccAddresses: $cc,
+            note: $trimmedNote !== '' ? $trimmedNote : null,
         ));
 
         $sentIds = $registrations
