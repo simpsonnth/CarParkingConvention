@@ -24,6 +24,48 @@ final class MailSendingQuota
             || str_contains($message, 'monthly email sending quota');
     }
 
+    /**
+     * Hard delivery failures / bounce-style SMTP rejects must not be retried
+     * (they would burn provider quota without ever succeeding).
+     */
+    public static function isPermanentFailure(Throwable $e): bool
+    {
+        if (self::isExceeded($e)) {
+            return false;
+        }
+
+        $message = strtolower($e->getMessage());
+
+        foreach ([
+            'mailbox unavailable',
+            'user unknown',
+            'unknown user',
+            'no such user',
+            'recipient rejected',
+            'address rejected',
+            'invalid address',
+            'invalid recipient',
+            'does not exist',
+            'undeliverable',
+            'bounced',
+            'bounce',
+            '550 5.',
+            '551 5.',
+            '552 5.',
+            '553 5.',
+            '554 5.',
+            'relay not permitted',
+            'spam message rejected',
+        ] as $needle) {
+            if (str_contains($message, $needle)) {
+                return true;
+            }
+        }
+
+        // Generic 55x without quota wording is treated as permanent.
+        return (bool) preg_match('/\b55[0-4]\b/', $message);
+    }
+
     public static function availableAt(): CarbonInterface
     {
         $cached = Cache::get(self::CACHE_KEY);

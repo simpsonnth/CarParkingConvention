@@ -156,12 +156,31 @@ class OutboundEmailProcessor
                 return 'queued';
             }
 
+            // Bounces / hard SMTP rejects: fail once. Do not retry — retries burn quota.
+            if (MailSendingQuota::isPermanentFailure($e)) {
+                $email->update([
+                    'status' => OutboundEmail::STATUS_FAILED,
+                    'available_at' => null,
+                    'last_error' => $e->getMessage(),
+                ]);
+
+                Log::error('Outbound email permanently failed (no retry)', [
+                    'outbound_email_id' => $email->id,
+                    'type' => $email->type,
+                    'to' => $email->to_email,
+                    'message' => $e->getMessage(),
+                ]);
+
+                return 'failed';
+            }
+
+            // Other unexpected errors: one short retry window only, then stop.
             $attempts = (int) $email->fresh()?->attempts;
-            $failed = $attempts >= self::MAX_ATTEMPTS;
+            $failed = $attempts >= 2;
 
             $email->update([
                 'status' => $failed ? OutboundEmail::STATUS_FAILED : OutboundEmail::STATUS_PENDING,
-                'available_at' => $failed ? null : now()->addMinutes(15),
+                'available_at' => $failed ? null : now()->addMinutes(30),
                 'last_error' => $e->getMessage(),
             ]);
 

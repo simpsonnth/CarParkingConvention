@@ -74,6 +74,27 @@ test('outbound processor queues car park tickets when provider quota is exceeded
         ->and($pending?->available_at?->isFuture())->toBeTrue();
 });
 
+test('outbound processor does not retry bounce-style permanent failures', function () {
+    $registration = seedOutboundTicketRegistration();
+
+    $this->mock(SendCarParkTicketsEmail::class, function ($mock) use ($registration): void {
+        $mock->shouldReceive('execute')
+            ->once()
+            ->with([$registration->id], 'bounce@example.test', null)
+            ->andThrow(new RuntimeException('Expected response code "250" but got code "550", with message "550 5.1.1 User unknown".'));
+    });
+
+    $result = app(OutboundEmailProcessor::class)->sendCarParkTicketsNowOrQueue(
+        [$registration->id],
+        'bounce@example.test',
+    );
+
+    expect($result['status'])->toBe('failed')
+        ->and(OutboundEmail::query()->where('status', OutboundEmail::STATUS_FAILED)->count())->toBe(1)
+        ->and(OutboundEmail::query()->where('status', OutboundEmail::STATUS_PENDING)->count())->toBe(0)
+        ->and(MailSendingQuota::isBlocked())->toBeFalse();
+});
+
 test('process due sends queued emails after quota clears', function () {
     Mail::fake();
 
