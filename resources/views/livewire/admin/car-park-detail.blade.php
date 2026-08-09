@@ -78,6 +78,7 @@
                 $dayCapacity = $dayMeta['capacity'];
                 $dayPct = $dayCapacity > 0 ? min(100, 100 * $assigned / $dayCapacity) : 0;
                 $dayOver = $assigned > $dayCapacity;
+                $dropOff = (int) ($dayDropOff[$dayKey] ?? 0);
             @endphp
             <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
                 <div class="text-sm font-medium text-zinc-500 dark:text-zinc-400">{{ $dayMeta['label'] }} demand</div>
@@ -91,6 +92,11 @@
                 </div>
                 @if ($dayOver)
                     <p class="mt-1 text-xs font-medium text-red-600 dark:text-red-400">Over by {{ $assigned - $dayCapacity }}</p>
+                @endif
+                @if ($dropOff > 0)
+                    <p class="mt-1 text-xs font-medium text-sky-700 dark:text-sky-300">
+                        +{{ $dropOff }} drop-off {{ \Illuminate\Support\Str::plural('coach', $dropOff) }} (not counted)
+                    </p>
                 @endif
                 <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700">
                     <div class="h-full rounded-full bg-yellow-400 transition-all duration-500 dark:bg-yellow-500"

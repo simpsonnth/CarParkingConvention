@@ -24,7 +24,25 @@
             <span class="h-2 w-2 shrink-0 rounded-full bg-red-500" aria-hidden="true"></span>
             Over capacity
         </span>
+        <span class="inline-flex items-center gap-1.5">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-sky-500" aria-hidden="true"></span>
+            Drop-off coaches (not counted)
+        </span>
     </p>
+
+    @if (($dropOffCoachTotal ?? 0) > 0)
+        <div class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-100">
+            <p class="font-semibold">
+                {{ $dropOffCoachTotal }} {{ \Illuminate\Support\Str::plural('coach', $dropOffCoachTotal) }} not staying at Twickenham
+            </p>
+            <p class="mt-0.5 text-xs text-sky-800 dark:text-sky-200/90">
+                Drop-off only coaches are excluded from Fri / Sat / Sun capacity counts below — they do not take a parking space.
+                <a href="{{ route('admin.coaches') }}" wire:navigate class="font-semibold underline decoration-sky-400/60 underline-offset-2 hover:decoration-sky-600">
+                    View coaches
+                </a>
+            </p>
+        </div>
+    @endif
 
     <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700 -mx-4 sm:mx-0">
         <table class="w-full min-w-[720px] text-left text-sm text-zinc-500 dark:text-zinc-400">
@@ -47,11 +65,27 @@
                         $liveOver = $parked > $liveCapacity;
                         $liveFree = max(0, $liveCapacity - $parked);
                         $liveTooltip = "{$parked} clocked in · {$liveFree} spaces free (today's limit {$liveCapacity})";
+                        $dropOffTotal = (int) ($park->drop_off_coaches ?? 0);
 
                         $dayColumns = [
-                            'friday' => ['label' => 'Friday', 'assigned' => (int) $park->assigned_friday, 'capacity' => (int) $park->capacity_friday],
-                            'saturday' => ['label' => 'Saturday', 'assigned' => (int) $park->assigned_saturday, 'capacity' => (int) $park->capacity_saturday],
-                            'sunday' => ['label' => 'Sunday', 'assigned' => (int) $park->assigned_sunday, 'capacity' => (int) $park->capacity_sunday],
+                            'friday' => [
+                                'label' => 'Friday',
+                                'assigned' => (int) $park->assigned_friday,
+                                'capacity' => (int) $park->capacity_friday,
+                                'drop_off' => (int) ($park->drop_off_friday ?? 0),
+                            ],
+                            'saturday' => [
+                                'label' => 'Saturday',
+                                'assigned' => (int) $park->assigned_saturday,
+                                'capacity' => (int) $park->capacity_saturday,
+                                'drop_off' => (int) ($park->drop_off_saturday ?? 0),
+                            ],
+                            'sunday' => [
+                                'label' => 'Sunday',
+                                'assigned' => (int) $park->assigned_sunday,
+                                'capacity' => (int) $park->capacity_sunday,
+                                'drop_off' => (int) ($park->drop_off_sunday ?? 0),
+                            ],
                         ];
                     @endphp
                     <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
@@ -65,6 +99,11 @@
                                     <div class="text-xs text-zinc-500 dark:text-zinc-400">
                                         {{ $park->location ?? 'No location' }}
                                     </div>
+                                    @if ($dropOffTotal > 0)
+                                        <div class="mt-1 text-xs font-medium text-sky-700 dark:text-sky-300">
+                                            {{ $dropOffTotal }} drop-off {{ \Illuminate\Support\Str::plural('coach', $dropOffTotal) }} (not counted)
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </td>
@@ -93,7 +132,9 @@
                                 $dayPct = $dayCapacity > 0 ? min(100, 100 * $assigned / $dayCapacity) : 0;
                                 $dayOver = $assigned > $dayCapacity;
                                 $dayFree = max(0, $dayCapacity - $assigned);
-                                $dayTooltip = "{$assigned} registered for {$day['label']} · {$dayFree} spaces free";
+                                $dropOff = $day['drop_off'];
+                                $dayTooltip = "{$assigned} registered for {$day['label']} · {$dayFree} spaces free"
+                                    .($dropOff > 0 ? " · {$dropOff} drop-off coach(es) not counted" : '');
                             @endphp
                             <td class="px-4 py-4">
                                 <flux:tooltip :content="$dayTooltip" position="top">
@@ -103,6 +144,11 @@
                                         </flux:badge>
                                         @if ($dayOver)
                                             <span class="block text-xs font-medium text-red-600 dark:text-red-400">Over by {{ $assigned - $dayCapacity }}</span>
+                                        @endif
+                                        @if ($dropOff > 0)
+                                            <span class="block text-xs font-medium text-sky-700 dark:text-sky-300">
+                                                +{{ $dropOff }} drop-off
+                                            </span>
                                         @endif
                                         <div class="flex h-1.5 w-28 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700"
                                             role="progressbar"

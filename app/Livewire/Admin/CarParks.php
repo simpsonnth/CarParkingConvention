@@ -57,11 +57,14 @@ class CarParks extends Component
             });
         }
 
-        $capacityTotals = $this->capacityOverTotals((clone $query)->get());
+        $allParks = (clone $query)->get();
+        $capacityTotals = $this->capacityOverTotals($allParks);
+        $dropOffCoachTotal = (int) $allParks->sum(fn (CarPark $park): int => (int) ($park->drop_off_coaches ?? 0));
 
         return view('livewire.admin.car-parks', [
             'carParks' => $query->paginate(10),
             'capacityOverTotals' => $capacityTotals,
+            'dropOffCoachTotal' => $dropOffCoachTotal,
         ]);
     }
 

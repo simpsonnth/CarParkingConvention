@@ -56,6 +56,68 @@ test('car parks page shows per-day assigned demand against day capacity', functi
         ->assertSee('Registered for that day');
 });
 
+test('car parks page excludes drop-off coaches from capacity and shows them separately', function () {
+    $admin = User::factory()->admin()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Coach Mix Park',
+        'capacity' => 10,
+        'capacity_friday' => 10,
+        'capacity_saturday' => 10,
+        'capacity_sunday' => 10,
+        'location' => 'Coach side',
+        'color' => '#0ea5e9',
+    ]);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Coach Mix Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $park->id,
+    ]);
+
+    ParkingRegistration::query()->create([
+        'name' => 'Car Driver',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700000001',
+        'email' => 'car@test.com',
+        'vehicle_type' => 'car',
+        'vehicle_registration' => 'CA01AAA',
+        'days' => ['Friday'],
+    ]);
+
+    ParkingRegistration::query()->create([
+        'name' => 'Staying Coach',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700000002',
+        'email' => 'stay@test.com',
+        'vehicle_type' => 'coach',
+        'vehicle_registration' => 'ST01BBB',
+        'days' => ['Friday'],
+        'coach_staying_on_site' => true,
+    ]);
+
+    ParkingRegistration::query()->create([
+        'name' => 'Drop Off Coach',
+        'congregation' => $congregation->name,
+        'contact_number' => '07700000003',
+        'email' => 'drop@test.com',
+        'vehicle_type' => 'coach',
+        'vehicle_registration' => 'DO01CCC',
+        'days' => ['Friday'],
+        'coach_staying_on_site' => false,
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(CarParks::class)
+        ->assertSee('Coach Mix Park')
+        ->assertSee('2 / 10')
+        ->assertDontSee('3 / 10')
+        ->assertSee('1 coach not staying at Twickenham')
+        ->assertSee('1 drop-off coach (not counted)')
+        ->assertSee('+1 drop-off')
+        ->assertSee('View coaches');
+});
+
 test('car parks page shows green live segment for clocked in vehicles', function () {
     $admin = User::factory()->admin()->create();
 

@@ -171,6 +171,7 @@ class CarParkDetail extends Component
             ->get();
 
         $dayAssigned = $dayCapacityMetrics->assignedCountsForPark($this->carPark->id);
+        $dayDropOff = $dayCapacityMetrics->dropOffCoachCountsForPark($this->carPark->id);
 
         return view('livewire.admin.car-park-detail', [
             'occupancy' => $occupancy,
@@ -180,6 +181,7 @@ class CarParkDetail extends Component
             'history' => $history,
             'congregationBreakdown' => $congregationBreakdown,
             'dayAssigned' => $dayAssigned,
+            'dayDropOff' => $dayDropOff,
         ]);
     }
 
