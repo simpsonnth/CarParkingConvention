@@ -141,6 +141,36 @@
                     </tr>
                 @endforelse
             </tbody>
+            @if ($carParks->total() > 0)
+                <tfoot class="border-t-2 border-zinc-200 bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900/80">
+                    <tr>
+                        <td class="px-6 py-4 text-sm font-semibold text-zinc-900 dark:text-white">
+                            Total over capacity
+                        </td>
+                        <td class="px-4 py-4">
+                            @if (($capacityOverTotals['live'] ?? 0) > 0)
+                                <span class="text-sm font-semibold text-red-600 dark:text-red-400">
+                                    Over by {{ $capacityOverTotals['live'] }}
+                                </span>
+                            @else
+                                <span class="text-sm text-zinc-400">—</span>
+                            @endif
+                        </td>
+                        @foreach (['friday', 'saturday', 'sunday'] as $dayKey)
+                            <td class="px-4 py-4">
+                                @if (($capacityOverTotals[$dayKey] ?? 0) > 0)
+                                    <span class="text-sm font-semibold text-red-600 dark:text-red-400">
+                                        Over by {{ $capacityOverTotals[$dayKey] }}
+                                    </span>
+                                @else
+                                    <span class="text-sm text-zinc-400">—</span>
+                                @endif
+                            </td>
+                        @endforeach
+                        <td class="px-6 py-4"></td>
+                    </tr>
+                </tfoot>
+            @endif
         </table>
     </div>
 

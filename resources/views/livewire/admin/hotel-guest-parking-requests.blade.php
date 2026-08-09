@@ -103,6 +103,9 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-zinc-100 dark:divide-zinc-700/80">
+                        @php
+                            $capacityOverTotals = ['friday' => 0, 'saturday' => 0, 'sunday' => 0];
+                        @endphp
                         @foreach ($carParkCapacityRows as $park)
                             @php
                                 $dayColumns = [
@@ -110,6 +113,9 @@
                                     'saturday' => ['assigned' => (int) $park->assigned_saturday, 'capacity' => (int) $park->capacity_saturday],
                                     'sunday' => ['assigned' => (int) $park->assigned_sunday, 'capacity' => (int) $park->capacity_sunday],
                                 ];
+                                foreach ($dayColumns as $dayKey => $day) {
+                                    $capacityOverTotals[$dayKey] += max(0, $day['assigned'] - $day['capacity']);
+                                }
                             @endphp
                             <tr wire:key="hgp-capacity-{{ $park->id }}">
                                 <td class="py-2.5 pe-4 font-medium text-zinc-900 dark:text-white">
@@ -141,6 +147,24 @@
                             </tr>
                         @endforeach
                     </tbody>
+                    <tfoot class="border-t border-zinc-200 dark:border-zinc-600">
+                        <tr>
+                            <td class="pt-3 pe-4 text-sm font-semibold text-zinc-900 dark:text-white">
+                                {{ __('management.hotel_guest_parking.capacity_total_over') }}
+                            </td>
+                            @foreach (['friday', 'saturday', 'sunday'] as $dayKey)
+                                <td class="pt-3 pe-4 last:pe-0">
+                                    @if ($capacityOverTotals[$dayKey] > 0)
+                                        <span class="text-sm font-semibold text-red-600 dark:text-red-400">
+                                            {{ __('management.hotel_guest_parking.capacity_over_by', ['count' => $capacityOverTotals[$dayKey]]) }}
+                                        </span>
+                                    @else
+                                        <span class="text-sm text-zinc-400">—</span>
+                                    @endif
+                                </td>
+                            @endforeach
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>

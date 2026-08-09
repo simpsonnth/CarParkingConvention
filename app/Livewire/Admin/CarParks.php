@@ -51,13 +51,41 @@ class CarParks extends Component
         $query = CarPark::addSelect($dayCapacityMetrics->listSelectSubqueries());
 
         if ($this->search) {
-            $query->where('name', 'like', '%'.$this->search.'%')
-                ->orWhere('location', 'like', '%'.$this->search.'%');
+            $query->where(function ($q): void {
+                $q->where('name', 'like', '%'.$this->search.'%')
+                    ->orWhere('location', 'like', '%'.$this->search.'%');
+            });
         }
+
+        $capacityTotals = $this->capacityOverTotals((clone $query)->get());
 
         return view('livewire.admin.car-parks', [
             'carParks' => $query->paginate(10),
+            'capacityOverTotals' => $capacityTotals,
         ]);
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, CarPark>  $parks
+     * @return array{friday: int, saturday: int, sunday: int, live: int}
+     */
+    protected function capacityOverTotals($parks): array
+    {
+        $totals = [
+            'friday' => 0,
+            'saturday' => 0,
+            'sunday' => 0,
+            'live' => 0,
+        ];
+
+        foreach ($parks as $park) {
+            $totals['friday'] += max(0, (int) $park->assigned_friday - (int) $park->capacity_friday);
+            $totals['saturday'] += max(0, (int) $park->assigned_saturday - (int) $park->capacity_saturday);
+            $totals['sunday'] += max(0, (int) $park->assigned_sunday - (int) $park->capacity_sunday);
+            $totals['live'] += max(0, (int) $park->current_occupancy - $park->capacityForToday());
+        }
+
+        return $totals;
     }
 
     public function create(): void

@@ -280,6 +280,7 @@ return [
         'capacity_heading' => 'Capacidade dos parques',
         'capacity_help' => 'Bilhetes registados atribuídos a cada parque (sex / sáb / dom) face à capacidade desse dia.',
         'capacity_over_by' => 'Excesso de :count',
+        'capacity_total_over' => 'Excesso total',
         'col_status' => 'Estado',
         'col_submitted' => 'Enviado',
         'col_name' => 'Nome',

@@ -701,5 +701,6 @@ test('hotel guest parking list shows how much a car park is over capacity', func
         ->test(HotelGuestParkingRequests::class)
         ->assertSee('Car park capacity')
         ->assertSee('3 / 2')
-        ->assertSee('Over by 1');
+        ->assertSee('Over by 1')
+        ->assertSee('Total over capacity');
 });

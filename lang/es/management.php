@@ -280,6 +280,7 @@ return [
         'capacity_heading' => 'Capacidad de aparcamientos',
         'capacity_help' => 'Billetes registrados asignados a cada aparcamiento (vie / sáb / dom) frente a la capacidad de ese día.',
         'capacity_over_by' => 'Exceso de :count',
+        'capacity_total_over' => 'Exceso total',
         'col_status' => 'Estado',
         'col_submitted' => 'Enviado',
         'col_name' => 'Nombre',

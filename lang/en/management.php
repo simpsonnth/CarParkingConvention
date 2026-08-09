@@ -280,6 +280,7 @@ return [
         'capacity_heading' => 'Car park capacity',
         'capacity_help' => 'Registered tickets assigned to each park (Fri / Sat / Sun) versus that day’s capacity.',
         'capacity_over_by' => 'Over by :count',
+        'capacity_total_over' => 'Total over capacity',
         'col_status' => 'Status',
         'col_submitted' => 'Submitted',
         'col_name' => 'Name',

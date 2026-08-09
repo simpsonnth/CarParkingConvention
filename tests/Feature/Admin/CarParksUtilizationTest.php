@@ -50,7 +50,8 @@ test('car parks page shows per-day assigned demand against day capacity', functi
         ->assertSee('North Car Park')
         ->assertSee('4 / 3')
         ->assertSee('0 / 10')
-        ->assertSee('Over')
+        ->assertSee('Over by 1')
+        ->assertSee('Total over capacity')
         ->assertSee('Clocked in (live)')
         ->assertSee('Registered for that day');
 });
