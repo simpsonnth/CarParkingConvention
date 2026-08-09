@@ -25,19 +25,20 @@
             Over capacity
         </span>
         <span class="inline-flex items-center gap-1.5">
-            <span class="h-2 w-2 shrink-0 rounded-full bg-sky-500" aria-hidden="true"></span>
+            <span class="h-2 w-2 shrink-0 rounded-full bg-amber-500" aria-hidden="true"></span>
             Drop-off coaches (not counted)
         </span>
     </p>
 
     @if (($dropOffCoachTotal ?? 0) > 0)
-        <div class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-100">
-            <p class="font-semibold">
+        <div class="rounded-xl border-2 border-amber-400 bg-amber-50 px-4 py-3 dark:border-amber-500 dark:bg-amber-950">
+            <p class="text-sm font-bold text-amber-950 dark:text-amber-50">
                 {{ $dropOffCoachTotal }} {{ \Illuminate\Support\Str::plural('coach', $dropOffCoachTotal) }} not staying at Twickenham
             </p>
-            <p class="mt-0.5 text-xs text-sky-800 dark:text-sky-200/90">
+            <p class="mt-1 text-sm text-amber-900 dark:text-amber-100">
                 Drop-off only coaches are excluded from Fri / Sat / Sun capacity counts below — they do not take a parking space.
-                <a href="{{ route('admin.coaches') }}" wire:navigate class="font-semibold underline decoration-sky-400/60 underline-offset-2 hover:decoration-sky-600">
+                <a href="{{ route('admin.coaches') }}" wire:navigate
+                    class="font-bold text-amber-950 underline decoration-amber-700 underline-offset-2 hover:decoration-amber-950 dark:text-white dark:decoration-amber-200 dark:hover:decoration-white">
                     View coaches
                 </a>
             </p>
@@ -100,7 +101,7 @@
                                         {{ $park->location ?? 'No location' }}
                                     </div>
                                     @if ($dropOffTotal > 0)
-                                        <div class="mt-1 text-xs font-medium text-sky-700 dark:text-sky-300">
+                                        <div class="mt-1 text-xs font-semibold text-amber-800 dark:text-amber-200">
                                             {{ $dropOffTotal }} drop-off {{ \Illuminate\Support\Str::plural('coach', $dropOffTotal) }} (not counted)
                                         </div>
                                     @endif
@@ -146,7 +147,7 @@
                                             <span class="block text-xs font-medium text-red-600 dark:text-red-400">Over by {{ $assigned - $dayCapacity }}</span>
                                         @endif
                                         @if ($dropOff > 0)
-                                            <span class="block text-xs font-medium text-sky-700 dark:text-sky-300">
+                                            <span class="block text-xs font-semibold text-amber-800 dark:text-amber-200">
                                                 +{{ $dropOff }} drop-off
                                             </span>
                                         @endif

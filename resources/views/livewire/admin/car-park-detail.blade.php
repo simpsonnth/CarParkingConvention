@@ -94,7 +94,7 @@
                     <p class="mt-1 text-xs font-medium text-red-600 dark:text-red-400">Over by {{ $assigned - $dayCapacity }}</p>
                 @endif
                 @if ($dropOff > 0)
-                    <p class="mt-1 text-xs font-medium text-sky-700 dark:text-sky-300">
+                    <p class="mt-1 text-xs font-semibold text-amber-800 dark:text-amber-200">
                         +{{ $dropOff }} drop-off {{ \Illuminate\Support\Str::plural('coach', $dropOff) }} (not counted)
                     </p>
                 @endif
