@@ -60,10 +60,11 @@
         ])>+{{ $dropOff }} drop-off</p>
     @endif
 
-    <div @class(['mt-2.5' => ! $compact, 'mt-1.5' => $compact]) @if ($tooltip !== '') title="{{ $tooltip }}" @endif>
+    <div @class(['mt-2.5' => ! $compact, 'mt-auto pt-2' => $compact]) @if ($tooltip !== '') title="{{ $tooltip }}" @endif>
         <x-car-park-capacity-meter
             :reading="$reading"
             :aria-label="$ariaLabel !== '' ? $ariaLabel : $tooltip"
+            :thick="$compact"
         />
     </div>
 </div>

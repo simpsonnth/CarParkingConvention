@@ -42,108 +42,62 @@
         </div>
     </div>
 
-    @if ($showExpected)
-        {{-- Logged-in board: rows share the full viewport height --}}
-        <div class="flex min-h-0 flex-1 flex-col gap-1">
-            @forelse ($parkCards as $card)
-                @php
-                    $park = $card['park'];
-                    $overflow = $card['overflow'];
-                    $worst = $card['worst'];
-                    $dropOffTotal = $card['drop_off_total'];
-                @endphp
-                <article @class([
-                    'flex min-h-0 flex-1 overflow-hidden rounded-lg border bg-white dark:bg-zinc-800',
-                    'border-zinc-200 dark:border-zinc-700' => $worst === 'ok',
-                    'border-orange-300 dark:border-orange-700' => $worst === 'overflow',
-                    'border-red-300 dark:border-red-700' => $worst === 'critical',
+    {{-- Dashboard board: each park is a row; guests get Live only, signed-in get Live+Fri/Sat/Sun --}}
+    <div class="flex min-h-0 flex-1 flex-col gap-1.5">
+        @forelse ($parkCards as $card)
+            @php
+                $park = $card['park'];
+                $overflow = $card['overflow'];
+                $worst = $card['worst'];
+                $dropOffTotal = $card['drop_off_total'];
+                $dayCount = count($card['days']);
+            @endphp
+            <article @class([
+                'flex min-h-0 flex-1 overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-zinc-800',
+                'border-zinc-200 dark:border-zinc-700' => $worst === 'ok',
+                'border-orange-300 dark:border-orange-700' => $worst === 'overflow',
+                'border-red-300 dark:border-red-700' => $worst === 'critical',
+            ])>
+                <div class="flex w-32 shrink-0 flex-col justify-center border-r border-zinc-100 px-3 dark:border-zinc-700/80 sm:w-40 lg:w-48">
+                    <div class="flex items-center gap-2">
+                        <div class="h-3 w-3 shrink-0 rounded-full ring-1 ring-zinc-200 dark:ring-zinc-600"
+                            style="background-color: {{ $park->color }}"></div>
+                        <h2 class="truncate text-sm font-semibold text-zinc-900 dark:text-white sm:text-base">{{ $park->name }}</h2>
+                    </div>
+                    <p class="mt-0.5 truncate text-[10px] text-zinc-500 dark:text-zinc-400 sm:text-[11px]">
+                        @if ($overflow > 0)
+                            Overflow {{ $overflow }} · Aim +{{ intdiv($overflow, 2) }}
+                        @else
+                            {{ $park->location ?: 'No overflow set' }}
+                        @endif
+                        @if ($showExpected && $dropOffTotal > 0)
+                            · {{ $dropOffTotal }} drop-off
+                        @endif
+                    </p>
+                </div>
+
+                <div @class([
+                    'grid min-h-0 flex-1 gap-1.5 p-1.5',
+                    'grid-cols-1' => $dayCount === 1,
+                    'grid-cols-2 lg:grid-cols-4' => $dayCount > 1,
                 ])>
-                    <div class="flex w-36 shrink-0 flex-col justify-center border-r border-zinc-100 px-2.5 dark:border-zinc-700/80 lg:w-44">
-                        <div class="flex items-center gap-2">
-                            <div class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: {{ $park->color }}"></div>
-                            <h2 class="truncate text-sm font-semibold text-zinc-900 dark:text-white">{{ $park->name }}</h2>
-                        </div>
-                        <p class="mt-0.5 truncate text-[10px] text-zinc-500 dark:text-zinc-400">
-                            @if ($overflow > 0)
-                                Overflow {{ $overflow }} · Aim +{{ intdiv($overflow, 2) }}
-                            @endif
-                            @if ($dropOffTotal > 0)
-                                · {{ $dropOffTotal }} drop-off
-                            @endif
-                        </p>
-                    </div>
-                    <div class="grid min-h-0 flex-1 grid-cols-2 gap-1 p-1 lg:grid-cols-4">
-                        @foreach ($card['days'] as $day)
-                            <x-car-park-capacity-cell
-                                :reading="$day['reading']"
-                                :label="$day['label']"
-                                :mode="$day['mode']"
-                                :drop-off="$day['drop_off']"
-                                :tooltip="$day['tooltip']"
-                                :aria-label="$park->name.' '.$day['label']"
-                                compact
-                            />
-                        @endforeach
-                    </div>
-                </article>
-            @empty
-                <div class="flex flex-1 items-center justify-center text-zinc-500">No car parks configured yet.</div>
-            @endforelse
-        </div>
-    @else
-        {{-- Guest: dense full-width live table — all parks visible without tall empty cards --}}
-        <div class="min-h-0 flex-1 overflow-hidden rounded-lg border border-zinc-200 dark:border-zinc-700">
-            <table class="h-full w-full table-fixed border-collapse text-left">
-                <thead class="bg-zinc-100 text-[11px] uppercase tracking-wide text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">
-                    <tr>
-                        <th class="w-[28%] px-3 py-2 font-medium">Car park</th>
-                        <th class="px-3 py-2 font-medium">Live (clocked in)</th>
-                        <th class="hidden w-[34%] px-3 py-2 font-medium sm:table-cell">Fill</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700">
-                    @forelse ($parkCards as $card)
-                        @php
-                            $park = $card['park'];
-                            $overflow = $card['overflow'];
-                            $live = $card['days'][0]['reading'];
-                        @endphp
-                        <tr class="bg-white dark:bg-zinc-800">
-                            <td class="px-3 py-2 align-middle">
-                                <div class="flex items-center gap-2">
-                                    <div class="h-2.5 w-2.5 shrink-0 rounded-full" style="background-color: {{ $park->color }}"></div>
-                                    <div class="min-w-0">
-                                        <div class="truncate text-sm font-semibold text-zinc-900 dark:text-white">{{ $park->name }}</div>
-                                        @if ($overflow > 0)
-                                            <div class="truncate text-[10px] text-zinc-500 dark:text-zinc-400">
-                                                Overflow {{ $overflow }} · Aim +{{ intdiv($overflow, 2) }} · Max {{ $live->hardLimit() }}
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-3 py-2 align-middle">
-                                <div @class(['text-xl font-semibold tabular-nums', $live->ratioTextClass()])>
-                                    {{ $live->used }} in / {{ $live->capacity }}
-                                </div>
-                                @if ($live->shortStatusLabel())
-                                    <div @class(['text-xs font-medium', $live->statusTextClass()])>{{ $live->shortStatusLabel() }}</div>
-                                @endif
-                            </td>
-                            <td class="hidden px-3 py-2 align-middle sm:table-cell">
-                                <x-car-park-capacity-meter
-                                    :reading="$live"
-                                    :aria-label="$park->name.' live'"
-                                />
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="3" class="px-3 py-8 text-center text-zinc-500">No car parks configured yet.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    @endif
+                    @foreach ($card['days'] as $day)
+                        <x-car-park-capacity-cell
+                            :reading="$day['reading']"
+                            :label="$day['label']"
+                            :mode="$day['mode']"
+                            :drop-off="$day['drop_off']"
+                            :tooltip="$day['tooltip']"
+                            :aria-label="$park->name.' '.$day['label']"
+                            compact
+                        />
+                    @endforeach
+                </div>
+            </article>
+        @empty
+            <div class="flex flex-1 items-center justify-center rounded-xl border border-dashed border-zinc-300 text-zinc-500 dark:border-zinc-600">
+                No car parks configured yet.
+            </div>
+        @endforelse
+    </div>
 </div>
