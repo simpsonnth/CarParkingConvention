@@ -103,6 +103,6 @@ test('authenticated users see expected day demand on capacities page', function 
         ->assertSee('Saturday')
         ->assertSee('Sunday')
         ->assertSee('3 / 10')
-        ->assertSee('Auto-refresh 30s')
+        ->assertSee('30s refresh')
         ->assertDontSee('Live only');
 });
