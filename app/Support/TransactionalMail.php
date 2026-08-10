@@ -46,12 +46,36 @@ final class TransactionalMail
                 continue;
             }
 
+            if ($mailer === 'mailersend' && ! MailerSendApiQuota::hasCapacity()) {
+                $remaining = MailerSendApiQuota::remaining();
+                $e = new RuntimeException(
+                    'MailerSend daily API request quota nearly exhausted'
+                    .' (remaining '.(string) ($remaining ?? 0)
+                    .', reserve '.MailerSendApiQuota::reserve().').'
+                );
+                MailSendingQuota::markProviderExceeded('mailersend', $e);
+                $errors[] = $e;
+                Log::warning('Mail provider quota exceeded; trying next if available', [
+                    'mailer' => 'mailersend',
+                    'message' => $e->getMessage(),
+                    'remaining' => $remaining,
+                    'reserve' => MailerSendApiQuota::reserve(),
+                    'resets_at' => MailerSendApiQuota::resetsAt()?->toIso8601String(),
+                ]);
+
+                continue;
+            }
+
             try {
                 Mail::mailer($mailer)->to($to)->send($mailable);
 
                 if ($mailer === 'brevo') {
                     // Force a fresh credit read soon after a send burst.
                     BrevoSendCredits::forgetCache();
+                }
+
+                if ($mailer === 'mailersend') {
+                    MailerSendApiQuota::recordSpend();
                 }
 
                 Log::info('Transactional mail sent', ['mailer' => $mailer]);

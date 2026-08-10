@@ -46,6 +46,8 @@ final class MailSendingQuota
             || str_contains($message, 'monthly_quota_exceeded')
             || str_contains($message, 'monthly email sending quota')
             || str_contains($message, 'quota exceeded')
+            || str_contains($message, 'quota nearly exhausted')
+            || str_contains($message, 'api request quota')
             || str_contains($message, 'send limit exceeded')
             || str_contains($message, 'send limit reached')
             || str_contains($message, 'account credits are 0')
@@ -290,6 +292,14 @@ final class MailSendingQuota
             || str_contains($message, 'trial account')
         ) {
             return now()->addDays(7);
+        }
+
+        if (
+            str_contains($message, 'mailersend daily api')
+            || str_contains($message, 'api request quota')
+        ) {
+            return MailerSendApiQuota::resetsAt()?->timezone(config('app.timezone'))
+                ?? self::nextUtcReset();
         }
 
         return self::nextUtcReset();

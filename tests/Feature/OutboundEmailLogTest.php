@@ -8,6 +8,7 @@ use App\Models\OutboundEmailEvent;
 use App\Models\User;
 use App\Services\ResendWebhookProcessor;
 use App\Support\BrevoSendCredits;
+use App\Support\MailerSendApiQuota;
 use App\Support\MailSendingQuota;
 use App\Support\ResendWebhookVerifier;
 use App\Support\TransactionalMail;
@@ -223,6 +224,7 @@ test('when resend and brevo are blocked mailersend remains available', function 
             'transport' => 'mailersend',
         ],
         'mailersend-driver.api_key' => 'mlsn.test-key',
+        'services.mailersend.reserve' => 5,
     ]);
 
     MailSendingQuota::clear();
@@ -242,6 +244,51 @@ test('when resend and brevo are blocked mailersend remains available', function 
         ->and(MailSendingQuota::mailerConfigured('mailersend'))->toBeTrue()
         ->and(MailSendingQuota::isBlocked())->toBeFalse()
         ->and(MailSendingQuota::hasAvailableProvider())->toBeTrue();
+});
+
+test('mailersend stops before burning the daily api reserve', function () {
+    config([
+        'mailersend-driver.api_key' => 'mlsn.test-key',
+        'services.mailersend.reserve' => 5,
+        'mail.transactional_primary' => 'mailersend',
+        'mail.transactional_failover' => '',
+        'mail.transactional_tertiary' => '',
+        'mail.mailers.mailersend' => [
+            'transport' => 'mailersend',
+        ],
+    ]);
+
+    MailSendingQuota::clear();
+    MailerSendApiQuota::forgetCache();
+
+    Illuminate\Support\Facades\Http::fake([
+        'api.mailersend.com/v1/api-quota' => Illuminate\Support\Facades\Http::response([
+            'quota' => 100,
+            'remaining' => 5,
+            'reset' => now('UTC')->addDay()->startOfDay()->toIso8601String(),
+        ]),
+    ]);
+
+    expect(MailerSendApiQuota::hasCapacity())->toBeFalse();
+
+    try {
+        TransactionalMail::send(new class extends \Illuminate\Mail\Mailable
+        {
+            public function envelope(): \Illuminate\Mail\Mailables\Envelope
+            {
+                return new \Illuminate\Mail\Mailables\Envelope(subject: 'Test');
+            }
+
+            public function content(): \Illuminate\Mail\Mailables\Content
+            {
+                return new \Illuminate\Mail\Mailables\Content(htmlString: '<p>Test</p>');
+            }
+        }, 'to@example.test');
+        expect(false)->toBeTrue();
+    } catch (RuntimeException $e) {
+        expect($e->getMessage())->toContain('API request quota')
+            ->and(MailSendingQuota::isProviderBlocked('mailersend'))->toBeTrue();
+    }
 });
 
 test('when all three providers are blocked outbound stays queued', function () {

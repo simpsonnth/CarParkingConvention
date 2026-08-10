@@ -30,6 +30,8 @@ return [
 
     'mailersend' => [
         'key' => env('MAILERSEND_API_KEY'),
+        // Stop using MailerSend when remaining daily API requests reach this floor.
+        'reserve' => env('MAILERSEND_API_RESERVE', 5),
     ],
 
     'chrome' => [
