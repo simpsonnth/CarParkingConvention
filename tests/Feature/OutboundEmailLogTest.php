@@ -167,6 +167,7 @@ test('quota block on primary leaves failover available', function () {
     config([
         'mail.transactional_primary' => 'smtp',
         'mail.transactional_failover' => 'brevo',
+        'mail.transactional_tertiary' => 'mailersend',
         'mail.mailers.smtp' => [
             'transport' => 'smtp',
             'host' => 'smtp.example.test',
@@ -181,6 +182,10 @@ test('quota block on primary leaves failover available', function () {
             'username' => 'brevo@example.test',
             'password' => 'failover-secret',
         ],
+        'mail.mailers.mailersend' => [
+            'transport' => 'mailersend',
+        ],
+        'mailersend-driver.api_key' => 'mlsn.test-key',
     ]);
 
     MailSendingQuota::clear();
@@ -195,11 +200,99 @@ test('quota block on primary leaves failover available', function () {
         ->and(MailSendingQuota::hasAvailableProvider())->toBeTrue();
 });
 
+test('when resend and brevo are blocked mailersend remains available', function () {
+    config([
+        'mail.transactional_primary' => 'smtp',
+        'mail.transactional_failover' => 'brevo',
+        'mail.transactional_tertiary' => 'mailersend',
+        'mail.mailers.smtp' => [
+            'transport' => 'smtp',
+            'host' => 'smtp.example.test',
+            'port' => 587,
+            'username' => 'resend',
+            'password' => 'primary-secret',
+        ],
+        'mail.mailers.brevo' => [
+            'transport' => 'smtp',
+            'host' => 'smtp-relay.brevo.com',
+            'port' => 587,
+            'username' => 'brevo@example.test',
+            'password' => 'failover-secret',
+        ],
+        'mail.mailers.mailersend' => [
+            'transport' => 'mailersend',
+        ],
+        'mailersend-driver.api_key' => 'mlsn.test-key',
+    ]);
+
+    MailSendingQuota::clear();
+    MailSendingQuota::markProviderExceeded(
+        'smtp',
+        new RuntimeException('550 You have reached your daily email sending quota.'),
+    );
+    MailSendingQuota::markProviderExceeded(
+        'brevo',
+        new RuntimeException('Brevo daily/monthly send limit reached (account credits are 0).'),
+    );
+
+    expect(MailSendingQuota::mailersInPreferenceOrder())->toBe(['smtp', 'brevo', 'mailersend'])
+        ->and(MailSendingQuota::isProviderBlocked('smtp'))->toBeTrue()
+        ->and(MailSendingQuota::isProviderBlocked('brevo'))->toBeTrue()
+        ->and(MailSendingQuota::isProviderBlocked('mailersend'))->toBeFalse()
+        ->and(MailSendingQuota::mailerConfigured('mailersend'))->toBeTrue()
+        ->and(MailSendingQuota::isBlocked())->toBeFalse()
+        ->and(MailSendingQuota::hasAvailableProvider())->toBeTrue();
+});
+
+test('when all three providers are blocked outbound stays queued', function () {
+    config([
+        'mail.transactional_primary' => 'smtp',
+        'mail.transactional_failover' => 'brevo',
+        'mail.transactional_tertiary' => 'mailersend',
+        'mail.mailers.smtp' => [
+            'transport' => 'smtp',
+            'host' => 'smtp.example.test',
+            'port' => 587,
+            'username' => 'resend',
+            'password' => 'primary-secret',
+        ],
+        'mail.mailers.brevo' => [
+            'transport' => 'smtp',
+            'host' => 'smtp-relay.brevo.com',
+            'port' => 587,
+            'username' => 'brevo@example.test',
+            'password' => 'failover-secret',
+        ],
+        'mail.mailers.mailersend' => [
+            'transport' => 'mailersend',
+        ],
+        'mailersend-driver.api_key' => 'mlsn.test-key',
+    ]);
+
+    MailSendingQuota::clear();
+    MailSendingQuota::markProviderExceeded(
+        'smtp',
+        new RuntimeException('550 You have reached your daily email sending quota.'),
+    );
+    MailSendingQuota::markProviderExceeded(
+        'brevo',
+        new RuntimeException('Brevo daily/monthly send limit reached (account credits are 0).'),
+    );
+    MailSendingQuota::markProviderExceeded(
+        'mailersend',
+        new RuntimeException('Too many requests / rate limit.'),
+    );
+
+    expect(MailSendingQuota::isBlocked())->toBeTrue()
+        ->and(MailSendingQuota::hasAvailableProvider())->toBeFalse();
+});
+
 test('brevo zero credits are treated as quota exceeded before smtp send', function () {
     config([
         'services.brevo.key' => 'test-key',
         'mail.transactional_primary' => 'brevo',
         'mail.transactional_failover' => 'smtp',
+        'mail.transactional_tertiary' => '',
         'mail.mailers.brevo' => [
             'transport' => 'smtp',
             'host' => 'smtp-relay.brevo.com',

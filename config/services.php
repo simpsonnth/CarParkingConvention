@@ -28,6 +28,10 @@ return [
         'key' => env('BREVO_API_KEY'),
     ],
 
+    'mailersend' => [
+        'key' => env('MAILERSEND_API_KEY'),
+    ],
+
     'chrome' => [
         'binary' => env('CHROME_PATH', '/usr/bin/google-chrome-stable'),
     ],

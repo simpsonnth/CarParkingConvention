@@ -13,7 +13,7 @@ use Throwable;
 final class TransactionalMail
 {
     /**
-     * Send via the first available provider (primary, then failover).
+     * Send via the first available provider (primary → failover → tertiary).
      *
      * @param  string|list<string>  $to
      * @return array{mailer: string}

@@ -24,9 +24,10 @@ final class MailSendingQuota
     {
         $primary = (string) config('mail.transactional_primary', config('mail.default', 'smtp'));
         $failover = (string) config('mail.transactional_failover', 'brevo');
+        $tertiary = (string) config('mail.transactional_tertiary', 'mailersend');
 
         $order = [];
-        foreach ([$primary, $failover] as $mailer) {
+        foreach ([$primary, $failover, $tertiary] as $mailer) {
             $mailer = trim($mailer);
             if ($mailer !== '' && ! in_array($mailer, $order, true)) {
                 $order[] = $mailer;
@@ -145,6 +146,10 @@ final class MailSendingQuota
             return trim((string) config('services.resend.key', '')) !== '';
         }
 
+        if (($config['transport'] ?? '') === 'mailersend') {
+            return trim((string) config('mailersend-driver.api_key', '')) !== '';
+        }
+
         return true;
     }
 
@@ -226,7 +231,7 @@ final class MailSendingQuota
                 ->where('available_at', '>', now())
                 ->update([
                     'available_at' => null,
-                    'last_error' => 'Primary provider quota reached; failover available.',
+                    'last_error' => 'Provider quota reached; next failover available.',
                 ]);
         }
 

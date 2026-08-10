@@ -18,17 +18,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Transactional primary / failover
+    | Transactional primary / failover chain
     |--------------------------------------------------------------------------
     |
-    | Ticket and notification emails try the primary mailer first. When that
-    | provider hits a daily/monthly quota, sending automatically moves to the
-    | failover mailer (Brevo) until the primary resets.
+    | Ticket and notification emails try providers in order. When a provider
+    | hits quota, sending moves to the next until the chain is exhausted;
+    | remaining jobs stay queued until a provider resets.
+    |
+    | Default: Resend (smtp) → Brevo → MailerSend
     |
     */
 
     'transactional_primary' => env('MAIL_TRANSACTIONAL_PRIMARY', env('MAIL_MAILER', 'smtp')),
     'transactional_failover' => env('MAIL_TRANSACTIONAL_FAILOVER', 'brevo'),
+    'transactional_tertiary' => env('MAIL_TRANSACTIONAL_TERTIARY', 'mailersend'),
 
     /*
     |--------------------------------------------------------------------------
@@ -74,6 +77,10 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
+        'mailersend' => [
+            'transport' => 'mailersend',
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],
@@ -105,6 +112,7 @@ return [
             'mailers' => [
                 'smtp',
                 'brevo',
+                'mailersend',
             ],
             'retry_after' => 60,
         ],
