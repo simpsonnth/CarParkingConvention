@@ -1,5 +1,6 @@
 @props([
     'reading', // App\Support\CarParkCapacityReading
+    'label' => '',
     'mode' => 'day', // day|live
     'tooltip' => '',
     'ariaLabel' => '',
@@ -8,44 +9,41 @@
 
 @php
     /** @var \App\Support\CarParkCapacityReading $reading */
-    $ratioText = $mode === 'live'
-        ? $reading->used.' in / '.$reading->capacity
-        : $reading->used.' / '.$reading->capacity;
+    $usedSuffix = $mode === 'live' ? ' in' : '';
 @endphp
 
-<div {{ $attributes->class(['min-w-[10.5rem] space-y-1.5']) }}>
-    <p @class([
-        'text-lg font-semibold tabular-nums tracking-tight leading-none',
-        $reading->ratioTextClass(),
-    ])>{{ $ratioText }}</p>
-
-    @if ($reading->overflow > 0)
-        <p class="text-[11px] leading-snug text-zinc-500 dark:text-zinc-400">
-            Aim {{ $reading->recommendedLimit() }}
-            <span class="text-zinc-400 dark:text-zinc-500">·</span>
-            Max {{ $reading->hardLimit() }}
-        </p>
+<div {{ $attributes->class(['rounded-lg bg-zinc-50 px-3 py-3 dark:bg-zinc-900/50']) }}>
+    @if ($label !== '')
+        <p class="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{{ $label }}</p>
     @endif
 
-    @if ($reading->shortStatusLabel())
+    <p class="mt-1">
         <span @class([
-            'inline-flex max-w-full items-center rounded-md px-1.5 py-0.5 text-[11px] font-semibold ring-1 ring-inset',
-            $reading->statusChipClass(),
-        ])>
+            'text-2xl font-semibold tabular-nums tracking-tight',
+            $reading->ratioTextClass(),
+        ])>{{ $reading->used }}{{ $usedSuffix }} / {{ $reading->capacity }}</span>
+    </p>
+
+    @if ($reading->shortStatusLabel())
+        <p @class(['mt-1 text-xs font-medium', $reading->statusTextClass()])>
             {{ $reading->shortStatusLabel() }}
-        </span>
+        </p>
+    @elseif ($reading->overflow > 0)
+        <p class="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+            max {{ $reading->hardLimit() }}
+        </p>
+    @else
+        <p class="mt-1 text-xs text-transparent select-none" aria-hidden="true">—</p>
     @endif
 
     @if ($dropOff > 0)
-        <span class="block text-[11px] font-semibold text-amber-800 dark:text-amber-200">
-            +{{ $dropOff }} drop-off
-        </span>
+        <p class="mt-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">+{{ $dropOff }} drop-off</p>
     @endif
 
-    <x-car-park-capacity-meter
-        :reading="$reading"
-        ok-bar-class="bg-emerald-500"
-        :show-zone-labels="$reading->overflow > 0"
-        :aria-label="$ariaLabel !== '' ? $ariaLabel : $tooltip"
-    />
+    <div class="mt-2.5" @if ($tooltip !== '') title="{{ $tooltip }}" @endif>
+        <x-car-park-capacity-meter
+            :reading="$reading"
+            :aria-label="$ariaLabel !== '' ? $ariaLabel : $tooltip"
+        />
+    </div>
 </div>

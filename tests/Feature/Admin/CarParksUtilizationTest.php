@@ -92,9 +92,9 @@ test('car parks page shows per-day assigned demand against day capacity', functi
         ->assertSee('4 / 3')
         ->assertSee('0 / 10')
         ->assertSee('Over limit +1')
-        ->assertSee('Totals past base capacity')
-        ->assertSee('How to read capacity')
-        ->assertSee('Green = within base capacity');
+        ->assertSee('Totals past base')
+        ->assertSee('Double park')
+        ->assertSee('Over max');
 });
 
 test('car parks page excludes drop-off coaches from capacity and shows them separately', function () {
@@ -153,8 +153,7 @@ test('car parks page excludes drop-off coaches from capacity and shows them sepa
         ->assertSee('Coach Mix Park')
         ->assertSee('2 / 10')
         ->assertDontSee('3 / 10')
-        ->assertSee('1 coach not staying at Twickenham')
-        ->assertSee('1 drop-off coach (not counted)')
+        ->assertSee('1 drop-off coach (not counted in capacity)')
         ->assertSee('+1 drop-off')
         ->assertSee('View coaches');
 });
