@@ -144,10 +144,24 @@ final class CarParkCapacityReading
     {
         return match ($this->zone()) {
             'critical' => $this->overflow > 0
-                ? 'Over overflow by '.$this->overHard()
-                : 'Over by '.$this->overBase(),
-            'overflow' => 'Double park +'.$this->overBase()
-                .($this->overRecommended() > 0 ? ' (past half)' : ''),
+                ? 'Over limit · +'.$this->overHard().' past max '.$this->hardLimit()
+                : 'Over capacity · +'.$this->overBase(),
+            'overflow' => $this->overRecommended() > 0
+                ? 'Past aim · +'.$this->overBase().' double parked'
+                : 'Double parking · +'.$this->overBase().' of '.$this->overflow,
+            default => null,
+        };
+    }
+
+    public function shortStatusLabel(): ?string
+    {
+        return match ($this->zone()) {
+            'critical' => $this->overflow > 0
+                ? 'Over limit +'.$this->overHard()
+                : 'Over limit +'.$this->overBase(),
+            'overflow' => $this->overRecommended() > 0
+                ? 'Past aim +'.$this->overBase()
+                : 'Double park +'.$this->overBase(),
             default => null,
         };
     }
@@ -155,9 +169,18 @@ final class CarParkCapacityReading
     public function statusTextClass(): string
     {
         return match ($this->zone()) {
-            'critical' => 'text-red-600 dark:text-red-400',
-            'overflow' => 'text-orange-600 dark:text-orange-400',
+            'critical' => 'text-red-700 dark:text-red-300',
+            'overflow' => 'text-orange-700 dark:text-orange-300',
             default => 'text-zinc-500 dark:text-zinc-400',
+        };
+    }
+
+    public function statusChipClass(): string
+    {
+        return match ($this->zone()) {
+            'critical' => 'bg-red-100 text-red-800 ring-red-200 dark:bg-red-950 dark:text-red-200 dark:ring-red-900',
+            'overflow' => 'bg-orange-100 text-orange-800 ring-orange-200 dark:bg-orange-950 dark:text-orange-200 dark:ring-orange-900',
+            default => '',
         };
     }
 
@@ -167,13 +190,8 @@ final class CarParkCapacityReading
             return '';
         }
 
-        $parts = [
-            "base {$this->capacity}",
-            "overflow {$this->overflow}",
-            "hard limit {$this->hardLimit()}",
-            'aim ≤ '.$this->recommendedLimit().' (half overflow)',
-        ];
-
-        return ' · '.implode(' · ', $parts);
+        return ' · base '.$this->capacity
+            .' · aim '.$this->recommendedLimit()
+            .' · max '.$this->hardLimit();
     }
 }

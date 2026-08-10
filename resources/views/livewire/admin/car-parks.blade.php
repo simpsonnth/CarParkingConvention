@@ -11,36 +11,47 @@
             class="w-full min-w-0 sm:max-w-xs" />
     </div>
 
-    <p class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
-        <span class="inline-flex items-center gap-1.5">
-            <span class="h-2 w-2 shrink-0 rounded-full bg-green-500" aria-hidden="true"></span>
-            Clocked in (live)
-        </span>
-        <span class="inline-flex items-center gap-1.5">
-            <span class="h-2 w-2 shrink-0 rounded-full bg-yellow-400 dark:bg-yellow-500" aria-hidden="true"></span>
-            Registered for that day
-        </span>
-        <span class="inline-flex items-center gap-1.5">
-            <span class="h-2 w-2 shrink-0 rounded-full bg-orange-500" aria-hidden="true"></span>
-            Double park (overflow)
-        </span>
-        <span class="inline-flex items-center gap-1.5">
-            <span class="h-2 w-2 shrink-0 rounded-full bg-red-500" aria-hidden="true"></span>
-            Over overflow limit
-        </span>
-        <span class="inline-flex items-center gap-1.5">
-            <span class="h-3 w-0.5 shrink-0 bg-zinc-700 dark:bg-zinc-200" aria-hidden="true"></span>
-            Base capacity
-        </span>
-        <span class="inline-flex items-center gap-1.5">
-            <span class="h-3.5 w-0.5 shrink-0 bg-sky-600 dark:bg-sky-400" aria-hidden="true"></span>
-            Aim (half overflow)
-        </span>
-        <span class="inline-flex items-center gap-1.5">
-            <span class="h-2 w-2 shrink-0 rounded-full bg-amber-500" aria-hidden="true"></span>
-            Drop-off coaches (not counted)
-        </span>
-    </p>
+    <div class="rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900/60">
+        <p class="text-sm font-medium text-zinc-800 dark:text-zinc-100">How to read capacity</p>
+        <div class="mt-2 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
+                <p><span class="font-semibold text-zinc-900 dark:text-white">845 / 710</span> = tickets vs base spaces</p>
+                <p><span class="font-semibold text-zinc-900 dark:text-white">Aim / Max</span> = half overflow, then hard limit</p>
+            </div>
+            <div class="space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
+                <p class="inline-flex items-center gap-1.5">
+                    <span class="h-2.5 w-2.5 rounded-sm bg-emerald-500"></span>
+                    Live (clocked in)
+                </p>
+                <p class="inline-flex items-center gap-1.5">
+                    <span class="h-2.5 w-2.5 rounded-sm bg-amber-400"></span>
+                    Registered for the day
+                </p>
+            </div>
+            <div class="space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
+                <p class="inline-flex items-center gap-1.5">
+                    <span class="h-2.5 w-2.5 rounded-sm bg-orange-500"></span>
+                    Double parking (into overflow)
+                </p>
+                <p class="inline-flex items-center gap-1.5">
+                    <span class="h-2.5 w-2.5 rounded-sm bg-red-500"></span>
+                    Over the hard max
+                </p>
+            </div>
+            <div class="space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
+                <div class="flex h-3 overflow-hidden rounded-md">
+                    <div class="w-[55%] bg-zinc-300 dark:bg-zinc-600"></div>
+                    <div class="w-[20%] bg-orange-200 dark:bg-orange-900/60"></div>
+                    <div class="w-[25%] bg-red-200 dark:bg-red-900/50"></div>
+                </div>
+                <p>Bar zones: base · aim half · rest of overflow</p>
+                <p class="inline-flex items-center gap-2">
+                    <span class="inline-flex items-center gap-1"><span class="h-3 w-0.5 bg-zinc-900 dark:bg-white"></span> base</span>
+                    <span class="inline-flex items-center gap-1"><span class="h-3 w-0.5 bg-sky-600"></span> aim</span>
+                </p>
+            </div>
+        </div>
+    </div>
 
     @if (($dropOffCoachTotal ?? 0) > 0)
         <div class="rounded-xl border-2 border-amber-400 bg-amber-50 px-4 py-3 dark:border-amber-500 dark:bg-amber-950">
@@ -58,7 +69,7 @@
     @endif
 
     <div class="overflow-x-auto rounded-lg border border-zinc-200 dark:border-zinc-700 -mx-4 sm:mx-0">
-        <table class="w-full min-w-[720px] text-left text-sm text-zinc-500 dark:text-zinc-400">
+        <table class="w-full min-w-[920px] text-left text-sm text-zinc-500 dark:text-zinc-400">
             <thead class="bg-zinc-50 text-xs uppercase text-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
                 <tr>
                     <th class="px-6 py-3">Name</th>
@@ -102,20 +113,27 @@
                             ],
                         ];
                     @endphp
-                    <tr class="hover:bg-zinc-50 dark:hover:bg-zinc-700/50">
-                        <td class="px-6 py-4">
-                            <div class="flex items-center gap-2">
-                                <div class="w-4 h-4 rounded-full border border-zinc-200 dark:border-zinc-600 shadow-sm"
+                    <tr @class([
+                        'hover:bg-zinc-50 dark:hover:bg-zinc-700/50',
+                        'bg-orange-50/40 dark:bg-orange-950/20' => collect($dayColumns)->contains(fn ($d) => $d['assigned'] > $d['capacity'] && $d['assigned'] <= $d['capacity'] + $overflow),
+                        'bg-red-50/50 dark:bg-red-950/20' => collect($dayColumns)->contains(fn ($d) => $d['assigned'] > $d['capacity'] + $overflow),
+                    ])>
+                        <td class="px-6 py-4 align-top">
+                            <div class="flex items-start gap-3">
+                                <div class="mt-1 h-4 w-4 shrink-0 rounded-full border border-zinc-200 shadow-sm dark:border-zinc-600"
                                     style="background-color: {{ $park->color }}"></div>
-                                <span class="text-[10px] text-zinc-400 font-mono">{{ $park->color }}</span>
-                                <div>
-                                    <div class="font-medium text-zinc-900 dark:text-white">{{ $park->name }}</div>
+                                <div class="min-w-0">
+                                    <div class="font-semibold text-zinc-900 dark:text-white">{{ $park->name }}</div>
                                     <div class="text-xs text-zinc-500 dark:text-zinc-400">
                                         {{ $park->location ?? 'No location' }}
                                     </div>
                                     @if ($overflow > 0)
-                                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
-                                            Overflow {{ $overflow }} · aim +{{ intdiv($overflow, 2) }} past base
+                                        <div class="mt-2 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md bg-zinc-100 px-2 py-1 text-[11px] text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+                                            <span>Base spaces as set per day</span>
+                                            <span class="text-zinc-400">·</span>
+                                            <span class="font-semibold">Overflow {{ $overflow }}</span>
+                                            <span class="text-zinc-400">·</span>
+                                            <span class="font-semibold text-sky-700 dark:text-sky-300">Aim +{{ intdiv($overflow, 2) }}</span>
                                         </div>
                                     @endif
                                     @if ($dropOffTotal > 0)
@@ -126,23 +144,13 @@
                                 </div>
                             </div>
                         </td>
-                        <td class="px-4 py-4">
+                        <td class="px-4 py-4 align-top">
                             <flux:tooltip :content="$liveTooltip" position="top">
-                                <div class="cursor-help space-y-1.5">
-                                    <flux:badge color="{{ $liveReading->badgeColor() }}">
-                                        {{ $parked }} in / {{ $liveCapacity }}
-                                        @if ($overflow > 0)
-                                            <span class="opacity-70">(+{{ $overflow }})</span>
-                                        @endif
-                                    </flux:badge>
-                                    @if ($liveReading->statusLabel())
-                                        <span class="block text-xs font-medium {{ $liveReading->statusTextClass() }}">
-                                            {{ $liveReading->statusLabel() }}
-                                        </span>
-                                    @endif
-                                    <x-car-park-capacity-meter
+                                <div class="cursor-help">
+                                    <x-car-park-capacity-cell
                                         :reading="$liveReading"
-                                        ok-bar-class="bg-green-500"
+                                        mode="live"
+                                        :tooltip="$liveTooltip"
                                         :aria-label="$park->name.' live occupancy: '.$liveTooltip"
                                     />
                                 </div>
@@ -150,43 +158,28 @@
                         </td>
                         @foreach ($dayColumns as $day)
                             @php
-                                $assigned = $day['assigned'];
-                                $dayCapacity = $day['capacity'];
-                                $dayReading = \App\Support\CarParkCapacityReading::make($assigned, $dayCapacity, $overflow);
-                                $dayFree = max(0, $dayCapacity - $assigned);
+                                $dayReading = \App\Support\CarParkCapacityReading::make($day['assigned'], $day['capacity'], $overflow);
+                                $dayFree = max(0, $day['capacity'] - $day['assigned']);
                                 $dropOff = $day['drop_off'];
-                                $dayTooltip = "{$assigned} registered for {$day['label']} · {$dayFree} spaces free"
+                                $dayTooltip = "{$day['assigned']} registered for {$day['label']} · {$dayFree} spaces free"
                                     .$dayReading->tooltipExtra()
                                     .($dropOff > 0 ? " · {$dropOff} drop-off coach(es) not counted" : '');
                             @endphp
-                            <td class="px-4 py-4">
+                            <td class="px-4 py-4 align-top">
                                 <flux:tooltip :content="$dayTooltip" position="top">
-                                    <div class="cursor-help space-y-1.5">
-                                        <flux:badge color="{{ $dayReading->badgeColor() }}">
-                                            {{ $assigned }} / {{ $dayCapacity }}
-                                            @if ($overflow > 0)
-                                                <span class="opacity-70">(+{{ $overflow }})</span>
-                                            @endif
-                                        </flux:badge>
-                                        @if ($dayReading->statusLabel())
-                                            <span class="block text-xs font-medium {{ $dayReading->statusTextClass() }}">
-                                                {{ $dayReading->statusLabel() }}
-                                            </span>
-                                        @endif
-                                        @if ($dropOff > 0)
-                                            <span class="block text-xs font-semibold text-amber-800 dark:text-amber-200">
-                                                +{{ $dropOff }} drop-off
-                                            </span>
-                                        @endif
-                                        <x-car-park-capacity-meter
+                                    <div class="cursor-help">
+                                        <x-car-park-capacity-cell
                                             :reading="$dayReading"
+                                            mode="day"
+                                            :drop-off="$dropOff"
+                                            :tooltip="$dayTooltip"
                                             :aria-label="$park->name.' '.$day['label'].' demand: '.$dayTooltip"
                                         />
                                     </div>
                                 </flux:tooltip>
                             </td>
                         @endforeach
-                        <td class="px-6 py-4 text-end">
+                        <td class="px-6 py-4 text-end align-top">
                             <flux:dropdown>
                                 <flux:button variant="ghost" size="sm" icon="ellipsis-horizontal" inset="top bottom" />
 
@@ -214,7 +207,7 @@
                 <tfoot class="border-t-2 border-zinc-200 bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-900/80">
                     <tr>
                         <td class="px-6 py-4 text-sm font-semibold text-zinc-900 dark:text-white">
-                            Total over capacity
+                            Totals past base capacity
                         </td>
                         @foreach (['live', 'friday', 'saturday', 'sunday'] as $dayKey)
                             @php
@@ -224,16 +217,16 @@
                             @endphp
                             <td class="px-4 py-4">
                                 @if ($overHard > 0)
-                                    <span class="block text-sm font-semibold text-red-600 dark:text-red-400">
-                                        Over overflow by {{ $overHard }}
+                                    <span class="inline-flex rounded-md bg-red-100 px-2 py-1 text-xs font-semibold text-red-800 ring-1 ring-inset ring-red-200 dark:bg-red-950 dark:text-red-200 dark:ring-red-900">
+                                        Over limit +{{ $overHard }}
                                     </span>
                                     @if ($overBase > $overHard)
-                                        <span class="block text-xs font-medium text-orange-600 dark:text-orange-400">
+                                        <span class="mt-1 block text-xs font-medium text-orange-700 dark:text-orange-300">
                                             Double park +{{ $overBase }}
                                         </span>
                                     @endif
                                 @elseif ($overBase > 0)
-                                    <span class="text-sm font-semibold text-orange-600 dark:text-orange-400">
+                                    <span class="inline-flex rounded-md bg-orange-100 px-2 py-1 text-xs font-semibold text-orange-800 ring-1 ring-inset ring-orange-200 dark:bg-orange-950 dark:text-orange-200 dark:ring-orange-900">
                                         Double park +{{ $overBase }}
                                     </span>
                                 @else
@@ -302,8 +295,8 @@
                     <input type="number" wire:model="overflowCapacity" id="overflowCapacity" placeholder="0" min="0"
                         class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" />
                     <p class="text-xs text-zinc-500 dark:text-zinc-400">
-                        Extra spaces available by double parking. The meter aims for half of this (sky marker). Going past
-                        base + overflow shows a red warning.
+                        Extra cars you can double-park beyond base capacity. The sky marker on the bar is half of this
+                        (recommended). Red means past base + overflow.
                     </p>
                     @error('overflowCapacity')
                         <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>

@@ -91,10 +91,10 @@ test('car parks page shows per-day assigned demand against day capacity', functi
         ->assertSee('North Car Park')
         ->assertSee('4 / 3')
         ->assertSee('0 / 10')
-        ->assertSee('Over by 1')
-        ->assertSee('Total over capacity')
-        ->assertSee('Clocked in (live)')
-        ->assertSee('Registered for that day');
+        ->assertSee('Over limit +1')
+        ->assertSee('Totals past base capacity')
+        ->assertSee('How to read capacity')
+        ->assertSee('Registered for the day');
 });
 
 test('car parks page excludes drop-off coaches from capacity and shows them separately', function () {
@@ -391,7 +391,7 @@ test('car parks page shows double park overflow in orange and warns past hard li
         ->assertSee('12 / 10')
         ->assertSee('Double park +2')
         ->assertSee('Double-park overflow')
-        ->assertDontSee('Over overflow by');
+        ->assertDontSee('Over limit +');
 
     foreach (range(13, 16) as $i) {
         ParkingRegistration::query()->create([
@@ -408,7 +408,7 @@ test('car parks page shows double park overflow in orange and warns past hard li
     Livewire::actingAs($admin)
         ->test(CarParks::class)
         ->assertSee('16 / 10')
-        ->assertSee('Over overflow by 2');
+        ->assertSee('Over limit +2');
 });
 
 test('walk-in scan blocks when today day capacity is full', function () {
