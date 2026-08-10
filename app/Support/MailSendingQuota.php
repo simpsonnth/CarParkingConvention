@@ -46,6 +46,8 @@ final class MailSendingQuota
             || str_contains($message, 'monthly email sending quota')
             || str_contains($message, 'quota exceeded')
             || str_contains($message, 'send limit exceeded')
+            || str_contains($message, 'send limit reached')
+            || str_contains($message, 'account credits are 0')
             || str_contains($message, 'plan limits')
             || str_contains($message, 'too many requests')
             || str_contains($message, 'rate limit');

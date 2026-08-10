@@ -7,8 +7,11 @@ use App\Models\OutboundEmail;
 use App\Models\OutboundEmailEvent;
 use App\Models\User;
 use App\Services\ResendWebhookProcessor;
+use App\Support\BrevoSendCredits;
 use App\Support\MailSendingQuota;
 use App\Support\ResendWebhookVerifier;
+use App\Support\TransactionalMail;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Livewire\Livewire;
 
@@ -190,4 +193,50 @@ test('quota block on primary leaves failover available', function () {
         ->and(MailSendingQuota::isProviderBlocked('brevo'))->toBeFalse()
         ->and(MailSendingQuota::isBlocked())->toBeFalse()
         ->and(MailSendingQuota::hasAvailableProvider())->toBeTrue();
+});
+
+test('brevo zero credits are treated as quota exceeded before smtp send', function () {
+    config([
+        'services.brevo.key' => 'test-key',
+        'mail.transactional_primary' => 'brevo',
+        'mail.transactional_failover' => 'smtp',
+        'mail.mailers.brevo' => [
+            'transport' => 'smtp',
+            'host' => 'smtp-relay.brevo.com',
+            'port' => 587,
+            'username' => 'brevo@example.test',
+            'password' => 'failover-secret',
+        ],
+        'mail.mailers.smtp' => [
+            'transport' => 'smtp',
+            'host' => 'smtp.example.test',
+            'port' => 587,
+            'username' => 'resend',
+            'password' => 'primary-secret',
+        ],
+    ]);
+
+    MailSendingQuota::clear();
+    Cache::put(BrevoSendCredits::CACHE_KEY, 0, now()->addMinutes(5));
+
+    expect(BrevoSendCredits::hasCredits())->toBeFalse();
+
+    try {
+        TransactionalMail::send(new class extends \Illuminate\Mail\Mailable
+        {
+            public function envelope(): \Illuminate\Mail\Mailables\Envelope
+            {
+                return new \Illuminate\Mail\Mailables\Envelope(subject: 'Test');
+            }
+
+            public function content(): \Illuminate\Mail\Mailables\Content
+            {
+                return new \Illuminate\Mail\Mailables\Content(htmlString: '<p>Test</p>');
+            }
+        }, 'to@example.test');
+        expect(false)->toBeTrue(); // should not reach
+    } catch (RuntimeException $e) {
+        expect($e->getMessage())->toContain('credits are 0')
+            ->and(MailSendingQuota::isProviderBlocked('brevo'))->toBeTrue();
+    }
 });

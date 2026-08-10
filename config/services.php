@@ -23,6 +23,11 @@ return [
         'webhook_secret' => env('RESEND_WEBHOOK_SECRET'),
     ],
 
+    'brevo' => [
+        // Used to detect exhausted free-plan send credits (SMTP can still return 250).
+        'key' => env('BREVO_API_KEY'),
+    ],
+
     'chrome' => [
         'binary' => env('CHROME_PATH', '/usr/bin/google-chrome-stable'),
     ],

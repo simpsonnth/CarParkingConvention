@@ -7,6 +7,7 @@ namespace App\Support;
 use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use RuntimeException;
 use Throwable;
 
 final class TransactionalMail
@@ -30,8 +31,28 @@ final class TransactionalMail
                 continue;
             }
 
+            if ($mailer === 'brevo' && ! BrevoSendCredits::hasCredits()) {
+                $e = new RuntimeException(
+                    'Brevo daily/monthly send limit reached (account credits are 0).'
+                );
+                MailSendingQuota::markProviderExceeded('brevo', $e);
+                $errors[] = $e;
+                Log::warning('Mail provider quota exceeded; trying next if available', [
+                    'mailer' => 'brevo',
+                    'message' => $e->getMessage(),
+                    'credits' => BrevoSendCredits::remaining(),
+                ]);
+
+                continue;
+            }
+
             try {
                 Mail::mailer($mailer)->to($to)->send($mailable);
+
+                if ($mailer === 'brevo') {
+                    // Force a fresh credit read soon after a send burst.
+                    BrevoSendCredits::forgetCache();
+                }
 
                 Log::info('Transactional mail sent', ['mailer' => $mailer]);
 
@@ -56,6 +77,6 @@ final class TransactionalMail
             throw $errors[array_key_last($errors)];
         }
 
-        throw new \RuntimeException('No mail providers are configured or available.');
+        throw new RuntimeException('No mail providers are configured or available.');
     }
 }
