@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\TicketChangeRequests;
 
 use App\Mail\TicketCancellationMail;
+use App\Support\OutboundEmailSnapshot;
 use App\Support\TicketEmailCcList;
 use App\Support\TransactionalMail;
 use Illuminate\Validation\ValidationException;
@@ -29,18 +30,24 @@ class SendTicketCancellationEmail
             fn (string $email): bool => $email !== $to,
         ));
 
-        $result = TransactionalMail::send(new TicketCancellationMail(
+        $mailable = new TicketCancellationMail(
             recipientEmail: $to,
             ticketNumber: $ticketNumber,
             congregation: $congregation,
             driverName: $driverName,
             ccAddresses: $cc,
-        ), $to);
+        );
+        $snapshot = OutboundEmailSnapshot::fromMailable($mailable);
+
+        $result = TransactionalMail::send($mailable, $to);
 
         return [
             'to' => $to,
             'cc' => $cc,
             'mailer' => $result['mailer'],
+            'subject' => $snapshot['subject'],
+            'body_html' => $snapshot['body_html'],
+            'attachments' => $snapshot['attachments'],
         ];
     }
 }

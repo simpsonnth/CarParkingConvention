@@ -37,6 +37,38 @@ test('admin can view outbound email log', function () {
         ->assertSee(__('management.outbound_emails.provider_delivered'));
 });
 
+test('outbound email detail shows message body and print-pass attachment link', function () {
+    $admin = User::factory()->admin()->create();
+
+    $outbound = OutboundEmail::query()->create([
+        'type' => OutboundEmail::TYPE_CAR_PARK_TICKETS,
+        'status' => OutboundEmail::STATUS_SENT,
+        'to_email' => 'guest@example.test',
+        'subject' => 'Email Hall — Car park tickets (1)',
+        'body_html' => '<p>Please find attached 1 car park ticket PDF(s).</p>',
+        'attachments' => [
+            [
+                'filename' => 'Alice Example.pdf',
+                'registration_id' => 2635,
+                'label' => 'Alice Example',
+            ],
+        ],
+        'payload' => ['registration_ids' => [2635], 'note' => null],
+        'attempts' => 1,
+        'sent_at' => now(),
+    ]);
+
+    Livewire::actingAs($admin)
+        ->test(OutboundEmails::class)
+        ->call('openDetail', $outbound->id)
+        ->assertSet('detailModalOpen', true)
+        ->assertSee('Email Hall — Car park tickets (1)')
+        ->assertSee('Please find attached 1 car park ticket PDF(s).')
+        ->assertSee('Alice Example.pdf')
+        ->assertSee(__('management.outbound_emails.open_print_pass'))
+        ->assertSee(route('admin.registrations.print', 2635), false);
+});
+
 test('resend webhook marks matched outbound email as opened', function () {
     Config::set('services.resend.webhook_secret', '');
 

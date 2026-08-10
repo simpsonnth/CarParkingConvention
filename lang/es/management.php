@@ -370,7 +370,7 @@ return [
 
     'outbound_emails' => [
         'title' => 'Registro de correos',
-        'subtitle' => 'Correos de billetes y notificaciones, con estado de entrega y rebotes de Resend.',
+        'subtitle' => 'Correos de billetes y notificaciones — abra un registro para ver el mensaje enviado (sustituye la necesidad de CC).',
         'search' => 'Buscar correo, tipo, error…',
         'per_page' => 'por página',
         'filter_all' => 'Todos',
@@ -385,6 +385,7 @@ return [
         'col_when' => 'Cuándo',
         'col_type' => 'Tipo',
         'col_to' => 'Para',
+        'col_subject' => 'Asunto',
         'col_status' => 'Envío',
         'col_provider' => 'Resend',
         'col_mailer' => 'Vía',
@@ -400,6 +401,11 @@ return [
         'close' => 'Cerrar',
         'empty' => 'Aún no hay correos registrados.',
         'detail_title' => 'Detalle del correo',
+        'message_heading' => 'Mensaje enviado',
+        'message_unavailable' => 'El cuerpo del mensaje no se guardó para este correo antiguo.',
+        'attachments_heading' => 'Adjuntos PDF',
+        'attachment_pdf' => 'Billete PDF de :label',
+        'open_print_pass' => 'Abrir pase para imprimir',
         'events_heading' => 'Eventos de Resend',
         'events_empty' => 'Todavía no hay eventos de webhook de Resend para este correo.',
         'status_pending' => 'En cola',

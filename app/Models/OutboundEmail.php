@@ -43,6 +43,9 @@ class OutboundEmail extends Model
         'provider_email_id',
         'provider_detail',
         'to_email',
+        'subject',
+        'body_html',
+        'attachments',
         'mailer',
         'payload',
         'available_at',
@@ -56,6 +59,7 @@ class OutboundEmail extends Model
 
     protected $casts = [
         'payload' => 'array',
+        'attachments' => 'array',
         'available_at' => 'datetime',
         'sent_at' => 'datetime',
         'delivered_at' => 'datetime',

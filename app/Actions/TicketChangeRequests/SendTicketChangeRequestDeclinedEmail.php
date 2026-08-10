@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\TicketChangeRequests;
 
 use App\Mail\TicketChangeRequestDeclinedMail;
+use App\Support\OutboundEmailSnapshot;
 use App\Support\TicketEmailCcList;
 use App\Support\TransactionalMail;
 use Illuminate\Validation\ValidationException;
@@ -28,17 +29,23 @@ class SendTicketChangeRequestDeclinedEmail
             fn (string $email): bool => $email !== $to,
         ));
 
-        $result = TransactionalMail::send(new TicketChangeRequestDeclinedMail(
+        $mailable = new TicketChangeRequestDeclinedMail(
             recipientEmail: $to,
             requesterName: $requesterName,
             congregation: $congregation,
             ccAddresses: $cc,
-        ), $to);
+        );
+        $snapshot = OutboundEmailSnapshot::fromMailable($mailable);
+
+        $result = TransactionalMail::send($mailable, $to);
 
         return [
             'to' => $to,
             'cc' => $cc,
             'mailer' => $result['mailer'],
+            'subject' => $snapshot['subject'],
+            'body_html' => $snapshot['body_html'],
+            'attachments' => $snapshot['attachments'],
         ];
     }
 }

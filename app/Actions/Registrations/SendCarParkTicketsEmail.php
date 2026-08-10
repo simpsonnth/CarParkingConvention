@@ -7,6 +7,7 @@ namespace App\Actions\Registrations;
 use App\Mail\CarParkTicketsMail;
 use App\Models\ParkingRegistration;
 use App\Services\MasterPassPdfGenerator;
+use App\Support\OutboundEmailSnapshot;
 use App\Support\TicketEmailCcList;
 use App\Support\TransactionalMail;
 use Illuminate\Validation\ValidationException;
@@ -60,14 +61,34 @@ class SendCarParkTicketsEmail
 
         $trimmedNote = $note !== null ? trim($note) : '';
 
-        $result = TransactionalMail::send(new CarParkTicketsMail(
+        $mailable = new CarParkTicketsMail(
             recipientEmail: $to,
             ticketCount: count($pdfPayload),
             congregationLabel: $congregationLabel,
             pdfAttachments: $pdfPayload,
             ccAddresses: $cc,
             note: $trimmedNote !== '' ? $trimmedNote : null,
-        ), $to);
+        );
+
+        $attachmentMeta = array_values(array_map(
+            static function (array $row): array {
+                /** @var ParkingRegistration $registration */
+                $registration = $row['registration'];
+
+                return [
+                    'filename' => (string) $row['filename'],
+                    'registration_id' => (int) $registration->id,
+                    'label' => trim((string) $registration->name) !== ''
+                        ? trim((string) $registration->name)
+                        : 'Registration #'.$registration->id,
+                ];
+            },
+            $attachments,
+        ));
+
+        $snapshot = OutboundEmailSnapshot::fromMailable($mailable, $attachmentMeta);
+
+        $result = TransactionalMail::send($mailable, $to);
 
         $sentIds = $registrations
             ->map(fn (ParkingRegistration $registration): int => (int) $registration->id)
@@ -87,6 +108,9 @@ class SendCarParkTicketsEmail
             'to' => $to,
             'cc' => $cc,
             'mailer' => $result['mailer'],
+            'subject' => $snapshot['subject'],
+            'body_html' => $snapshot['body_html'],
+            'attachments' => $snapshot['attachments'],
         ];
     }
 

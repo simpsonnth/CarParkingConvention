@@ -370,7 +370,7 @@ return [
 
     'outbound_emails' => [
         'title' => 'Email log',
-        'subtitle' => 'Outbound ticket and notification emails, including Resend delivery and bounce status.',
+        'subtitle' => 'Outbound ticket and notification emails — open a row to see the message that was sent (replaces needing a CC copy).',
         'search' => 'Search email, type, error…',
         'per_page' => 'per page',
         'filter_all' => 'All',
@@ -385,6 +385,7 @@ return [
         'col_when' => 'When',
         'col_type' => 'Type',
         'col_to' => 'To',
+        'col_subject' => 'Subject',
         'col_status' => 'Send status',
         'col_provider' => 'Resend',
         'col_mailer' => 'Via',
@@ -400,6 +401,11 @@ return [
         'close' => 'Close',
         'empty' => 'No outbound emails recorded yet.',
         'detail_title' => 'Email details',
+        'message_heading' => 'Message sent',
+        'message_unavailable' => 'Message body was not stored for this older email.',
+        'attachments_heading' => 'PDF attachments',
+        'attachment_pdf' => 'PDF ticket for :label',
+        'open_print_pass' => 'Open print pass',
         'events_heading' => 'Resend events',
         'events_empty' => 'No Resend webhook events matched this email yet.',
         'status_pending' => 'Queued',

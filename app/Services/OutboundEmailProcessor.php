@@ -132,6 +132,15 @@ class OutboundEmailProcessor
             $email->update([
                 'status' => OutboundEmail::STATUS_SENT,
                 'mailer' => $result['mailer'] ?? null,
+                'subject' => isset($result['subject']) && is_string($result['subject']) && $result['subject'] !== ''
+                    ? $result['subject']
+                    : null,
+                'body_html' => isset($result['body_html']) && is_string($result['body_html']) && $result['body_html'] !== ''
+                    ? $result['body_html']
+                    : null,
+                'attachments' => isset($result['attachments']) && is_array($result['attachments'])
+                    ? array_values($result['attachments'])
+                    : null,
                 'sent_at' => now(),
                 'available_at' => null,
                 'last_error' => null,
@@ -220,7 +229,12 @@ class OutboundEmailProcessor
     }
 
     /**
-     * @return array{mailer?: string}
+     * @return array{
+     *     mailer?: string,
+     *     subject?: string,
+     *     body_html?: string,
+     *     attachments?: list<array{filename: string, registration_id: int, label?: string}>
+     * }
      */
     private function dispatch(OutboundEmail $email): array
     {

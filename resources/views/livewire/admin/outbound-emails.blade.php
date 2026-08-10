@@ -161,6 +161,10 @@
                         <dt class="text-zinc-500">{{ __('management.outbound_emails.col_status') }}</dt>
                         <dd class="font-medium">{{ __('management.outbound_emails.status_'.$viewing->status) }}</dd>
                     </div>
+                    <div class="sm:col-span-2">
+                        <dt class="text-zinc-500">{{ __('management.outbound_emails.col_subject') }}</dt>
+                        <dd class="font-medium">{{ $viewing->subject ?: '—' }}</dd>
+                    </div>
                     <div>
                         <dt class="text-zinc-500">{{ __('management.outbound_emails.col_provider') }}</dt>
                         <dd class="font-medium">{{ $viewing->provider_status ? __('management.outbound_emails.provider_'.$viewing->provider_status) : '—' }}</dd>
@@ -190,6 +194,66 @@
                         <dd class="font-mono text-xs break-all">{{ $viewing->provider_email_id ?: '—' }}</dd>
                     </div>
                 </dl>
+
+                <div>
+                    <h3 class="mb-2 text-sm font-semibold text-zinc-900 dark:text-white">
+                        {{ __('management.outbound_emails.message_heading') }}
+                    </h3>
+                    @if (filled($viewing->body_html))
+                        <div class="rounded-lg border border-zinc-200 bg-white p-4 text-sm text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100 prose prose-sm max-w-none dark:prose-invert">
+                            {!! $viewing->body_html !!}
+                        </div>
+                    @else
+                        <p class="text-sm text-zinc-500">{{ __('management.outbound_emails.message_unavailable') }}</p>
+                    @endif
+                </div>
+
+                @php
+                    $attachmentRows = is_array($viewing->attachments) ? $viewing->attachments : [];
+                    if ($attachmentRows === [] && $viewing->type === 'car_park_tickets') {
+                        $ids = array_values(array_filter(array_map('intval', $viewing->payload['registration_ids'] ?? [])));
+                        $attachmentRows = array_map(
+                            static fn (int $id): array => [
+                                'filename' => 'ticket-'.$id.'.pdf',
+                                'registration_id' => $id,
+                                'label' => 'Registration #'.$id,
+                            ],
+                            $ids,
+                        );
+                    }
+                @endphp
+
+                @if ($attachmentRows !== [])
+                    <div>
+                        <h3 class="mb-2 text-sm font-semibold text-zinc-900 dark:text-white">
+                            {{ __('management.outbound_emails.attachments_heading') }}
+                        </h3>
+                        <ul class="space-y-2 text-sm">
+                            @foreach ($attachmentRows as $attachment)
+                                @php
+                                    $registrationId = (int) ($attachment['registration_id'] ?? 0);
+                                    $filename = (string) ($attachment['filename'] ?? 'ticket.pdf');
+                                    $label = (string) ($attachment['label'] ?? $filename);
+                                @endphp
+                                <li class="rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-700">
+                                    <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <div>
+                                            <p class="font-medium text-zinc-900 dark:text-white">{{ $filename }}</p>
+                                            <p class="text-xs text-zinc-500">{{ __('management.outbound_emails.attachment_pdf', ['label' => $label]) }}</p>
+                                        </div>
+                                        @if ($registrationId > 0)
+                                            <a href="{{ route('admin.registrations.print', $registrationId) }}"
+                                                target="_blank" rel="noopener"
+                                                class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-medium text-sky-700 hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-sky-950/40">
+                                                {{ __('management.outbound_emails.open_print_pass') }}
+                                            </a>
+                                        @endif
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
                 @if ($viewing->last_error || $viewing->provider_detail)
                     <div class="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm dark:border-zinc-700 dark:bg-zinc-900/50">
