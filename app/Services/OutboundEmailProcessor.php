@@ -196,14 +196,14 @@ class OutboundEmailProcessor
         }
     }
 
-    public function processDue(int $limit = 15): int
+    public function processDue(int $limit = 1): int
     {
         $processed = 0;
 
         OutboundEmail::query()
             ->due()
             ->orderBy('id')
-            ->limit($limit)
+            ->limit(max(1, $limit))
             ->get()
             ->each(function (OutboundEmail $email) use (&$processed): void {
                 $this->process($email);

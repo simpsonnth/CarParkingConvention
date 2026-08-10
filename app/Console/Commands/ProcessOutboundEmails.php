@@ -10,7 +10,7 @@ use Illuminate\Console\Command;
 
 class ProcessOutboundEmails extends Command
 {
-    protected $signature = 'mail:process-outbound {--limit=25 : Max pending emails to attempt}';
+    protected $signature = 'mail:process-outbound {--limit=1 : Max pending emails to attempt}';
 
     protected $description = 'Send due outbound emails, deferring automatically when the provider quota is exhausted';
 

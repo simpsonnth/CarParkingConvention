@@ -8,4 +8,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-Schedule::command('mail:process-outbound --limit=25')->everyMinute();
+Schedule::command('mail:process-outbound --limit=1')
+    ->everyMinute()
+    ->withoutOverlapping(20);

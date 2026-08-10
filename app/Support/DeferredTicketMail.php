@@ -97,7 +97,9 @@ final class DeferredTicketMail
                 if ($email !== null) {
                     $processor->process($email);
                 }
-                $processor->processDue(20);
+                // Keep opportunistic drain tiny on the web PHP process — Chrome PDF
+                // generation is memory-heavy on small VPS hosts.
+                $processor->processDue(1);
             } catch (\Throwable $e) {
                 Log::error('Deferred outbound email runner failed', [
                     'outbound_email_id' => $outboundEmailId,
