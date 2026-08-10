@@ -39,6 +39,7 @@ return [
     'closed_lessons_learned' => 'As lições aprendidas estão fechadas.',
 
     'row_home' => 'Boas-vindas',
+    'row_capacities' => 'Capacidades atuais dos parques',
     'row_parking' => 'Inscrição de estacionamento',
     'row_register_simple' => 'Números da congregação (register-simple)',
     'row_co' => 'Inscrição Superintendente de Circuito',

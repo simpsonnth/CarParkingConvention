@@ -36,6 +36,10 @@
                     </div>
 
                     <div class="grid gap-3">
+                        <a href="{{ route('parking.capacities') }}"
+                            class="block w-full py-3 px-4 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-800 dark:text-zinc-100 font-semibold text-center hover:bg-zinc-50 dark:hover:bg-zinc-700/40 transition">
+                            Car Park Current Capacities
+                        </a>
                         @can('dashboard.view')
                             <a href="{{ route('dashboard') }}"
                                 class="block w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold text-center hover:opacity-90 transition">
@@ -60,6 +64,10 @@
                     <a href="{{ route('login') }}"
                         class="block w-full py-3 px-4 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-semibold text-center hover:opacity-90 transition shadow-lg">
                         Log In
+                    </a>
+                    <a href="{{ route('parking.capacities') }}"
+                        class="block w-full py-3 px-4 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-800 dark:text-zinc-100 font-semibold text-center hover:bg-zinc-50 dark:hover:bg-zinc-700/50 transition">
+                        Car Park Current Capacities
                     </a>
                 </div>
             @endauth

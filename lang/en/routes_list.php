@@ -39,6 +39,7 @@ return [
     'closed_lessons_learned' => 'Lessons learned submissions are now closed.',
 
     'row_home' => 'Welcome / landing',
+    'row_capacities' => 'Car park current capacities',
     'row_parking' => 'Parking registration',
     'row_register_simple' => 'Congregation numbers (register-simple)',
     'row_co' => 'Circuit Overseer registration',

@@ -31,6 +31,13 @@ class PublicRouteAccess
                 'toggleable' => false,
             ],
             [
+                'route' => 'parking.capacities',
+                'params' => [],
+                'label_key' => 'routes_list.row_capacities',
+                'closed_message_key' => 'routes_list.closed_default',
+                'toggleable' => false,
+            ],
+            [
                 'route' => 'parking.register',
                 'params' => [],
                 'label_key' => 'routes_list.row_parking',

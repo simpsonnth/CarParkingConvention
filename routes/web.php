@@ -8,6 +8,9 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+Route::get('/car-park-capacities', App\Livewire\Public\CarParkCapacities::class)
+    ->name('parking.capacities');
+
 Route::post('/webhooks/resend', App\Http\Controllers\ResendWebhookController::class)
     ->name('webhooks.resend');
 
