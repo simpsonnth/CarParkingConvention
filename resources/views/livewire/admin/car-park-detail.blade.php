@@ -42,9 +42,7 @@
             <div class="mt-2 flex items-baseline gap-2">
                 <span @class([
                     'text-3xl font-bold',
-                    'text-red-600 dark:text-red-400' => $liveReading->isCritical(),
-                    'text-orange-600 dark:text-orange-400' => $liveReading->isOverflow(),
-                    'text-zinc-900 dark:text-white' => $liveReading->zone() === 'ok',
+                    $liveReading->ratioTextClass(),
                 ])>{{ $occupancy }}</span>
                 <span class="text-sm text-zinc-500">/ {{ $capacity }}
                     @if ($carPark->overflowCapacity() > 0)
@@ -110,9 +108,7 @@
                 <div class="mt-2 flex items-baseline gap-2">
                     <span @class([
                         'text-2xl font-bold',
-                        'text-red-600 dark:text-red-400' => $dayReading->isCritical(),
-                        'text-orange-600 dark:text-orange-400' => $dayReading->isOverflow(),
-                        'text-zinc-900 dark:text-white' => $dayReading->zone() === 'ok',
+                        $dayReading->ratioTextClass(),
                     ])>{{ $assigned }}</span>
                     <span class="text-sm text-zinc-500">/ {{ $dayCapacity }}
                         @if ($carPark->overflowCapacity() > 0)

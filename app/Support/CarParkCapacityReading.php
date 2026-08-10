@@ -127,16 +127,25 @@ final class CarParkCapacityReading
         return match ($this->zone()) {
             'critical' => 'red',
             'overflow' => 'orange',
-            default => 'zinc',
+            default => 'green',
         };
     }
 
-    public function barColorClass(string $okClass): string
+    public function barColorClass(string $okClass = 'bg-emerald-500'): string
     {
         return match ($this->zone()) {
             'critical' => 'bg-red-500',
             'overflow' => 'bg-orange-500',
             default => $okClass,
+        };
+    }
+
+    public function ratioTextClass(): string
+    {
+        return match ($this->zone()) {
+            'critical' => 'text-red-700 dark:text-red-300',
+            'overflow' => 'text-orange-700 dark:text-orange-300',
+            default => 'text-emerald-700 dark:text-emerald-300',
         };
     }
 
@@ -168,11 +177,7 @@ final class CarParkCapacityReading
 
     public function statusTextClass(): string
     {
-        return match ($this->zone()) {
-            'critical' => 'text-red-700 dark:text-red-300',
-            'overflow' => 'text-orange-700 dark:text-orange-300',
-            default => 'text-zinc-500 dark:text-zinc-400',
-        };
+        return $this->ratioTextClass();
     }
 
     public function statusChipClass(): string
@@ -180,7 +185,7 @@ final class CarParkCapacityReading
         return match ($this->zone()) {
             'critical' => 'bg-red-100 text-red-800 ring-red-200 dark:bg-red-950 dark:text-red-200 dark:ring-red-900',
             'overflow' => 'bg-orange-100 text-orange-800 ring-orange-200 dark:bg-orange-950 dark:text-orange-200 dark:ring-orange-900',
-            default => '',
+            default => 'bg-emerald-100 text-emerald-800 ring-emerald-200 dark:bg-emerald-950 dark:text-emerald-200 dark:ring-emerald-900',
         };
     }
 

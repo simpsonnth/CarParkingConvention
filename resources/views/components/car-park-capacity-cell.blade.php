@@ -8,7 +8,6 @@
 
 @php
     /** @var \App\Support\CarParkCapacityReading $reading */
-    $okBar = $mode === 'live' ? 'bg-emerald-500' : 'bg-amber-400 dark:bg-amber-500';
     $ratioText = $mode === 'live'
         ? $reading->used.' in / '.$reading->capacity
         : $reading->used.' / '.$reading->capacity;
@@ -17,9 +16,7 @@
 <div {{ $attributes->class(['min-w-[10.5rem] space-y-1.5']) }}>
     <p @class([
         'text-lg font-semibold tabular-nums tracking-tight leading-none',
-        'text-red-700 dark:text-red-300' => $reading->isCritical(),
-        'text-orange-700 dark:text-orange-300' => $reading->isOverflow(),
-        'text-zinc-900 dark:text-white' => $reading->zone() === 'ok',
+        $reading->ratioTextClass(),
     ])>{{ $ratioText }}</p>
 
     @if ($reading->overflow > 0)
@@ -47,7 +44,7 @@
 
     <x-car-park-capacity-meter
         :reading="$reading"
-        :ok-bar-class="$okBar"
+        ok-bar-class="bg-emerald-500"
         :show-zone-labels="$reading->overflow > 0"
         :aria-label="$ariaLabel !== '' ? $ariaLabel : $tooltip"
     />

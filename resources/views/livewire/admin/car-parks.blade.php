@@ -21,21 +21,25 @@
             <div class="space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
                 <p class="inline-flex items-center gap-1.5">
                     <span class="h-2.5 w-2.5 rounded-sm bg-emerald-500"></span>
-                    Live (clocked in)
+                    Green = within base capacity
                 </p>
                 <p class="inline-flex items-center gap-1.5">
-                    <span class="h-2.5 w-2.5 rounded-sm bg-amber-400"></span>
-                    Registered for the day
+                    <span class="h-2.5 w-2.5 rounded-sm bg-orange-500"></span>
+                    Orange = over base, within overflow
+                </p>
+                <p class="inline-flex items-center gap-1.5">
+                    <span class="h-2.5 w-2.5 rounded-sm bg-red-500"></span>
+                    Red = over the hard max (base + overflow)
                 </p>
             </div>
             <div class="space-y-1 text-xs text-zinc-600 dark:text-zinc-300">
                 <p class="inline-flex items-center gap-1.5">
-                    <span class="h-2.5 w-2.5 rounded-sm bg-orange-500"></span>
-                    Double parking (into overflow)
+                    <span class="text-[10px] font-semibold text-zinc-500">Live</span>
+                    shows cars clocked in
                 </p>
                 <p class="inline-flex items-center gap-1.5">
-                    <span class="h-2.5 w-2.5 rounded-sm bg-red-500"></span>
-                    Over the hard max
+                    <span class="text-[10px] font-semibold text-zinc-500">Fri/Sat/Sun</span>
+                    show registered tickets
                 </p>
             </div>
             <div class="space-y-1 text-xs text-zinc-600 dark:text-zinc-300">

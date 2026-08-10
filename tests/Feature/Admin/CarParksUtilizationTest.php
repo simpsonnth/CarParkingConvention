@@ -94,7 +94,7 @@ test('car parks page shows per-day assigned demand against day capacity', functi
         ->assertSee('Over limit +1')
         ->assertSee('Totals past base capacity')
         ->assertSee('How to read capacity')
-        ->assertSee('Registered for the day');
+        ->assertSee('Green = within base capacity');
 });
 
 test('car parks page excludes drop-off coaches from capacity and shows them separately', function () {
