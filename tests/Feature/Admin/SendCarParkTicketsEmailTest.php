@@ -16,8 +16,24 @@ use App\Support\TicketEmailCcList;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Livewire;
 
-test('ticket email cc list defaults to nathan simpson outlook', function () {
-    expect(TicketEmailCcList::all())->toBe(['nathan-simpson@outlook.com']);
+test('ticket email cc list is empty when unset', function () {
+    expect(TicketEmailCcList::all())->toBe([]);
+});
+
+test('settings page can save an empty ticket email cc list', function () {
+    $admin = User::factory()->admin()->create();
+
+    \App\Services\CongregationPortalAuth::setPassword('secret-portal');
+    Setting::set(TicketEmailCcList::SETTING_KEY, 'carparke32@gmail.com');
+
+    Livewire::actingAs($admin)
+        ->test(Settings::class)
+        ->set('ticketEmailCcs', '')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect(TicketEmailCcList::all())->toBe([])
+        ->and(Setting::get(TicketEmailCcList::SETTING_KEY))->toBe('');
 });
 
 test('ticket email cc list parses and deduplicates addresses', function () {

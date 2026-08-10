@@ -10,8 +10,6 @@ final class TicketEmailCcList
 {
     public const SETTING_KEY = 'ticket_email_ccs';
 
-    public const DEFAULT_CC = 'nathan-simpson@outlook.com';
-
     /**
      * @return list<string>
      */
@@ -20,7 +18,7 @@ final class TicketEmailCcList
         $raw = Setting::get(self::SETTING_KEY);
 
         if ($raw === null || trim((string) $raw) === '') {
-            return [self::DEFAULT_CC];
+            return [];
         }
 
         return self::parse((string) $raw);

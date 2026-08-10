@@ -41,10 +41,7 @@ class Settings extends Component
         $this->conventionLocation = Setting::get('convention_location', 'Twickenham');
         $this->existingLogo = Setting::get('ticket_logo', '');
         $this->congregationPortalPasswordConfigured = app(CongregationPortalAuth::class)->passwordIsConfigured();
-        $storedCcs = Setting::get(TicketEmailCcList::SETTING_KEY);
-        $this->ticketEmailCcs = $storedCcs !== null && trim((string) $storedCcs) !== ''
-            ? (string) $storedCcs
-            : TicketEmailCcList::DEFAULT_CC;
+        $this->ticketEmailCcs = (string) (Setting::get(TicketEmailCcList::SETTING_KEY) ?? '');
         $this->ticketEmailBody = TicketEmailBody::template();
     }
 
@@ -67,8 +64,8 @@ class Settings extends Component
         $this->validate($rules);
 
         $parsedCcs = TicketEmailCcList::parse($this->ticketEmailCcs);
-        if ($this->ticketEmailCcs !== '' && $parsedCcs === []) {
-            $this->addError('ticketEmailCcs', 'Enter at least one valid email address, or leave blank for the default.');
+        if (trim($this->ticketEmailCcs) !== '' && $parsedCcs === []) {
+            $this->addError('ticketEmailCcs', 'Enter at least one valid email address, or leave blank for no CC.');
 
             return;
         }
@@ -78,9 +75,9 @@ class Settings extends Component
         Setting::set('convention_location', $this->conventionLocation);
         Setting::set(
             TicketEmailCcList::SETTING_KEY,
-            $parsedCcs === [] ? TicketEmailCcList::DEFAULT_CC : TicketEmailCcList::toStorageString($this->ticketEmailCcs),
+            TicketEmailCcList::toStorageString($this->ticketEmailCcs),
         );
-        $this->ticketEmailCcs = Setting::get(TicketEmailCcList::SETTING_KEY, TicketEmailCcList::DEFAULT_CC);
+        $this->ticketEmailCcs = (string) (Setting::get(TicketEmailCcList::SETTING_KEY) ?? '');
 
         Setting::set(TicketEmailBody::SETTING_KEY, trim($this->ticketEmailBody));
         $this->ticketEmailBody = TicketEmailBody::template();

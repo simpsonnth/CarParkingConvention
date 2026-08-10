@@ -18,8 +18,8 @@
             <div class="space-y-3 border-t border-zinc-200 dark:border-zinc-700 pt-6">
                 <flux:heading size="sm">Ticket email CC recipients</flux:heading>
                 <flux:textarea wire:model="ticketEmailCcs" label="CC addresses"
-                    placeholder="nathan-simpson@outlook.com" rows="3" />
-                <p class="text-xs text-zinc-500">One email per line (or comma-separated). These addresses are CC’d when car park tickets are emailed from Registrations. Default includes nathan-simpson@outlook.com.</p>
+                    placeholder="ops@example.com" rows="3" />
+                <p class="text-xs text-zinc-500">Optional. One email per line (or comma-separated). These addresses are CC’d when car park tickets are emailed from Registrations. Leave blank for no CC.</p>
                 @error('ticketEmailCcs')
                     <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                 @enderror
