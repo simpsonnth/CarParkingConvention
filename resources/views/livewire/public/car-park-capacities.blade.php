@@ -1,71 +1,61 @@
-<div class="mx-auto max-w-5xl space-y-6" wire:poll.30s>
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+<div class="flex min-h-0 flex-1 flex-col gap-2" wire:poll.30s>
+    <div class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-            <a href="{{ route('home') }}" class="text-sm text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
-                ← Home
-            </a>
-            <h1 class="mt-2 text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white sm:text-3xl">
-                Car Park Current Capacities
-            </h1>
-            <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <a href="{{ route('home') }}" class="text-xs text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200">
+                    ← Home
+                </a>
+                <h1 class="text-lg font-semibold tracking-tight text-zinc-900 dark:text-white sm:text-xl">
+                    Car Park Current Capacities
+                </h1>
+            </div>
+            <p class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                <span class="inline-flex items-center gap-1"><span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>OK</span>
+                <span class="inline-flex items-center gap-1"><span class="h-1.5 w-1.5 rounded-full bg-orange-500"></span>Double park</span>
+                <span class="inline-flex items-center gap-1"><span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>Over max</span>
                 @if ($showExpected)
-                    Live clock-ins plus registered demand for Fri–Sun.
-                @else
-                    Live clock-ins only. Log in to see expected (registered) demand by day.
+                    <span class="inline-flex items-center gap-1"><span class="h-2 w-px bg-sky-500"></span>Aim</span>
                 @endif
+                <span class="text-zinc-400 dark:text-zinc-500">Auto-refresh 30s</span>
+                @unless ($showExpected)
+                    <span class="text-sky-800 dark:text-sky-200">
+                        Live only —
+                        <a href="{{ route('login') }}" class="font-semibold underline underline-offset-2">Log in</a>
+                        for expected demand
+                    </span>
+                @endunless
             </p>
         </div>
 
-        <div class="flex shrink-0 flex-wrap items-center gap-2">
+        <div class="flex shrink-0 flex-wrap items-center gap-1.5">
             @auth
                 @can('car-parks.view')
                     <a href="{{ route('admin.car-parks') }}" wire:navigate
-                        class="inline-flex items-center justify-center rounded-lg border border-zinc-300 px-4 py-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-100 dark:hover:bg-zinc-800">
+                        class="inline-flex items-center justify-center rounded-md border border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-100 dark:hover:bg-zinc-800">
                         Admin parks
                     </a>
                 @endcan
                 @can('dashboard.view')
                     <a href="{{ route('dashboard') }}"
-                        class="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 dark:bg-white dark:text-zinc-900">
+                        class="inline-flex items-center justify-center rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 dark:bg-white dark:text-zinc-900">
                         Dashboard
                     </a>
                 @else
                     <a href="{{ route('home') }}"
-                        class="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 dark:bg-white dark:text-zinc-900">
+                        class="inline-flex items-center justify-center rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 dark:bg-white dark:text-zinc-900">
                         Home
                     </a>
                 @endcan
             @else
                 <a href="{{ route('login') }}"
-                    class="inline-flex items-center justify-center rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:opacity-90 dark:bg-white dark:text-zinc-900">
+                    class="inline-flex items-center justify-center rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 dark:bg-white dark:text-zinc-900">
                     Log in
                 </a>
             @endauth
         </div>
     </div>
 
-    <p class="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400">
-        <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-emerald-500"></span>OK</span>
-        <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-orange-500"></span>Double park</span>
-        <span class="inline-flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-red-500"></span>Over max</span>
-        @if ($showExpected)
-            <span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-px bg-sky-500"></span>Aim (½ overflow)</span>
-        @endif
-        <span class="text-zinc-400 dark:text-zinc-500">Updates every 30 seconds</span>
-    </p>
-
-    @unless ($showExpected)
-        <div class="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950 dark:border-sky-700 dark:bg-sky-950 dark:text-sky-50">
-            You’re viewing live occupancy only.
-            <a href="{{ route('login') }}"
-                class="font-semibold text-sky-900 underline underline-offset-2 hover:text-sky-700 dark:text-white dark:hover:text-sky-100">
-                Log in
-            </a>
-            to also see expected registrations by day.
-        </div>
-    @endunless
-
-    <div class="space-y-4">
+    <div class="flex min-h-0 flex-1 flex-col gap-1.5">
         @forelse ($parkCards as $card)
             @php
                 /** @var \App\Models\CarPark $park */
@@ -73,38 +63,36 @@
                 $overflow = $card['overflow'];
                 $worst = $card['worst'];
                 $dropOffTotal = $card['drop_off_total'];
+                $dayCount = max(1, count($card['days']));
             @endphp
             <article @class([
-                'rounded-xl border bg-white shadow-sm dark:bg-zinc-800',
+                'flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border bg-white dark:bg-zinc-800 sm:flex-row',
                 'border-zinc-200 dark:border-zinc-700' => $worst === 'ok',
                 'border-orange-300 dark:border-orange-700' => $worst === 'overflow',
                 'border-red-300 dark:border-red-700' => $worst === 'critical',
             ])>
-                <div class="flex items-center gap-3 border-b border-zinc-100 px-4 py-3 dark:border-zinc-700/80">
-                    <div class="h-3.5 w-3.5 shrink-0 rounded-full ring-1 ring-zinc-200 dark:ring-zinc-600"
+                <div class="flex w-full shrink-0 items-center gap-2 border-b border-zinc-100 px-3 py-2 sm:w-44 sm:border-b-0 sm:border-r dark:border-zinc-700/80 lg:w-52">
+                    <div class="h-3 w-3 shrink-0 rounded-full ring-1 ring-zinc-200 dark:ring-zinc-600"
                         style="background-color: {{ $park->color }}"></div>
                     <div class="min-w-0">
-                        <h2 class="truncate text-base font-semibold text-zinc-900 dark:text-white">{{ $park->name }}</h2>
-                        <p class="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                            {{ $park->location ?: 'No location' }}
+                        <h2 class="truncate text-sm font-semibold text-zinc-900 dark:text-white">{{ $park->name }}</h2>
+                        <p class="truncate text-[10px] leading-tight text-zinc-500 dark:text-zinc-400">
                             @if ($overflow > 0)
-                                <span class="text-zinc-300 dark:text-zinc-600">·</span>
-                                Overflow {{ $overflow }}
-                                <span class="text-zinc-300 dark:text-zinc-600">·</span>
-                                Aim +{{ intdiv($overflow, 2) }}
+                                Overflow {{ $overflow }} · Aim +{{ intdiv($overflow, 2) }}
+                            @else
+                                {{ $park->location ?: 'No overflow' }}
                             @endif
                             @if ($showExpected && $dropOffTotal > 0)
-                                <span class="text-zinc-300 dark:text-zinc-600">·</span>
-                                <span class="font-medium text-amber-700 dark:text-amber-300">{{ $dropOffTotal }} drop-off</span>
+                                · <span class="font-medium text-amber-700 dark:text-amber-300">{{ $dropOffTotal }} drop-off</span>
                             @endif
                         </p>
                     </div>
                 </div>
 
                 <div @class([
-                    'grid gap-2 p-3',
-                    'sm:grid-cols-2 lg:grid-cols-4' => $showExpected,
-                    'sm:grid-cols-1' => ! $showExpected,
+                    'grid min-h-0 flex-1 gap-1 p-1.5',
+                    'grid-cols-2 lg:grid-cols-4' => $showExpected && $dayCount > 1,
+                    'grid-cols-1' => ! $showExpected || $dayCount === 1,
                 ])>
                     @foreach ($card['days'] as $day)
                         <x-car-park-capacity-cell
@@ -114,12 +102,13 @@
                             :drop-off="$day['drop_off']"
                             :tooltip="$day['tooltip']"
                             :aria-label="$park->name.' '.$day['label']"
+                            compact
                         />
                     @endforeach
                 </div>
             </article>
         @empty
-            <div class="rounded-xl border border-dashed border-zinc-300 px-6 py-12 text-center text-zinc-500 dark:border-zinc-600">
+            <div class="flex flex-1 items-center justify-center rounded-lg border border-dashed border-zinc-300 text-zinc-500 dark:border-zinc-600">
                 No car parks configured yet.
             </div>
         @endforelse

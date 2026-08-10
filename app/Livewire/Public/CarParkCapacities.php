@@ -10,7 +10,7 @@ use App\Support\CarParkCapacityReading;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
-#[Layout('components.layouts.public')]
+#[Layout('components.layouts.public-fullscreen')]
 class CarParkCapacities extends Component
 {
     public function render(CarParkDayCapacityMetrics $dayCapacityMetrics)

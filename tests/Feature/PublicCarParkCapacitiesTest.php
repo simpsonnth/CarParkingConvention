@@ -60,7 +60,7 @@ test('guests can view live car park capacities only', function () {
         ->assertSee('Public Live Park')
         ->assertSee('1 in / 10')
         ->assertSee('Log in')
-        ->assertSee('Live clock-ins only')
+        ->assertSee('Live only')
         ->assertDontSee('5 / 10')
         ->assertDontSee('Friday');
 });
@@ -103,6 +103,6 @@ test('authenticated users see expected day demand on capacities page', function 
         ->assertSee('Saturday')
         ->assertSee('Sunday')
         ->assertSee('3 / 10')
-        ->assertSee('registered demand')
-        ->assertDontSee('Live clock-ins only');
+        ->assertSee('Auto-refresh 30s')
+        ->assertDontSee('Live only');
 });
