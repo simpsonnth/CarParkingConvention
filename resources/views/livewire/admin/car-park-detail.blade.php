@@ -33,29 +33,50 @@
     @endif
 
     {{-- Stats Cards --}}
+    @php
+        $liveReading = \App\Support\CarParkCapacityReading::make((int) $occupancy, (int) $capacity, $carPark->overflowCapacity());
+    @endphp
     <div class="grid gap-6 md:grid-cols-3">
         <div class="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
             <div class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Current Occupancy</div>
             <div class="mt-2 flex items-baseline gap-2">
-                <span class="text-3xl font-bold text-zinc-900 dark:text-white">{{ $occupancy }}</span>
-                <span class="text-sm text-zinc-500">/ {{ $capacity }}</span>
+                <span @class([
+                    'text-3xl font-bold',
+                    'text-red-600 dark:text-red-400' => $liveReading->isCritical(),
+                    'text-orange-600 dark:text-orange-400' => $liveReading->isOverflow(),
+                    'text-zinc-900 dark:text-white' => $liveReading->zone() === 'ok',
+                ])>{{ $occupancy }}</span>
+                <span class="text-sm text-zinc-500">/ {{ $capacity }}
+                    @if ($carPark->overflowCapacity() > 0)
+                        <span class="text-zinc-400">(+{{ $carPark->overflowCapacity() }} overflow)</span>
+                    @endif
+                </span>
             </div>
             <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Today's capacity limit</p>
+            @if ($liveReading->statusLabel())
+                <p class="mt-1 text-xs font-medium {{ $liveReading->statusTextClass() }}">{{ $liveReading->statusLabel() }}</p>
+            @endif
         </div>
 
         <div class="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
             <div class="text-sm font-medium text-zinc-500 dark:text-zinc-400">Utilization</div>
             <div class="mt-2 flex items-baseline gap-2">
                 <span
-                    class="text-3xl font-bold text-zinc-900 dark:text-white">{{ number_format($percentage, 1) }}%</span>
+                    class="text-3xl font-bold text-zinc-900 dark:text-white">{{ number_format($liveReading->fillPercent(), 1) }}%</span>
             </div>
-            <div class="mt-3 h-2 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700">
-                @php
-                    $color = $percentage > 90 ? 'bg-red-500' : ($percentage > 75 ? 'bg-yellow-500' : 'bg-green-500');
-                @endphp
-                <div class="h-full rounded-full transition-all duration-500 {{ $color }}"
-                    style="width: {{ min(100, $percentage) }}%"></div>
+            <div class="mt-3">
+                <x-car-park-capacity-meter
+                    :reading="$liveReading"
+                    ok-bar-class="bg-green-500"
+                    width-class="w-full"
+                    :aria-label="'Live utilization'"
+                />
             </div>
+            @if ($carPark->overflowCapacity() > 0)
+                <p class="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
+                    Meter scale includes overflow. Sky mark = half overflow aim ({{ $liveReading->recommendedLimit() }}).
+                </p>
+            @endif
         </div>
 
         <div class="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
@@ -63,6 +84,11 @@
             <div class="mt-2 text-3xl font-bold text-zinc-900 dark:text-white">
                 {{ max(0, $capacity - $occupancy) }}
             </div>
+            @if ($carPark->overflowCapacity() > 0)
+                <p class="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                    {{ max(0, $liveReading->hardLimit() - $occupancy) }} including overflow
+                </p>
+            @endif
         </div>
     </div>
 
@@ -76,8 +102,7 @@
             @php
                 $assigned = (int) ($dayAssigned[$dayKey] ?? 0);
                 $dayCapacity = $dayMeta['capacity'];
-                $dayPct = $dayCapacity > 0 ? min(100, 100 * $assigned / $dayCapacity) : 0;
-                $dayOver = $assigned > $dayCapacity;
+                $dayReading = \App\Support\CarParkCapacityReading::make($assigned, $dayCapacity, $carPark->overflowCapacity());
                 $dropOff = (int) ($dayDropOff[$dayKey] ?? 0);
             @endphp
             <div class="rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-700 dark:bg-zinc-800">
@@ -85,22 +110,30 @@
                 <div class="mt-2 flex items-baseline gap-2">
                     <span @class([
                         'text-2xl font-bold',
-                        'text-red-600 dark:text-red-400' => $dayOver,
-                        'text-zinc-900 dark:text-white' => ! $dayOver,
+                        'text-red-600 dark:text-red-400' => $dayReading->isCritical(),
+                        'text-orange-600 dark:text-orange-400' => $dayReading->isOverflow(),
+                        'text-zinc-900 dark:text-white' => $dayReading->zone() === 'ok',
                     ])>{{ $assigned }}</span>
-                    <span class="text-sm text-zinc-500">/ {{ $dayCapacity }}</span>
+                    <span class="text-sm text-zinc-500">/ {{ $dayCapacity }}
+                        @if ($carPark->overflowCapacity() > 0)
+                            <span class="text-zinc-400">(+{{ $carPark->overflowCapacity() }})</span>
+                        @endif
+                    </span>
                 </div>
-                @if ($dayOver)
-                    <p class="mt-1 text-xs font-medium text-red-600 dark:text-red-400">Over by {{ $assigned - $dayCapacity }}</p>
+                @if ($dayReading->statusLabel())
+                    <p class="mt-1 text-xs font-medium {{ $dayReading->statusTextClass() }}">{{ $dayReading->statusLabel() }}</p>
                 @endif
                 @if ($dropOff > 0)
                     <p class="mt-1 text-xs font-semibold text-amber-800 dark:text-amber-200">
                         +{{ $dropOff }} drop-off {{ \Illuminate\Support\Str::plural('coach', $dropOff) }} (not counted)
                     </p>
                 @endif
-                <div class="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700">
-                    <div class="h-full rounded-full bg-yellow-400 transition-all duration-500 dark:bg-yellow-500"
-                        style="width: {{ $dayPct }}%"></div>
+                <div class="mt-3">
+                    <x-car-park-capacity-meter
+                        :reading="$dayReading"
+                        width-class="w-full"
+                        :aria-label="$dayMeta['label'].' demand'"
+                    />
                 </div>
             </div>
         @endforeach
@@ -257,6 +290,16 @@
                 <flux:input wire:model="capacityFriday" label="Friday capacity" type="number" placeholder="e.g. 150" />
                 <flux:input wire:model="capacitySaturday" label="Saturday capacity" type="number" placeholder="e.g. 150" />
                 <flux:input wire:model="capacitySunday" label="Sunday capacity" type="number" placeholder="e.g. 150" />
+            </div>
+
+            <div class="space-y-1">
+                <flux:input wire:model="overflowCapacity" label="Double-park overflow" type="number" placeholder="0" />
+                <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                    Extra spaces by double parking. Aim for half of this value on the meter.
+                </p>
+                @error('overflowCapacity')
+                    <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
             </div>
 
             <flux:input wire:model="location" label="Location" placeholder="e.g. Behind Main Hall" />

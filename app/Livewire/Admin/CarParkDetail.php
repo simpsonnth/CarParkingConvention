@@ -28,6 +28,8 @@ class CarParkDetail extends Component
 
     public string $capacitySunday = '';
 
+    public string $overflowCapacity = '0';
+
     public string $location = '';
 
     public string $color = '';
@@ -57,6 +59,7 @@ class CarParkDetail extends Component
         $this->capacityFriday = (string) $this->carPark->capacity_friday;
         $this->capacitySaturday = (string) $this->carPark->capacity_saturday;
         $this->capacitySunday = (string) $this->carPark->capacity_sunday;
+        $this->overflowCapacity = (string) $this->carPark->overflowCapacity();
         $this->location = (string) ($this->carPark->location ?? '');
         $this->color = (string) ($this->carPark->color ?? '');
         $this->travelDirections = (string) ($this->carPark->travel_directions ?? '');
@@ -74,6 +77,7 @@ class CarParkDetail extends Component
             'capacityFriday' => 'required|integer|min:1',
             'capacitySaturday' => 'required|integer|min:1',
             'capacitySunday' => 'required|integer|min:1',
+            'overflowCapacity' => 'required|integer|min:0',
             'location' => 'nullable|string',
             'color' => 'nullable|string|max:50',
             'travelDirections' => 'nullable|string|max:2000',
@@ -85,6 +89,7 @@ class CarParkDetail extends Component
             'capacity_friday' => (int) $this->capacityFriday,
             'capacity_saturday' => (int) $this->capacitySaturday,
             'capacity_sunday' => (int) $this->capacitySunday,
+            'overflow_capacity' => (int) $this->overflowCapacity,
             'location' => $this->location !== '' ? $this->location : null,
             'color' => $this->color !== '' ? $this->color : null,
             'travel_directions' => $this->normalizedTravelDirections(),

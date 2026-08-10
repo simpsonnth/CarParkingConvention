@@ -25,6 +25,8 @@ class CarParks extends Component
 
     public string $capacitySunday = '';
 
+    public string $overflowCapacity = '0';
+
     public string $location = '';
 
     public string $color = '';
@@ -70,22 +72,37 @@ class CarParks extends Component
 
     /**
      * @param  \Illuminate\Support\Collection<int, CarPark>  $parks
-     * @return array{friday: int, saturday: int, sunday: int, live: int}
+     * @return array{
+     *     friday: array{over_base: int, over_hard: int},
+     *     saturday: array{over_base: int, over_hard: int},
+     *     sunday: array{over_base: int, over_hard: int},
+     *     live: array{over_base: int, over_hard: int}
+     * }
      */
     protected function capacityOverTotals($parks): array
     {
+        $blank = ['over_base' => 0, 'over_hard' => 0];
         $totals = [
-            'friday' => 0,
-            'saturday' => 0,
-            'sunday' => 0,
-            'live' => 0,
+            'friday' => $blank,
+            'saturday' => $blank,
+            'sunday' => $blank,
+            'live' => $blank,
         ];
 
         foreach ($parks as $park) {
-            $totals['friday'] += max(0, (int) $park->assigned_friday - (int) $park->capacity_friday);
-            $totals['saturday'] += max(0, (int) $park->assigned_saturday - (int) $park->capacity_saturday);
-            $totals['sunday'] += max(0, (int) $park->assigned_sunday - (int) $park->capacity_sunday);
-            $totals['live'] += max(0, (int) $park->current_occupancy - $park->capacityForToday());
+            $overflow = $park->overflowCapacity();
+
+            foreach (['friday', 'saturday', 'sunday'] as $day) {
+                $assigned = (int) $park->{"assigned_{$day}"};
+                $capacity = (int) $park->{"capacity_{$day}"};
+                $totals[$day]['over_base'] += max(0, $assigned - $capacity);
+                $totals[$day]['over_hard'] += max(0, $assigned - $capacity - $overflow);
+            }
+
+            $liveUsed = (int) $park->current_occupancy;
+            $liveCapacity = $park->capacityForToday();
+            $totals['live']['over_base'] += max(0, $liveUsed - $liveCapacity);
+            $totals['live']['over_hard'] += max(0, $liveUsed - $liveCapacity - $overflow);
         }
 
         return $totals;
@@ -99,6 +116,7 @@ class CarParks extends Component
             'capacityFriday',
             'capacitySaturday',
             'capacitySunday',
+            'overflowCapacity',
             'location',
             'color',
             'travelDirections',
@@ -106,6 +124,7 @@ class CarParks extends Component
             'mapImage',
             'existingMapImage',
         );
+        $this->overflowCapacity = '0';
         $this->modalOpen = true;
     }
 
@@ -117,6 +136,7 @@ class CarParks extends Component
         $this->capacityFriday = (string) $carPark->capacity_friday;
         $this->capacitySaturday = (string) $carPark->capacity_saturday;
         $this->capacitySunday = (string) $carPark->capacity_sunday;
+        $this->overflowCapacity = (string) $carPark->overflowCapacity();
         $this->location = (string) ($carPark->location ?? '');
         $this->color = (string) ($carPark->color ?? '');
         $this->travelDirections = (string) ($carPark->travel_directions ?? '');
@@ -134,6 +154,7 @@ class CarParks extends Component
             'capacityFriday' => 'required|integer|min:1',
             'capacitySaturday' => 'required|integer|min:1',
             'capacitySunday' => 'required|integer|min:1',
+            'overflowCapacity' => 'required|integer|min:0',
             'location' => 'nullable|string',
             'color' => 'nullable|string|max:50',
             'travelDirections' => 'nullable|string|max:2000',
@@ -145,6 +166,7 @@ class CarParks extends Component
             'capacity_friday' => (int) $this->capacityFriday,
             'capacity_saturday' => (int) $this->capacitySaturday,
             'capacity_sunday' => (int) $this->capacitySunday,
+            'overflow_capacity' => (int) $this->overflowCapacity,
             'location' => $this->location !== '' ? $this->location : null,
             'color' => $this->color !== '' ? $this->color : null,
             'travel_directions' => $this->normalizedTravelDirections(),
@@ -183,6 +205,7 @@ class CarParks extends Component
             'capacityFriday',
             'capacitySaturday',
             'capacitySunday',
+            'overflowCapacity',
             'location',
             'color',
             'travelDirections',
@@ -190,6 +213,7 @@ class CarParks extends Component
             'mapImage',
             'existingMapImage',
         );
+        $this->overflowCapacity = '0';
     }
 
     public function delete(CarPark $carPark, CarParkMapImageStorage $mapImages): void

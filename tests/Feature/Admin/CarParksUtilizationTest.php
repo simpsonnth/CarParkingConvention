@@ -339,6 +339,7 @@ test('saving car park persists day capacities and syncs legacy capacity to max',
         ->set('capacityFriday', 5)
         ->set('capacitySaturday', 12)
         ->set('capacitySunday', 8)
+        ->set('overflowCapacity', 20)
         ->set('color', '#0ea5e9')
         ->call('save')
         ->assertHasNoErrors();
@@ -349,7 +350,65 @@ test('saving car park persists day capacities and syncs legacy capacity to max',
         ->and($park->capacity_friday)->toBe(5)
         ->and($park->capacity_saturday)->toBe(12)
         ->and($park->capacity_sunday)->toBe(8)
-        ->and($park->capacity)->toBe(12);
+        ->and($park->capacity)->toBe(12)
+        ->and($park->overflow_capacity)->toBe(20);
+});
+
+test('car parks page shows double park overflow in orange and warns past hard limit', function () {
+    $admin = User::factory()->admin()->create();
+
+    $park = CarPark::query()->create([
+        'name' => 'Overflow Park',
+        'capacity' => 10,
+        'capacity_friday' => 10,
+        'capacity_saturday' => 10,
+        'capacity_sunday' => 10,
+        'overflow_capacity' => 4,
+        'color' => '#f97316',
+    ]);
+
+    $congregation = Congregation::query()->create([
+        'name' => 'Overflow Hall',
+        'uuid' => (string) \Illuminate\Support\Str::uuid(),
+        'car_park_id' => $park->id,
+    ]);
+
+    foreach (range(1, 12) as $i) {
+        ParkingRegistration::query()->create([
+            'name' => "Driver {$i}",
+            'congregation' => $congregation->name,
+            'contact_number' => "077000000{$i}",
+            'email' => "driver{$i}@overflow.test",
+            'vehicle_type' => 'car',
+            'vehicle_registration' => sprintf('OF%02dAAA', $i),
+            'days' => ['Friday'],
+        ]);
+    }
+
+    Livewire::actingAs($admin)
+        ->test(CarParks::class)
+        ->assertSee('Overflow Park')
+        ->assertSee('12 / 10')
+        ->assertSee('Double park +2')
+        ->assertSee('Double-park overflow')
+        ->assertDontSee('Over overflow by');
+
+    foreach (range(13, 16) as $i) {
+        ParkingRegistration::query()->create([
+            'name' => "Driver {$i}",
+            'congregation' => $congregation->name,
+            'contact_number' => "077000001{$i}",
+            'email' => "driver{$i}@overflow.test",
+            'vehicle_type' => 'car',
+            'vehicle_registration' => sprintf('OF%02dBBB', $i),
+            'days' => ['Friday'],
+        ]);
+    }
+
+    Livewire::actingAs($admin)
+        ->test(CarParks::class)
+        ->assertSee('16 / 10')
+        ->assertSee('Over overflow by 2');
 });
 
 test('walk-in scan blocks when today day capacity is full', function () {

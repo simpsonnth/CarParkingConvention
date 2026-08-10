@@ -18,11 +18,19 @@ class CarPark extends Model
         'capacity_friday',
         'capacity_saturday',
         'capacity_sunday',
+        'overflow_capacity',
         'location',
         'map_image_path',
         'travel_directions',
         'color',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'overflow_capacity' => 'integer',
+        ];
+    }
 
     protected static function booted(): void
     {
@@ -69,6 +77,21 @@ class CarPark extends Model
         };
 
         return $day === null ? (int) $this->capacity : $this->capacityForDay($day);
+    }
+
+    public function overflowCapacity(): int
+    {
+        return max(0, (int) ($this->overflow_capacity ?? 0));
+    }
+
+    public function hardLimitForDay(string $day): int
+    {
+        return $this->capacityForDay($day) + $this->overflowCapacity();
+    }
+
+    public function hardLimitForToday(?CarbonInterface $now = null): int
+    {
+        return $this->capacityForToday($now) + $this->overflowCapacity();
     }
 
     public function contrastingTextColor(): string

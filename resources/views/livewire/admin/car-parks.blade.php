@@ -21,8 +21,20 @@
             Registered for that day
         </span>
         <span class="inline-flex items-center gap-1.5">
+            <span class="h-2 w-2 shrink-0 rounded-full bg-orange-500" aria-hidden="true"></span>
+            Double park (overflow)
+        </span>
+        <span class="inline-flex items-center gap-1.5">
             <span class="h-2 w-2 shrink-0 rounded-full bg-red-500" aria-hidden="true"></span>
-            Over capacity
+            Over overflow limit
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+            <span class="h-3 w-0.5 shrink-0 bg-zinc-700 dark:bg-zinc-200" aria-hidden="true"></span>
+            Base capacity
+        </span>
+        <span class="inline-flex items-center gap-1.5">
+            <span class="h-3.5 w-0.5 shrink-0 bg-sky-600 dark:bg-sky-400" aria-hidden="true"></span>
+            Aim (half overflow)
         </span>
         <span class="inline-flex items-center gap-1.5">
             <span class="h-2 w-2 shrink-0 rounded-full bg-amber-500" aria-hidden="true"></span>
@@ -60,12 +72,13 @@
             <tbody class="divide-y divide-zinc-200 dark:divide-zinc-700 bg-white dark:bg-zinc-800">
                 @forelse ($carParks as $park)
                     @php
+                        $overflow = $park->overflowCapacity();
                         $parked = (int) $park->current_occupancy;
                         $liveCapacity = $park->capacityForToday();
-                        $livePct = $liveCapacity > 0 ? min(100, 100 * $parked / $liveCapacity) : 0;
-                        $liveOver = $parked > $liveCapacity;
+                        $liveReading = \App\Support\CarParkCapacityReading::make($parked, $liveCapacity, $overflow);
                         $liveFree = max(0, $liveCapacity - $parked);
-                        $liveTooltip = "{$parked} clocked in · {$liveFree} spaces free (today's limit {$liveCapacity})";
+                        $liveTooltip = "{$parked} clocked in · {$liveFree} spaces free (today's limit {$liveCapacity})"
+                            .$liveReading->tooltipExtra();
                         $dropOffTotal = (int) ($park->drop_off_coaches ?? 0);
 
                         $dayColumns = [
@@ -100,6 +113,11 @@
                                     <div class="text-xs text-zinc-500 dark:text-zinc-400">
                                         {{ $park->location ?? 'No location' }}
                                     </div>
+                                    @if ($overflow > 0)
+                                        <div class="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                                            Overflow {{ $overflow }} · aim +{{ intdiv($overflow, 2) }} past base
+                                        </div>
+                                    @endif
                                     @if ($dropOffTotal > 0)
                                         <div class="mt-1 text-xs font-semibold text-amber-800 dark:text-amber-200">
                                             {{ $dropOffTotal }} drop-off {{ \Illuminate\Support\Str::plural('coach', $dropOffTotal) }} (not counted)
@@ -111,18 +129,22 @@
                         <td class="px-4 py-4">
                             <flux:tooltip :content="$liveTooltip" position="top">
                                 <div class="cursor-help space-y-1.5">
-                                    <flux:badge color="{{ $liveOver ? 'red' : 'zinc' }}">
+                                    <flux:badge color="{{ $liveReading->badgeColor() }}">
                                         {{ $parked }} in / {{ $liveCapacity }}
+                                        @if ($overflow > 0)
+                                            <span class="opacity-70">(+{{ $overflow }})</span>
+                                        @endif
                                     </flux:badge>
-                                    <div class="flex h-1.5 w-28 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700"
-                                        role="progressbar"
-                                        aria-valuenow="{{ (int) $livePct }}"
-                                        aria-valuemin="0"
-                                        aria-valuemax="100"
-                                        aria-label="{{ $park->name }} live occupancy: {{ $liveTooltip }}">
-                                        <div class="h-full bg-green-500 transition-all duration-500"
-                                            style="width: {{ $livePct }}%"></div>
-                                    </div>
+                                    @if ($liveReading->statusLabel())
+                                        <span class="block text-xs font-medium {{ $liveReading->statusTextClass() }}">
+                                            {{ $liveReading->statusLabel() }}
+                                        </span>
+                                    @endif
+                                    <x-car-park-capacity-meter
+                                        :reading="$liveReading"
+                                        ok-bar-class="bg-green-500"
+                                        :aria-label="$park->name.' live occupancy: '.$liveTooltip"
+                                    />
                                 </div>
                             </flux:tooltip>
                         </td>
@@ -130,36 +152,36 @@
                             @php
                                 $assigned = $day['assigned'];
                                 $dayCapacity = $day['capacity'];
-                                $dayPct = $dayCapacity > 0 ? min(100, 100 * $assigned / $dayCapacity) : 0;
-                                $dayOver = $assigned > $dayCapacity;
+                                $dayReading = \App\Support\CarParkCapacityReading::make($assigned, $dayCapacity, $overflow);
                                 $dayFree = max(0, $dayCapacity - $assigned);
                                 $dropOff = $day['drop_off'];
                                 $dayTooltip = "{$assigned} registered for {$day['label']} · {$dayFree} spaces free"
+                                    .$dayReading->tooltipExtra()
                                     .($dropOff > 0 ? " · {$dropOff} drop-off coach(es) not counted" : '');
                             @endphp
                             <td class="px-4 py-4">
                                 <flux:tooltip :content="$dayTooltip" position="top">
                                     <div class="cursor-help space-y-1.5">
-                                        <flux:badge color="{{ $dayOver ? 'red' : 'zinc' }}">
+                                        <flux:badge color="{{ $dayReading->badgeColor() }}">
                                             {{ $assigned }} / {{ $dayCapacity }}
+                                            @if ($overflow > 0)
+                                                <span class="opacity-70">(+{{ $overflow }})</span>
+                                            @endif
                                         </flux:badge>
-                                        @if ($dayOver)
-                                            <span class="block text-xs font-medium text-red-600 dark:text-red-400">Over by {{ $assigned - $dayCapacity }}</span>
+                                        @if ($dayReading->statusLabel())
+                                            <span class="block text-xs font-medium {{ $dayReading->statusTextClass() }}">
+                                                {{ $dayReading->statusLabel() }}
+                                            </span>
                                         @endif
                                         @if ($dropOff > 0)
                                             <span class="block text-xs font-semibold text-amber-800 dark:text-amber-200">
                                                 +{{ $dropOff }} drop-off
                                             </span>
                                         @endif
-                                        <div class="flex h-1.5 w-28 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-700"
-                                            role="progressbar"
-                                            aria-valuenow="{{ (int) $dayPct }}"
-                                            aria-valuemin="0"
-                                            aria-valuemax="100"
-                                            aria-label="{{ $park->name }} {{ $day['label'] }} demand: {{ $dayTooltip }}">
-                                            <div class="h-full bg-yellow-400 transition-all duration-500 dark:bg-yellow-500"
-                                                style="width: {{ $dayPct }}%"></div>
-                                        </div>
+                                        <x-car-park-capacity-meter
+                                            :reading="$dayReading"
+                                            :aria-label="$park->name.' '.$day['label'].' demand: '.$dayTooltip"
+                                        />
                                     </div>
                                 </flux:tooltip>
                             </td>
@@ -194,20 +216,25 @@
                         <td class="px-6 py-4 text-sm font-semibold text-zinc-900 dark:text-white">
                             Total over capacity
                         </td>
-                        <td class="px-4 py-4">
-                            @if (($capacityOverTotals['live'] ?? 0) > 0)
-                                <span class="text-sm font-semibold text-red-600 dark:text-red-400">
-                                    Over by {{ $capacityOverTotals['live'] }}
-                                </span>
-                            @else
-                                <span class="text-sm text-zinc-400">—</span>
-                            @endif
-                        </td>
-                        @foreach (['friday', 'saturday', 'sunday'] as $dayKey)
+                        @foreach (['live', 'friday', 'saturday', 'sunday'] as $dayKey)
+                            @php
+                                $cell = $capacityOverTotals[$dayKey] ?? ['over_base' => 0, 'over_hard' => 0];
+                                $overBase = (int) ($cell['over_base'] ?? 0);
+                                $overHard = (int) ($cell['over_hard'] ?? 0);
+                            @endphp
                             <td class="px-4 py-4">
-                                @if (($capacityOverTotals[$dayKey] ?? 0) > 0)
-                                    <span class="text-sm font-semibold text-red-600 dark:text-red-400">
-                                        Over by {{ $capacityOverTotals[$dayKey] }}
+                                @if ($overHard > 0)
+                                    <span class="block text-sm font-semibold text-red-600 dark:text-red-400">
+                                        Over overflow by {{ $overHard }}
+                                    </span>
+                                    @if ($overBase > $overHard)
+                                        <span class="block text-xs font-medium text-orange-600 dark:text-orange-400">
+                                            Double park +{{ $overBase }}
+                                        </span>
+                                    @endif
+                                @elseif ($overBase > 0)
+                                    <span class="text-sm font-semibold text-orange-600 dark:text-orange-400">
+                                        Double park +{{ $overBase }}
                                     </span>
                                 @else
                                     <span class="text-sm text-zinc-400">—</span>
@@ -229,7 +256,7 @@
         <div class="space-y-6">
             <div>
                 <flux:heading size="lg">{{ $carParkId ? 'Edit Car Park' : 'Create Car Park' }}</flux:heading>
-                <flux:subheading>Manage car park details and per-day capacity.</flux:subheading>
+                <flux:subheading>Manage car park details, per-day capacity, and double-park overflow.</flux:subheading>
             </div>
 
             <div class="space-y-4">
@@ -267,6 +294,20 @@
                             <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
+                </div>
+
+                <div class="space-y-2">
+                    <label for="overflowCapacity"
+                        class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Double-park overflow</label>
+                    <input type="number" wire:model="overflowCapacity" id="overflowCapacity" placeholder="0" min="0"
+                        class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm placeholder-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" />
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                        Extra spaces available by double parking. The meter aims for half of this (sky marker). Going past
+                        base + overflow shows a red warning.
+                    </p>
+                    @error('overflowCapacity')
+                        <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div class="space-y-2">
