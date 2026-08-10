@@ -55,9 +55,12 @@
     </p>
 
     @unless ($showExpected)
-        <div class="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-zinc-300">
+        <div class="rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-950 dark:border-sky-700 dark:bg-sky-950 dark:text-sky-50">
             You’re viewing live occupancy only.
-            <a href="{{ route('login') }}" class="font-semibold text-zinc-900 underline underline-offset-2 dark:text-white">Log in</a>
+            <a href="{{ route('login') }}"
+                class="font-semibold text-sky-900 underline underline-offset-2 hover:text-sky-700 dark:text-white dark:hover:text-sky-100">
+                Log in
+            </a>
             to also see expected registrations by day.
         </div>
     @endunless
