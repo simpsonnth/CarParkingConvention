@@ -106,9 +106,28 @@ class ResendWebhookProcessor
         }
 
         if ($type === 'email.delivered') {
-            $updates['provider_status'] = OutboundEmail::PROVIDER_DELIVERED;
             $updates['delivered_at'] = $occurredAt ?? now();
-            $updates['provider_detail'] = null;
+            // Don't downgrade opened / bounce / complaint.
+            if (! in_array($outbound->provider_status, [
+                OutboundEmail::PROVIDER_OPENED,
+                OutboundEmail::PROVIDER_BOUNCED,
+                OutboundEmail::PROVIDER_COMPLAINED,
+            ], true)) {
+                $updates['provider_status'] = OutboundEmail::PROVIDER_DELIVERED;
+                $updates['provider_detail'] = null;
+            }
+        } elseif ($type === 'email.opened') {
+            $updates['opened_at'] = $outbound->opened_at ?? ($occurredAt ?? now());
+            if ($outbound->delivered_at === null) {
+                $updates['delivered_at'] = $occurredAt ?? now();
+            }
+            if (! in_array($outbound->provider_status, [
+                OutboundEmail::PROVIDER_BOUNCED,
+                OutboundEmail::PROVIDER_COMPLAINED,
+            ], true)) {
+                $updates['provider_status'] = OutboundEmail::PROVIDER_OPENED;
+                $updates['provider_detail'] = null;
+            }
         } elseif ($type === 'email.bounced') {
             $bounce = is_array($data['bounce'] ?? null) ? $data['bounce'] : [];
             $detail = trim(implode(' — ', array_filter([
@@ -127,6 +146,7 @@ class ResendWebhookProcessor
             // Don't overwrite a stronger status.
             if (! in_array($outbound->provider_status, [
                 OutboundEmail::PROVIDER_DELIVERED,
+                OutboundEmail::PROVIDER_OPENED,
                 OutboundEmail::PROVIDER_BOUNCED,
                 OutboundEmail::PROVIDER_COMPLAINED,
             ], true)) {

@@ -42,6 +42,11 @@
             {{ __('management.outbound_emails.filter_delivered') }}
             <span class="ms-1 tabular-nums opacity-80">({{ $deliveredCount }})</span>
         </flux:button>
+        <flux:button size="sm" variant="{{ $statusFilter === 'opened' ? 'primary' : 'ghost' }}"
+            wire:click="setStatusFilter('opened')">
+            {{ __('management.outbound_emails.filter_opened') }}
+            <span class="ms-1 tabular-nums opacity-80">({{ $openedCount }})</span>
+        </flux:button>
         <flux:button size="sm" variant="{{ $statusFilter === 'bounced' ? 'primary' : 'ghost' }}"
             wire:click="setStatusFilter('bounced')">
             {{ __('management.outbound_emails.filter_bounced') }}
@@ -93,7 +98,9 @@
                             @endif
                         </td>
                         <td class="px-4 py-3 whitespace-nowrap">
-                            @if ($row->provider_status === 'delivered')
+                            @if ($row->provider_status === 'opened' || $row->opened_at)
+                                <flux:badge color="indigo">{{ __('management.outbound_emails.provider_opened') }}</flux:badge>
+                            @elseif ($row->provider_status === 'delivered')
                                 <flux:badge color="green">{{ __('management.outbound_emails.provider_delivered') }}</flux:badge>
                             @elseif ($row->provider_status === 'bounced')
                                 <flux:badge color="rose">{{ __('management.outbound_emails.provider_bounced') }}</flux:badge>
@@ -165,6 +172,10 @@
                     <div>
                         <dt class="text-zinc-500">{{ __('management.outbound_emails.col_delivered_at') }}</dt>
                         <dd class="font-medium">{{ $viewing->delivered_at?->timezone(config('app.timezone'))->format('Y-m-d H:i:s') ?: '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-zinc-500">{{ __('management.outbound_emails.col_opened_at') }}</dt>
+                        <dd class="font-medium">{{ $viewing->opened_at?->timezone(config('app.timezone'))->format('Y-m-d H:i:s') ?: '—' }}</dd>
                     </div>
                     <div>
                         <dt class="text-zinc-500">{{ __('management.outbound_emails.col_bounced_at') }}</dt>

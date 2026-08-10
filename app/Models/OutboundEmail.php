@@ -34,6 +34,8 @@ class OutboundEmail extends Model
 
     public const PROVIDER_SENT = 'sent';
 
+    public const PROVIDER_OPENED = 'opened';
+
     protected $fillable = [
         'type',
         'status',
@@ -47,6 +49,7 @@ class OutboundEmail extends Model
         'last_error',
         'sent_at',
         'delivered_at',
+        'opened_at',
         'bounced_at',
     ];
 
@@ -55,6 +58,7 @@ class OutboundEmail extends Model
         'available_at' => 'datetime',
         'sent_at' => 'datetime',
         'delivered_at' => 'datetime',
+        'opened_at' => 'datetime',
         'bounced_at' => 'datetime',
         'attempts' => 'integer',
     ];

@@ -32,6 +32,35 @@ test('admin can view outbound email log', function () {
         ->assertSee(__('management.outbound_emails.provider_delivered'));
 });
 
+test('resend webhook marks matched outbound email as opened', function () {
+    Config::set('services.resend.webhook_secret', '');
+
+    $outbound = OutboundEmail::query()->create([
+        'type' => OutboundEmail::TYPE_CAR_PARK_TICKETS,
+        'status' => OutboundEmail::STATUS_SENT,
+        'to_email' => 'reader@example.test',
+        'payload' => ['registration_ids' => [3], 'note' => null],
+        'attempts' => 1,
+        'sent_at' => now()->subMinute(),
+        'provider_status' => OutboundEmail::PROVIDER_DELIVERED,
+        'delivered_at' => now()->subMinute(),
+    ]);
+
+    $this->postJson('/webhooks/resend', [
+        'type' => 'email.opened',
+        'created_at' => now()->toIso8601String(),
+        'data' => [
+            'email_id' => 'opened-email-id-123',
+            'to' => ['reader@example.test'],
+        ],
+    ])->assertOk();
+
+    $outbound->refresh();
+    expect($outbound->provider_status)->toBe(OutboundEmail::PROVIDER_OPENED)
+        ->and($outbound->opened_at)->not->toBeNull()
+        ->and($outbound->delivered_at)->not->toBeNull();
+});
+
 test('resend webhook marks matched outbound email as bounced', function () {
     Config::set('services.resend.webhook_secret', '');
 

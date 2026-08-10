@@ -18,7 +18,7 @@ class OutboundEmails extends Component
 
     public int $perPage = 25;
 
-    /** all | pending | sent | failed | delivered | bounced | complained */
+    /** all | pending | sent | failed | delivered | opened | bounced | complained */
     public string $statusFilter = 'all';
 
     public bool $detailModalOpen = false;
@@ -37,7 +37,7 @@ class OutboundEmails extends Component
 
     public function setStatusFilter(string $filter): void
     {
-        if (! in_array($filter, ['all', 'pending', 'sent', 'failed', 'delivered', 'bounced', 'complained'], true)) {
+        if (! in_array($filter, ['all', 'pending', 'sent', 'failed', 'delivered', 'opened', 'bounced', 'complained'], true)) {
             return;
         }
 
@@ -71,7 +71,8 @@ class OutboundEmails extends Component
         $pendingCount = (clone $base)->where('status', OutboundEmail::STATUS_PENDING)->count();
         $sentCount = (clone $base)->where('status', OutboundEmail::STATUS_SENT)->count();
         $failedCount = (clone $base)->where('status', OutboundEmail::STATUS_FAILED)->count();
-        $deliveredCount = (clone $base)->where('provider_status', OutboundEmail::PROVIDER_DELIVERED)->count();
+        $deliveredCount = (clone $base)->whereNotNull('delivered_at')->count();
+        $openedCount = (clone $base)->whereNotNull('opened_at')->count();
         $bouncedCount = (clone $base)->where('provider_status', OutboundEmail::PROVIDER_BOUNCED)->count();
         $complainedCount = (clone $base)->where('provider_status', OutboundEmail::PROVIDER_COMPLAINED)->count();
         $total = (clone $base)->count();
@@ -85,7 +86,9 @@ class OutboundEmails extends Component
         } elseif ($this->statusFilter === 'failed') {
             $query->where('status', OutboundEmail::STATUS_FAILED);
         } elseif ($this->statusFilter === 'delivered') {
-            $query->where('provider_status', OutboundEmail::PROVIDER_DELIVERED);
+            $query->whereNotNull('delivered_at');
+        } elseif ($this->statusFilter === 'opened') {
+            $query->whereNotNull('opened_at');
         } elseif ($this->statusFilter === 'bounced') {
             $query->where('provider_status', OutboundEmail::PROVIDER_BOUNCED);
         } elseif ($this->statusFilter === 'complained') {
@@ -120,6 +123,7 @@ class OutboundEmails extends Component
             'sentCount' => $sentCount,
             'failedCount' => $failedCount,
             'deliveredCount' => $deliveredCount,
+            'openedCount' => $openedCount,
             'bouncedCount' => $bouncedCount,
             'complainedCount' => $complainedCount,
             'viewing' => $viewing,
