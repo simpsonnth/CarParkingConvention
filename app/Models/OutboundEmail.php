@@ -43,6 +43,7 @@ class OutboundEmail extends Model
         'provider_email_id',
         'provider_detail',
         'to_email',
+        'mailer',
         'payload',
         'available_at',
         'attempts',

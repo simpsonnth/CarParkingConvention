@@ -7,6 +7,7 @@ use App\Models\OutboundEmail;
 use App\Models\OutboundEmailEvent;
 use App\Models\User;
 use App\Services\ResendWebhookProcessor;
+use App\Support\MailSendingQuota;
 use App\Support\ResendWebhookVerifier;
 use Illuminate\Support\Facades\Config;
 use Livewire\Livewire;
@@ -157,4 +158,36 @@ test('resend webhook rejects invalid signature when secret configured', function
         'svix-timestamp' => (string) time(),
         'svix-signature' => 'v1,not-valid',
     ])->assertStatus(400);
+});
+
+test('quota block on primary leaves failover available', function () {
+    config([
+        'mail.transactional_primary' => 'smtp',
+        'mail.transactional_failover' => 'brevo',
+        'mail.mailers.smtp' => [
+            'transport' => 'smtp',
+            'host' => 'smtp.example.test',
+            'port' => 587,
+            'username' => 'resend',
+            'password' => 'primary-secret',
+        ],
+        'mail.mailers.brevo' => [
+            'transport' => 'smtp',
+            'host' => 'smtp-relay.brevo.com',
+            'port' => 587,
+            'username' => 'brevo@example.test',
+            'password' => 'failover-secret',
+        ],
+    ]);
+
+    MailSendingQuota::clear();
+    MailSendingQuota::markProviderExceeded(
+        'smtp',
+        new RuntimeException('550 You have reached your daily email sending quota.'),
+    );
+
+    expect(MailSendingQuota::isProviderBlocked('smtp'))->toBeTrue()
+        ->and(MailSendingQuota::isProviderBlocked('brevo'))->toBeFalse()
+        ->and(MailSendingQuota::isBlocked())->toBeFalse()
+        ->and(MailSendingQuota::hasAvailableProvider())->toBeTrue();
 });

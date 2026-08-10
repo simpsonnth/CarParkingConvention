@@ -6,7 +6,7 @@ namespace App\Actions\HotelGuestParking;
 
 use App\Mail\HotelGuestParkingRequestDeclinedMail;
 use App\Support\TicketEmailCcList;
-use Illuminate\Support\Facades\Mail;
+use App\Support\TransactionalMail;
 use Illuminate\Validation\ValidationException;
 
 class SendHotelGuestParkingDeclinedEmail
@@ -25,15 +25,16 @@ class SendHotelGuestParkingDeclinedEmail
             fn (string $email): bool => $email !== $to,
         ));
 
-        Mail::to($to)->send(new HotelGuestParkingRequestDeclinedMail(
+        $result = TransactionalMail::send(new HotelGuestParkingRequestDeclinedMail(
             recipientEmail: $to,
             requesterName: $requesterName,
             ccAddresses: $cc,
-        ));
+        ), $to);
 
         return [
             'to' => $to,
             'cc' => $cc,
+            'mailer' => $result['mailer'],
         ];
     }
 }

@@ -18,6 +18,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Transactional primary / failover
+    |--------------------------------------------------------------------------
+    |
+    | Ticket and notification emails try the primary mailer first. When that
+    | provider hits a daily/monthly quota, sending automatically moves to the
+    | failover mailer (Brevo) until the primary resets.
+    |
+    */
+
+    'transactional_primary' => env('MAIL_TRANSACTIONAL_PRIMARY', env('MAIL_MAILER', 'smtp')),
+    'transactional_failover' => env('MAIL_TRANSACTIONAL_FAILOVER', 'brevo'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Mailer Configurations
     |--------------------------------------------------------------------------
     |
@@ -49,16 +63,23 @@ return [
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 
+        'brevo' => [
+            'transport' => 'smtp',
+            'scheme' => env('BREVO_MAIL_SCHEME', 'smtp'),
+            'host' => env('BREVO_SMTP_HOST', 'smtp-relay.brevo.com'),
+            'port' => env('BREVO_SMTP_PORT', 587),
+            'username' => env('BREVO_SMTP_USERNAME'),
+            'password' => env('BREVO_SMTP_PASSWORD'),
+            'timeout' => null,
+            'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
+        ],
+
         'ses' => [
             'transport' => 'ses',
         ],
 
         'postmark' => [
             'transport' => 'postmark',
-            // 'message_stream_id' => env('POSTMARK_MESSAGE_STREAM_ID'),
-            // 'client' => [
-            //     'timeout' => 5,
-            // ],
         ],
 
         'resend' => [
@@ -83,7 +104,7 @@ return [
             'transport' => 'failover',
             'mailers' => [
                 'smtp',
-                'log',
+                'brevo',
             ],
             'retry_after' => 60,
         ],

@@ -8,7 +8,7 @@ use App\Mail\CarParkTicketsMail;
 use App\Models\ParkingRegistration;
 use App\Services\MasterPassPdfGenerator;
 use App\Support\TicketEmailCcList;
-use Illuminate\Support\Facades\Mail;
+use App\Support\TransactionalMail;
 use Illuminate\Validation\ValidationException;
 
 class SendCarParkTicketsEmail
@@ -60,14 +60,14 @@ class SendCarParkTicketsEmail
 
         $trimmedNote = $note !== null ? trim($note) : '';
 
-        Mail::to($to)->send(new CarParkTicketsMail(
+        $result = TransactionalMail::send(new CarParkTicketsMail(
             recipientEmail: $to,
             ticketCount: count($pdfPayload),
             congregationLabel: $congregationLabel,
             pdfAttachments: $pdfPayload,
             ccAddresses: $cc,
             note: $trimmedNote !== '' ? $trimmedNote : null,
-        ));
+        ), $to);
 
         $sentIds = $registrations
             ->map(fn (ParkingRegistration $registration): int => (int) $registration->id)
@@ -86,6 +86,7 @@ class SendCarParkTicketsEmail
             'sent' => count($pdfPayload),
             'to' => $to,
             'cc' => $cc,
+            'mailer' => $result['mailer'],
         ];
     }
 

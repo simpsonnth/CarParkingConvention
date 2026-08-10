@@ -127,10 +127,11 @@ class OutboundEmailProcessor
         ]);
 
         try {
-            $this->dispatch($email);
+            $result = $this->dispatch($email);
 
             $email->update([
                 'status' => OutboundEmail::STATUS_SENT,
+                'mailer' => $result['mailer'] ?? null,
                 'sent_at' => now(),
                 'available_at' => null,
                 'last_error' => null,
@@ -139,7 +140,12 @@ class OutboundEmailProcessor
             return 'sent';
         } catch (Throwable $e) {
             if (MailSendingQuota::isExceeded($e)) {
-                $availableAt = MailSendingQuota::markExceeded($e);
+                // Ensure the primary provider is marked even if the exception
+                // bubbled from a mocked/lower layer that skipped TransactionalMail.
+                MailSendingQuota::markExceeded($e);
+                $availableAt = MailSendingQuota::isBlocked()
+                    ? MailSendingQuota::availableAt()
+                    : null;
                 $email->update([
                     'status' => OutboundEmail::STATUS_PENDING,
                     'available_at' => $availableAt,
@@ -150,7 +156,7 @@ class OutboundEmailProcessor
                     'outbound_email_id' => $email->id,
                     'type' => $email->type,
                     'to' => $email->to_email,
-                    'available_at' => $availableAt->toIso8601String(),
+                    'available_at' => $availableAt?->toIso8601String(),
                 ]);
 
                 return 'queued';
@@ -213,11 +219,14 @@ class OutboundEmailProcessor
         return $processed;
     }
 
-    private function dispatch(OutboundEmail $email): void
+    /**
+     * @return array{mailer?: string}
+     */
+    private function dispatch(OutboundEmail $email): array
     {
         $payload = is_array($email->payload) ? $email->payload : [];
 
-        match ($email->type) {
+        $result = match ($email->type) {
             OutboundEmail::TYPE_CAR_PARK_TICKETS => app(SendCarParkTicketsEmail::class)->execute(
                 array_values(array_map('intval', $payload['registration_ids'] ?? [])),
                 (string) $email->to_email,
@@ -242,5 +251,7 @@ class OutboundEmailProcessor
             ),
             default => throw new \InvalidArgumentException('Unknown outbound email type: '.$email->type),
         };
+
+        return is_array($result) ? $result : [];
     }
 }

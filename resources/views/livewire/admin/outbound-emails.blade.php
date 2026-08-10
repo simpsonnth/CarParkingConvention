@@ -72,6 +72,7 @@
                     <th class="px-4 py-3">{{ __('management.outbound_emails.col_to') }}</th>
                     <th class="px-4 py-3">{{ __('management.outbound_emails.col_status') }}</th>
                     <th class="px-4 py-3">{{ __('management.outbound_emails.col_provider') }}</th>
+                    <th class="px-4 py-3">{{ __('management.outbound_emails.col_mailer') }}</th>
                     <th class="px-4 py-3">{{ __('management.outbound_emails.col_error') }}</th>
                     <th class="px-4 py-3 text-end">{{ __('management.outbound_emails.col_actions') }}</th>
                 </tr>
@@ -114,6 +115,9 @@
                                 <span class="text-zinc-400">—</span>
                             @endif
                         </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-300">
+                            {{ $row->mailer ?: '—' }}
+                        </td>
                         <td class="px-4 py-3 max-w-[240px] truncate text-zinc-500 dark:text-zinc-400"
                             title="{{ $row->provider_detail ?: $row->last_error }}">
                             {{ $row->provider_detail ?: ($row->last_error ?: '—') }}
@@ -127,7 +131,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" class="px-4 py-10 text-center text-zinc-500 dark:text-zinc-400">
+                        <td colspan="8" class="px-4 py-10 text-center text-zinc-500 dark:text-zinc-400">
                             {{ __('management.outbound_emails.empty') }}
                         </td>
                     </tr>

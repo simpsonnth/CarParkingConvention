@@ -387,6 +387,7 @@ return [
         'col_to' => 'To',
         'col_status' => 'Send status',
         'col_provider' => 'Resend',
+        'col_mailer' => 'Via',
         'col_error' => 'Detail',
         'col_actions' => 'Actions',
         'col_attempts' => 'Attempts',

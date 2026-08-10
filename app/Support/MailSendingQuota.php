@@ -12,7 +12,29 @@ use Throwable;
 
 final class MailSendingQuota
 {
+    public const CACHE_KEY_PREFIX = 'mail_provider_quota_blocked_until:';
+
+    /** @deprecated Kept for older cache entries during deploy. */
     public const CACHE_KEY = 'mail_sending_quota_blocked_until';
+
+    /**
+     * @return list<string>
+     */
+    public static function mailersInPreferenceOrder(): array
+    {
+        $primary = (string) config('mail.transactional_primary', config('mail.default', 'smtp'));
+        $failover = (string) config('mail.transactional_failover', 'brevo');
+
+        $order = [];
+        foreach ([$primary, $failover] as $mailer) {
+            $mailer = trim($mailer);
+            if ($mailer !== '' && ! in_array($mailer, $order, true)) {
+                $order[] = $mailer;
+            }
+        }
+
+        return $order;
+    }
 
     public static function isExceeded(Throwable $e): bool
     {
@@ -21,7 +43,12 @@ final class MailSendingQuota
         return str_contains($message, 'daily email sending quota')
             || str_contains($message, 'daily_quota_exceeded')
             || str_contains($message, 'monthly_quota_exceeded')
-            || str_contains($message, 'monthly email sending quota');
+            || str_contains($message, 'monthly email sending quota')
+            || str_contains($message, 'quota exceeded')
+            || str_contains($message, 'send limit exceeded')
+            || str_contains($message, 'plan limits')
+            || str_contains($message, 'too many requests')
+            || str_contains($message, 'rate limit');
     }
 
     /**
@@ -66,50 +93,166 @@ final class MailSendingQuota
         return (bool) preg_match('/\b55[0-4]\b/', $message);
     }
 
-    public static function availableAt(): CarbonInterface
+    public static function isProviderBlocked(string $mailer): bool
     {
-        $cached = Cache::get(self::CACHE_KEY);
-        if (is_string($cached) && $cached !== '') {
-            return Carbon::parse($cached);
+        $cached = Cache::get(self::CACHE_KEY_PREFIX.$mailer);
+        if (is_string($cached) && $cached !== '' && Carbon::parse($cached)->isFuture()) {
+            return true;
         }
 
-        // Resend free-tier daily quota resets at midnight UTC.
-        return now('UTC')->addDay()->startOfDay()->addMinutes(5)->timezone(config('app.timezone'));
+        // Legacy single-key block (pre-failover) only applies to primary/smtp/resend.
+        if (in_array($mailer, ['smtp', 'resend', 'resend_smtp', (string) config('mail.transactional_primary')], true)) {
+            $legacy = Cache::get(self::CACHE_KEY);
+            if (is_string($legacy) && $legacy !== '' && Carbon::parse($legacy)->isFuture()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    public static function isBlocked(): bool
+    public static function hasAvailableProvider(): bool
     {
-        $cached = Cache::get(self::CACHE_KEY);
-        if (! is_string($cached) || $cached === '') {
+        foreach (self::mailersInPreferenceOrder() as $mailer) {
+            if (! self::mailerConfigured($mailer)) {
+                continue;
+            }
+            if (! self::isProviderBlocked($mailer)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public static function mailerConfigured(string $mailer): bool
+    {
+        $config = config("mail.mailers.{$mailer}");
+        if (! is_array($config) || ($config['transport'] ?? null) === null) {
             return false;
         }
 
-        return Carbon::parse($cached)->isFuture();
+        if (($config['transport'] ?? '') === 'smtp') {
+            $host = trim((string) ($config['host'] ?? ''));
+            $password = trim((string) ($config['password'] ?? ''));
+
+            return $host !== '' && $password !== '';
+        }
+
+        if (($config['transport'] ?? '') === 'resend') {
+            return trim((string) config('services.resend.key', '')) !== '';
+        }
+
+        return true;
     }
 
-    public static function markExceeded(?Throwable $e = null): CarbonInterface
+    /**
+     * True only when every configured transactional provider is quota-blocked.
+     */
+    public static function isBlocked(): bool
+    {
+        return ! self::hasAvailableProvider();
+    }
+
+    public static function availableAt(?string $mailer = null): CarbonInterface
+    {
+        if ($mailer !== null) {
+            $cached = Cache::get(self::CACHE_KEY_PREFIX.$mailer);
+            if (is_string($cached) && $cached !== '') {
+                return Carbon::parse($cached);
+            }
+
+            return self::nextUtcReset();
+        }
+
+        $times = [];
+        foreach (self::mailersInPreferenceOrder() as $name) {
+            if (! self::mailerConfigured($name)) {
+                continue;
+            }
+            $cached = Cache::get(self::CACHE_KEY_PREFIX.$name);
+            if (is_string($cached) && $cached !== '') {
+                $times[] = Carbon::parse($cached);
+            }
+        }
+
+        $legacy = Cache::get(self::CACHE_KEY);
+        if (is_string($legacy) && $legacy !== '') {
+            $times[] = Carbon::parse($legacy);
+        }
+
+        if ($times === []) {
+            return self::nextUtcReset();
+        }
+
+        return collect($times)->sort()->first() ?? self::nextUtcReset();
+    }
+
+    public static function markProviderExceeded(string $mailer, ?Throwable $e = null): CarbonInterface
     {
         $availableAt = self::availableAtFromException($e) ?? self::nextUtcReset();
 
-        Cache::put(self::CACHE_KEY, $availableAt->toIso8601String(), $availableAt->copy()->addHour());
+        Cache::put(
+            self::CACHE_KEY_PREFIX.$mailer,
+            $availableAt->toIso8601String(),
+            $availableAt->copy()->addHour(),
+        );
 
-        OutboundEmail::query()
-            ->where('status', OutboundEmail::STATUS_PENDING)
-            ->where(function ($q) use ($availableAt): void {
-                $q->whereNull('available_at')
-                    ->orWhere('available_at', '<', $availableAt);
-            })
-            ->update([
-                'available_at' => $availableAt,
-                'last_error' => $e?->getMessage() ?? 'Daily email sending quota reached.',
-            ]);
+        // Keep legacy key in sync when the primary provider trips, so older
+        // process checks still behave during rolling deploys.
+        $primary = (string) config('mail.transactional_primary', 'smtp');
+        if ($mailer === $primary || in_array($mailer, ['smtp', 'resend', 'resend_smtp'], true)) {
+            Cache::put(self::CACHE_KEY, $availableAt->toIso8601String(), $availableAt->copy()->addHour());
+        }
+
+        if (! self::hasAvailableProvider()) {
+            OutboundEmail::query()
+                ->where('status', OutboundEmail::STATUS_PENDING)
+                ->where(function ($q) use ($availableAt): void {
+                    $q->whereNull('available_at')
+                        ->orWhere('available_at', '<', $availableAt);
+                })
+                ->update([
+                    'available_at' => $availableAt,
+                    'last_error' => $e?->getMessage() ?? 'Email sending quota reached on all providers.',
+                ]);
+        } else {
+            // Failover is available — clear artificial deferrals so jobs send now.
+            OutboundEmail::query()
+                ->where('status', OutboundEmail::STATUS_PENDING)
+                ->whereNotNull('available_at')
+                ->where('available_at', '>', now())
+                ->update([
+                    'available_at' => null,
+                    'last_error' => 'Primary provider quota reached; failover available.',
+                ]);
+        }
 
         return $availableAt;
     }
 
-    public static function clear(): void
+    /**
+     * @deprecated Use markProviderExceeded()
+     */
+    public static function markExceeded(?Throwable $e = null): CarbonInterface
     {
+        $primary = (string) config('mail.transactional_primary', config('mail.default', 'smtp'));
+
+        return self::markProviderExceeded($primary, $e);
+    }
+
+    public static function clear(?string $mailer = null): void
+    {
+        if ($mailer !== null) {
+            Cache::forget(self::CACHE_KEY_PREFIX.$mailer);
+
+            return;
+        }
+
         Cache::forget(self::CACHE_KEY);
+        foreach (self::mailersInPreferenceOrder() as $name) {
+            Cache::forget(self::CACHE_KEY_PREFIX.$name);
+        }
     }
 
     private static function nextUtcReset(): CarbonInterface
@@ -125,7 +268,6 @@ final class MailSendingQuota
 
         $message = strtolower($e->getMessage());
         if (str_contains($message, 'monthly')) {
-            // Wait until the 1st of next month 00:05 UTC for monthly caps.
             return now('UTC')->startOfMonth()->addMonth()->addMinutes(5)->timezone(config('app.timezone'));
         }
 

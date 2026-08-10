@@ -6,7 +6,7 @@ namespace App\Actions\TicketChangeRequests;
 
 use App\Mail\TicketCancellationMail;
 use App\Support\TicketEmailCcList;
-use Illuminate\Support\Facades\Mail;
+use App\Support\TransactionalMail;
 use Illuminate\Validation\ValidationException;
 
 class SendTicketCancellationEmail
@@ -29,17 +29,18 @@ class SendTicketCancellationEmail
             fn (string $email): bool => $email !== $to,
         ));
 
-        Mail::to($to)->send(new TicketCancellationMail(
+        $result = TransactionalMail::send(new TicketCancellationMail(
             recipientEmail: $to,
             ticketNumber: $ticketNumber,
             congregation: $congregation,
             driverName: $driverName,
             ccAddresses: $cc,
-        ));
+        ), $to);
 
         return [
             'to' => $to,
             'cc' => $cc,
+            'mailer' => $result['mailer'],
         ];
     }
 }

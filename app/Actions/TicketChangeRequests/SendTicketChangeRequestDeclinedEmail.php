@@ -6,7 +6,7 @@ namespace App\Actions\TicketChangeRequests;
 
 use App\Mail\TicketChangeRequestDeclinedMail;
 use App\Support\TicketEmailCcList;
-use Illuminate\Support\Facades\Mail;
+use App\Support\TransactionalMail;
 use Illuminate\Validation\ValidationException;
 
 class SendTicketChangeRequestDeclinedEmail
@@ -28,16 +28,17 @@ class SendTicketChangeRequestDeclinedEmail
             fn (string $email): bool => $email !== $to,
         ));
 
-        Mail::to($to)->send(new TicketChangeRequestDeclinedMail(
+        $result = TransactionalMail::send(new TicketChangeRequestDeclinedMail(
             recipientEmail: $to,
             requesterName: $requesterName,
             congregation: $congregation,
             ccAddresses: $cc,
-        ));
+        ), $to);
 
         return [
             'to' => $to,
             'cc' => $cc,
+            'mailer' => $result['mailer'],
         ];
     }
 }
