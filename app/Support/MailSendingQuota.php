@@ -51,7 +51,11 @@ final class MailSendingQuota
             || str_contains($message, 'account credits are 0')
             || str_contains($message, 'plan limits')
             || str_contains($message, 'too many requests')
-            || str_contains($message, 'rate limit');
+            || str_contains($message, 'rate limit')
+            // MailerSend trial caps (keep queued until the account is upgraded).
+            || str_contains($message, 'unique recipients limit')
+            || str_contains($message, 'ms42225')
+            || str_contains($message, 'trial account');
     }
 
     /**
@@ -276,6 +280,16 @@ final class MailSendingQuota
         $message = strtolower($e->getMessage());
         if (str_contains($message, 'monthly')) {
             return now('UTC')->startOfMonth()->addMonth()->addMinutes(5)->timezone(config('app.timezone'));
+        }
+
+        // Trial / unique-recipient caps do not reset overnight — pause longer so
+        // we do not thrash the queue until the MailerSend plan is upgraded.
+        if (
+            str_contains($message, 'unique recipients limit')
+            || str_contains($message, 'ms42225')
+            || str_contains($message, 'trial account')
+        ) {
+            return now()->addDays(7);
         }
 
         return self::nextUtcReset();
