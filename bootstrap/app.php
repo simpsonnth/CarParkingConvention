@@ -16,6 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
         ]);
+        $middleware->validateCsrfTokens(except: [
+            'webhooks/resend',
+        ]);
         $middleware->alias([
             'public.route' => \App\Http\Middleware\EnsurePublicRouteEnabled::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,

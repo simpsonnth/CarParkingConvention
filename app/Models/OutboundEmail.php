@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OutboundEmail extends Model
 {
@@ -23,23 +24,45 @@ class OutboundEmail extends Model
 
     public const STATUS_FAILED = 'failed';
 
+    public const PROVIDER_DELIVERED = 'delivered';
+
+    public const PROVIDER_BOUNCED = 'bounced';
+
+    public const PROVIDER_COMPLAINED = 'complained';
+
+    public const PROVIDER_DELAYED = 'delayed';
+
+    public const PROVIDER_SENT = 'sent';
+
     protected $fillable = [
         'type',
         'status',
+        'provider_status',
+        'provider_email_id',
+        'provider_detail',
         'to_email',
         'payload',
         'available_at',
         'attempts',
         'last_error',
         'sent_at',
+        'delivered_at',
+        'bounced_at',
     ];
 
     protected $casts = [
         'payload' => 'array',
         'available_at' => 'datetime',
         'sent_at' => 'datetime',
+        'delivered_at' => 'datetime',
+        'bounced_at' => 'datetime',
         'attempts' => 'integer',
     ];
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(OutboundEmailEvent::class);
+    }
 
     /**
      * @param  Builder<OutboundEmail>  $query
@@ -53,5 +76,15 @@ class OutboundEmail extends Model
                 $q->whereNull('available_at')
                     ->orWhere('available_at', '<=', now());
             });
+    }
+
+    public function isBounced(): bool
+    {
+        return $this->provider_status === self::PROVIDER_BOUNCED || $this->bounced_at !== null;
+    }
+
+    public function isDelivered(): bool
+    {
+        return $this->provider_status === self::PROVIDER_DELIVERED || $this->delivered_at !== null;
     }
 }

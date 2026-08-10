@@ -8,6 +8,9 @@ Route::get('/', function () {
     return view('welcome');
 })->name('home');
 
+Route::post('/webhooks/resend', App\Http\Controllers\ResendWebhookController::class)
+    ->name('webhooks.resend');
+
 Route::view('dashboard', 'dashboard')
     ->middleware(['auth', 'verified', 'permission:dashboard.view'])
     ->name('dashboard');
@@ -346,6 +349,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/hotel-guest-parking/{hotelGuestParkingRequest}', App\Livewire\Admin\HotelGuestParkingRequestDetail::class)
             ->middleware('permission:hotel-guest-parking.view')
             ->name('hotel-guest-parking.show');
+        Route::get('/outbound-emails', App\Livewire\Admin\OutboundEmails::class)
+            ->middleware('permission:outbound-emails.view')
+            ->name('outbound-emails');
         Route::get('/parking-qr-codes', App\Livewire\Admin\GenericParkingQrCodes::class)
             ->middleware('permission:parking-qr.view')
             ->name('parking-qr-codes');

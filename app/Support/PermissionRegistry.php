@@ -95,6 +95,9 @@ final class PermissionRegistry
                 'hotel-guest-parking.view',
                 'hotel-guest-parking.manage',
             ],
+            'Outbound Emails' => [
+                'outbound-emails.view',
+            ],
             'Parking QR Codes' => [
                 'parking-qr.view',
             ],
