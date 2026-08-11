@@ -241,6 +241,28 @@
                         class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" />
                 </div>
 
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div class="space-y-2">
+                        <label for="latitude" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Latitude</label>
+                        <input type="text" inputmode="decimal" wire:model="latitude" id="latitude" placeholder="e.g. 51.4495814"
+                            class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm font-mono dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" />
+                        @error('latitude')
+                            <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+                    <div class="space-y-2">
+                        <label for="longitude" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Longitude</label>
+                        <input type="text" inputmode="decimal" wire:model="longitude" id="longitude" placeholder="e.g. -0.3505310"
+                            class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm font-mono dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" />
+                        @error('longitude')
+                            <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+                <p class="text-xs text-zinc-500 dark:text-zinc-400 -mt-2">
+                    Used for Visiting Guest handout “navigate back to your car” QR codes.
+                </p>
+
                 <div class="space-y-2">
                     <label for="color" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Pass colour</label>
                     <div class="flex items-center gap-3">

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Attendant;
 
+use App\Actions\Attendant\LookupParkingRegistration;
 use App\Models\CarPark;
 use App\Models\Congregation;
 use App\Models\ParkingPass;
@@ -60,6 +61,15 @@ class Scan extends Component
     public bool $coachCaptainToBeAssigned = false;
 
     public ?int $selectedCongregationId = null;
+
+    public string $lookupQuery = '';
+
+    /** @var list<array<string, mixed>> */
+    public array $lookupResults = [];
+
+    public ?string $lookupError = null;
+
+    public bool $lookupSearched = false;
 
     #[Layout('components.layouts.public')]
     public function mount($code = null, ?ParkingRegistration $registration = null): void
@@ -475,6 +485,52 @@ class Scan extends Component
         Flux::toast('Vehicle '.($pass->vehicle_reg ?? '').' clocked out.');
     }
 
+    public function lookup(LookupParkingRegistration $action): void
+    {
+        $this->lookupQuery = trim($this->lookupQuery);
+        $this->lookupError = null;
+        $this->lookupResults = [];
+        $this->lookupSearched = false;
+
+        if ($this->lookupQuery === '') {
+            $this->addError('lookupQuery', 'Enter a vehicle registration or ticket number.');
+
+            return;
+        }
+
+        $this->resetErrorBag('lookupQuery');
+        $this->lookupResults = $action->execute($this->lookupQuery);
+        $this->lookupSearched = true;
+
+        if ($this->lookupResults === []) {
+            $this->lookupError = 'No active registration found for that plate or ticket number.';
+        }
+    }
+
+    public function clearLookup(): void
+    {
+        $this->reset('lookupQuery', 'lookupResults', 'lookupError', 'lookupSearched');
+        $this->resetErrorBag('lookupQuery');
+    }
+
+    public function checkInFromLookup(int $registrationId): void
+    {
+        $registration = ParkingRegistration::query()->find($registrationId);
+
+        if ($registration === null) {
+            $this->lookupError = 'That registration is no longer available.';
+            $this->lookupResults = array_values(array_filter(
+                $this->lookupResults,
+                fn (array $row): bool => (int) ($row['id'] ?? 0) !== $registrationId
+            ));
+
+            return;
+        }
+
+        $this->clearLookup();
+        $this->scanRegistration($registration);
+    }
+
     public function checkInAnotherCar(): void
     {
         $this->reset('vehicleReg', 'contactNumber', 'name', 'email', 'days', 'elderlyInfirmParking', 'notes', 'foundRegistration', 'existingParkedPass', 'scannedRegistration', 'quickCheckIn', 'editingDetails', 'coachCaptainToBeAssigned');
@@ -505,6 +561,10 @@ class Scan extends Component
             'lastScanResult',
             'lastScanMessage',
             'coachCaptainToBeAssigned',
+            'lookupQuery',
+            'lookupResults',
+            'lookupError',
+            'lookupSearched',
         );
 
         if ($walkIn) {
@@ -684,6 +744,10 @@ class Scan extends Component
             'editingDetails',
             'selectedCongregationId',
             'coachCaptainToBeAssigned',
+            'lookupQuery',
+            'lookupResults',
+            'lookupError',
+            'lookupSearched',
         );
 
         if ($walkIn) {

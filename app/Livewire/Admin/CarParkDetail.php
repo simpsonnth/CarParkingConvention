@@ -32,6 +32,10 @@ class CarParkDetail extends Component
 
     public string $location = '';
 
+    public string $latitude = '';
+
+    public string $longitude = '';
+
     public string $color = '';
 
     public string $travelDirections = '';
@@ -61,6 +65,8 @@ class CarParkDetail extends Component
         $this->capacitySunday = (string) $this->carPark->capacity_sunday;
         $this->overflowCapacity = (string) $this->carPark->overflowCapacity();
         $this->location = (string) ($this->carPark->location ?? '');
+        $this->latitude = $this->carPark->latitude !== null ? (string) $this->carPark->latitude : '';
+        $this->longitude = $this->carPark->longitude !== null ? (string) $this->carPark->longitude : '';
         $this->color = (string) ($this->carPark->color ?? '');
         $this->travelDirections = (string) ($this->carPark->travel_directions ?? '');
         $this->existingMapImage = $this->carPark->map_image_path ?? '';
@@ -79,6 +85,8 @@ class CarParkDetail extends Component
             'capacitySunday' => 'required|integer|min:1',
             'overflowCapacity' => 'required|integer|min:0',
             'location' => 'nullable|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'color' => 'nullable|string|max:50',
             'travelDirections' => 'nullable|string|max:2000',
             'mapImage' => 'nullable|image|max:10240',
@@ -91,6 +99,8 @@ class CarParkDetail extends Component
             'capacity_sunday' => (int) $this->capacitySunday,
             'overflow_capacity' => (int) $this->overflowCapacity,
             'location' => $this->location !== '' ? $this->location : null,
+            'latitude' => $this->latitude !== '' ? (float) $this->latitude : null,
+            'longitude' => $this->longitude !== '' ? (float) $this->longitude : null,
             'color' => $this->color !== '' ? $this->color : null,
             'travel_directions' => $this->normalizedTravelDirections(),
         ];

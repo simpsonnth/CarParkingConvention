@@ -89,6 +89,101 @@
         </div>
     </div>
 
+    <div class="rounded-2xl border border-teal-200 bg-white p-6 shadow-sm dark:border-teal-800 dark:bg-zinc-900">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex-1 space-y-4">
+                <div class="space-y-3">
+                    <flux:heading size="lg">{{ __('parking_qr.guest_heading') }}</flux:heading>
+                    <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ __('parking_qr.guest_description') }}</p>
+                </div>
+
+                @if($carParks->isEmpty())
+                    <p class="text-sm text-amber-700 dark:text-amber-300">{{ __('parking_qr.guest_no_parks') }}</p>
+                @else
+                    <div class="max-w-sm space-y-1">
+                        <label for="guestCarParkId" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                            {{ __('parking_qr.guest_park_label') }}
+                        </label>
+                        <select
+                            id="guestCarParkId"
+                            wire:model.live="guestCarParkId"
+                            class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
+                        >
+                            @foreach($carParks as $park)
+                                <option value="{{ $park->id }}">{{ $park->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    @if($guestPark)
+                        <ul class="space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+                            <li>
+                                @if($guestPark->map_image_path)
+                                    <span class="text-teal-700 dark:text-teal-300">{{ __('parking_qr.guest_map_ready') }}</span>
+                                @else
+                                    <span class="text-amber-700 dark:text-amber-300">{{ __('parking_qr.guest_map_missing') }}</span>
+                                @endif
+                            </li>
+                            <li>
+                                @if($guestNavUrl)
+                                    <span class="text-teal-700 dark:text-teal-300">{{ __('parking_qr.guest_coords_ready') }}</span>
+                                @else
+                                    <span class="text-amber-700 dark:text-amber-300">{{ __('parking_qr.guest_coords_missing') }}</span>
+                                @endif
+                            </li>
+                        </ul>
+
+                        <div class="flex flex-wrap gap-2">
+                            <flux:button
+                                variant="primary"
+                                icon="printer"
+                                onclick="window.open('{{ $guestPrintUrl }}', '_blank')">
+                                {{ __('parking_qr.print_guest_handout') }}
+                            </flux:button>
+                            @if($guestNavUrl)
+                                <flux:button
+                                    variant="ghost"
+                                    icon="arrow-top-right-on-square"
+                                    :href="$guestNavUrl"
+                                    target="_blank">
+                                    {{ __('parking_qr.open_maps') }}
+                                </flux:button>
+                            @endif
+                        </div>
+                    @endif
+                @endif
+            </div>
+
+            <div class="flex flex-col items-center rounded-xl border border-teal-200 bg-teal-50 p-6 dark:border-teal-800 dark:bg-teal-950/30">
+                @if($ticketLogo)
+                    <img src="{{ asset($ticketLogo) }}" alt="Logo" class="mb-4 h-10 w-auto">
+                @endif
+                <div class="mb-2 text-center text-[10px] font-bold uppercase tracking-widest text-zinc-400">{{ $convName }}</div>
+                <div class="mb-1 text-center text-lg font-black text-zinc-900 dark:text-white">{{ $convLoc }} {{ $convYear }}</div>
+                <div class="mb-4 text-center text-sm font-bold text-teal-800 dark:text-teal-200">
+                    {{ __('parking_qr.guest_label') }}
+                    @if($guestPark)
+                        · {{ $guestPark->name }}
+                    @endif
+                </div>
+                @if($guestNavUrl)
+                    <img
+                        src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{ urlencode($guestNavUrl) }}"
+                        alt="{{ __('parking_qr.guest_nav_qr_alt') }}"
+                        class="h-auto w-full max-w-[200px]"
+                    />
+                    <div class="mt-4 text-center text-xs font-bold uppercase tracking-widest text-teal-700 dark:text-teal-300">
+                        {{ __('parking_qr.guest_nav_label') }}
+                    </div>
+                @else
+                    <div class="flex h-[200px] w-full max-w-[200px] items-center justify-center rounded-lg border border-dashed border-teal-300 bg-white/60 p-4 text-center text-xs text-teal-800 dark:border-teal-700 dark:bg-zinc-900/40 dark:text-teal-200">
+                        {{ __('parking_qr.guest_coords_missing') }}
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
     <div class="space-y-4">
         <div>
             <flux:heading size="lg">{{ __('parking_qr.ticket_heading') }}</flux:heading>

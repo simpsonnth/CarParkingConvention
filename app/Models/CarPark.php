@@ -20,6 +20,8 @@ class CarPark extends Model
         'capacity_sunday',
         'overflow_capacity',
         'location',
+        'latitude',
+        'longitude',
         'map_image_path',
         'travel_directions',
         'color',
@@ -29,6 +31,8 @@ class CarPark extends Model
     {
         return [
             'overflow_capacity' => 'integer',
+            'latitude' => 'float',
+            'longitude' => 'float',
         ];
     }
 
@@ -43,6 +47,24 @@ class CarPark extends Model
     public function mapImageUrl(): ?string
     {
         return $this->map_image_path ?: null;
+    }
+
+    public function hasNavigation(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null;
+    }
+
+    public function navigationUrl(): ?string
+    {
+        if (! $this->hasNavigation()) {
+            return null;
+        }
+
+        return sprintf(
+            'https://www.google.com/maps/dir/?api=1&destination=%s,%s',
+            rtrim(rtrim(number_format((float) $this->latitude, 7, '.', ''), '0'), '.'),
+            rtrim(rtrim(number_format((float) $this->longitude, 7, '.', ''), '0'), '.')
+        );
     }
 
     public function congregations(): HasMany

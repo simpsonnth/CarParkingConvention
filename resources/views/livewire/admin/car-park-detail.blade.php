@@ -16,6 +16,15 @@
                 @endif
             </div>
             <flux:subheading>{{ $carPark->location ?? 'No location specified' }}</flux:subheading>
+            @if ($carPark->hasNavigation())
+                <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400 font-mono">
+                    {{ $carPark->latitude }}, {{ $carPark->longitude }}
+                    ·
+                    <a href="{{ $carPark->navigationUrl() }}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:underline dark:text-indigo-400 font-sans">
+                        Open in Maps
+                    </a>
+                </p>
+            @endif
         </div>
         @can('car-parks.manage')
             <div class="shrink-0">
@@ -299,6 +308,24 @@
             </div>
 
             <flux:input wire:model="location" label="Location" placeholder="e.g. Behind Main Hall" />
+
+            <div class="grid gap-4 sm:grid-cols-2">
+                <div class="space-y-1">
+                    <flux:input wire:model="latitude" label="Latitude" placeholder="e.g. 51.4495814" />
+                    @error('latitude')
+                        <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+                <div class="space-y-1">
+                    <flux:input wire:model="longitude" label="Longitude" placeholder="e.g. -0.3505310" />
+                    @error('longitude')
+                        <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+            </div>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400 -mt-2">
+                Used for Visiting Guest handout navigation QR codes.
+            </p>
 
             <div class="space-y-2">
                 <label for="color" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Pass Color</label>

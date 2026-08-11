@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Livewire\Admin;
 
+use App\Models\CarPark;
 use App\Models\Congregation;
+use App\Models\Setting;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -13,6 +15,13 @@ use Livewire\Component;
 class GenericParkingQrCodes extends Component
 {
     public string $search = '';
+
+    public ?int $guestCarParkId = null;
+
+    public function mount(): void
+    {
+        $this->guestCarParkId = $this->defaultGuestCarParkId();
+    }
 
     /**
      * @return Collection<int, Congregation>
@@ -32,16 +41,62 @@ class GenericParkingQrCodes extends Component
             ->get();
     }
 
+    /**
+     * @return Collection<int, CarPark>
+     */
+    public function carParks(): Collection
+    {
+        return CarPark::query()->orderBy('name')->get();
+    }
+
+    public function selectedGuestCarPark(): ?CarPark
+    {
+        if ($this->guestCarParkId === null) {
+            return null;
+        }
+
+        return $this->carParks()->firstWhere('id', $this->guestCarParkId);
+    }
+
     public function render()
     {
+        $guestPark = $this->selectedGuestCarPark();
+
         return view('livewire.admin.generic-parking-qr-codes', [
             'congregations' => $this->congregations(),
+            'carParks' => $this->carParks(),
+            'guestPark' => $guestPark,
+            'guestPrintUrl' => $guestPark
+                ? route('admin.parking-qr-codes.print-guest', $guestPark)
+                : null,
+            'guestNavUrl' => $guestPark?->navigationUrl(),
             'walkInScanUrl' => route('attendant.scan.walk-in'),
             'coachWalkInScanUrl' => route('attendant.scan.walk-in.coach'),
-            'convName' => \App\Models\Setting::get('convention_name', "Convention of Jehovah's Witness"),
-            'convYear' => \App\Models\Setting::get('convention_year', date('Y')),
-            'convLoc' => \App\Models\Setting::get('convention_location', 'Twickenham'),
-            'ticketLogo' => \App\Models\Setting::get('ticket_logo'),
+            'convName' => Setting::get('convention_name', "Convention of Jehovah's Witness"),
+            'convYear' => Setting::get('convention_year', date('Y')),
+            'convLoc' => Setting::get('convention_location', 'Twickenham'),
+            'ticketLogo' => Setting::get('ticket_logo'),
         ]);
+    }
+
+    protected function defaultGuestCarParkId(): ?int
+    {
+        $rosebine2 = CarPark::query()->where('name', 'Rosebine 2')->value('id');
+        if ($rosebine2 !== null) {
+            return (int) $rosebine2;
+        }
+
+        $withCoords = CarPark::query()
+            ->whereNotNull('latitude')
+            ->whereNotNull('longitude')
+            ->orderBy('name')
+            ->value('id');
+        if ($withCoords !== null) {
+            return (int) $withCoords;
+        }
+
+        $first = CarPark::query()->orderBy('name')->value('id');
+
+        return $first !== null ? (int) $first : null;
     }
 }

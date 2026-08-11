@@ -102,6 +102,125 @@
     @endunless
 
     @if($step === 'scan')
+        <div class="bg-white dark:bg-zinc-800 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-xl space-y-4">
+            <div class="text-center space-y-1">
+                <div class="text-xs font-bold uppercase tracking-widest text-zinc-400">Find vehicle</div>
+                <p class="text-sm text-zinc-500 dark:text-zinc-400">
+                    Look up where a car should park by plate or ticket number
+                </p>
+            </div>
+
+            <form wire:submit.prevent="lookup" class="space-y-4">
+                <flux:input
+                    wire:model="lookupQuery"
+                    placeholder="Plate or ticket number..."
+                    autocomplete="off"
+                    class="text-center text-xl h-14 bg-zinc-50 dark:bg-zinc-900 border-none rounded-xl font-mono tracking-wider uppercase focus:ring-2 focus:ring-indigo-500"
+                />
+                @error('lookupQuery')
+                    <span class="text-red-500 text-sm block text-center">{{ $message }}</span>
+                @enderror
+                <flux:button type="submit" variant="filled" class="w-full h-12 text-base font-bold rounded-xl">
+                    LOOK UP
+                </flux:button>
+            </form>
+
+            @if($lookupError)
+                <div class="rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-center">
+                    <div class="text-sm font-semibold text-red-500">{{ $lookupError }}</div>
+                </div>
+            @endif
+
+            @foreach($lookupResults as $result)
+                <div class="rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900/50 p-5 space-y-4">
+                    <div class="text-center">
+                        @if(! empty($result['car_park_name']))
+                            <div class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-indigo-500/10 text-indigo-500 font-bold text-base">
+                                <flux:icon name="map-pin" class="size-4" />
+                                {{ $result['car_park_name'] }}
+                                @if(! empty($result['car_park_is_individual']))
+                                    <span class="text-xs font-normal opacity-90">(individual)</span>
+                                @endif
+                            </div>
+                        @else
+                            <div class="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold text-sm">
+                                <flux:icon name="exclamation-triangle" class="size-4" />
+                                Not assigned to a car park
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-zinc-500 uppercase tracking-wider text-xs font-bold">Name</span>
+                            <span class="font-semibold text-zinc-900 dark:text-white text-right">{{ $result['name'] ?: '—' }}</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-zinc-500 uppercase tracking-wider text-xs font-bold">Phone</span>
+                            @if(! empty($result['contact_number']))
+                                <a href="tel:{{ $result['contact_number'] }}" class="font-mono font-semibold text-indigo-500 hover:underline">
+                                    {{ $result['contact_number'] }}
+                                </a>
+                            @else
+                                <span class="text-zinc-400">—</span>
+                            @endif
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-zinc-500 uppercase tracking-wider text-xs font-bold">Email</span>
+                            @if(! empty($result['email']))
+                                <a href="mailto:{{ $result['email'] }}" class="font-semibold text-indigo-500 hover:underline text-right break-all">
+                                    {{ $result['email'] }}
+                                </a>
+                            @else
+                                <span class="text-zinc-400">—</span>
+                            @endif
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-zinc-500 uppercase tracking-wider text-xs font-bold">Plate</span>
+                            <span class="font-mono font-bold text-zinc-900 dark:text-white tracking-wider">
+                                {{ $result['vehicle_registration'] ?: '—' }}
+                            </span>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-zinc-500 uppercase tracking-wider text-xs font-bold">Ticket</span>
+                            <span class="font-mono text-zinc-900 dark:text-white">{{ $result['ticket_number'] }}</span>
+                        </div>
+                        <div class="flex items-center justify-between gap-3">
+                            <span class="text-zinc-500 uppercase tracking-wider text-xs font-bold">Congregation</span>
+                            <span class="font-semibold text-zinc-900 dark:text-white text-right">{{ $result['congregation'] }}</span>
+                        </div>
+                    </div>
+
+                    @if(! empty($result['is_circuit_overseer']))
+                        <p class="text-center text-xs text-amber-600 dark:text-amber-400">
+                            Circuit overseer ticket — use walk-in check-in if needed.
+                        </p>
+                    @elseif(! empty($result['can_check_in']))
+                        <flux:button
+                            type="button"
+                            variant="primary"
+                            wire:click="checkInFromLookup({{ (int) $result['id'] }})"
+                            class="w-full h-12 text-base font-bold rounded-xl"
+                        >
+                            Check in this vehicle
+                        </flux:button>
+                    @endif
+                </div>
+            @endforeach
+
+            @if($lookupSearched || $lookupResults !== [] || $lookupError)
+                <div class="text-center">
+                    <button
+                        type="button"
+                        wire:click="clearLookup"
+                        class="text-sm font-semibold text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200"
+                    >
+                        Clear lookup
+                    </button>
+                </div>
+            @endif
+        </div>
+
         <div class="space-y-6">
             {{-- Result Card --}}
             @if ($lastScanResult)

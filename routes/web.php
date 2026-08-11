@@ -368,6 +368,11 @@ Route::middleware(['auth'])->group(function () {
         })
             ->middleware('permission:parking-qr.view')
             ->name('parking-qr-codes.print-walk-in-coach');
+        Route::get('/parking-qr-codes/print-guest/{carPark}', function (App\Models\CarPark $carPark) {
+            return view('admin.print-guest-handout', ['carPark' => $carPark]);
+        })
+            ->middleware('permission:parking-qr.view')
+            ->name('parking-qr-codes.print-guest');
         Route::get('/routes-list', App\Livewire\Admin\PublicRoutesList::class)
             ->middleware('permission:routes.view')
             ->name('routes-list');

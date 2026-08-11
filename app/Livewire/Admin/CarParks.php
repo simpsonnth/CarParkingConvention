@@ -29,6 +29,10 @@ class CarParks extends Component
 
     public string $location = '';
 
+    public string $latitude = '';
+
+    public string $longitude = '';
+
     public string $color = '';
 
     public string $travelDirections = '';
@@ -118,6 +122,8 @@ class CarParks extends Component
             'capacitySunday',
             'overflowCapacity',
             'location',
+            'latitude',
+            'longitude',
             'color',
             'travelDirections',
             'carParkId',
@@ -138,6 +144,8 @@ class CarParks extends Component
         $this->capacitySunday = (string) $carPark->capacity_sunday;
         $this->overflowCapacity = (string) $carPark->overflowCapacity();
         $this->location = (string) ($carPark->location ?? '');
+        $this->latitude = $carPark->latitude !== null ? (string) $carPark->latitude : '';
+        $this->longitude = $carPark->longitude !== null ? (string) $carPark->longitude : '';
         $this->color = (string) ($carPark->color ?? '');
         $this->travelDirections = (string) ($carPark->travel_directions ?? '');
         $this->existingMapImage = $carPark->map_image_path ?? '';
@@ -156,6 +164,8 @@ class CarParks extends Component
             'capacitySunday' => 'required|integer|min:1',
             'overflowCapacity' => 'required|integer|min:0',
             'location' => 'nullable|string',
+            'latitude' => 'nullable|numeric|between:-90,90',
+            'longitude' => 'nullable|numeric|between:-180,180',
             'color' => 'nullable|string|max:50',
             'travelDirections' => 'nullable|string|max:2000',
             'mapImage' => 'nullable|image|max:10240',
@@ -168,6 +178,8 @@ class CarParks extends Component
             'capacity_sunday' => (int) $this->capacitySunday,
             'overflow_capacity' => (int) $this->overflowCapacity,
             'location' => $this->location !== '' ? $this->location : null,
+            'latitude' => $this->latitude !== '' ? (float) $this->latitude : null,
+            'longitude' => $this->longitude !== '' ? (float) $this->longitude : null,
             'color' => $this->color !== '' ? $this->color : null,
             'travel_directions' => $this->normalizedTravelDirections(),
         ];
@@ -207,6 +219,8 @@ class CarParks extends Component
             'capacitySunday',
             'overflowCapacity',
             'location',
+            'latitude',
+            'longitude',
             'color',
             'travelDirections',
             'carParkId',
