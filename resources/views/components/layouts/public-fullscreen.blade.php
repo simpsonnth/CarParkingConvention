@@ -5,8 +5,9 @@
     @include('partials.head')
 </head>
 
-<body class="h-svh overflow-hidden bg-white antialiased dark:bg-zinc-900">
-    <div class="flex h-full min-h-0 w-full min-w-0 flex-col p-2 sm:p-3">
+<body
+    class="min-h-svh overflow-x-hidden overflow-y-auto bg-white antialiased dark:bg-zinc-900 lg:h-svh lg:overflow-hidden">
+    <div class="mx-auto flex min-h-svh w-full min-w-0 max-w-7xl flex-col p-3 lg:h-full lg:min-h-0 lg:max-w-none lg:p-2 xl:p-3">
         {{ $slot }}
     </div>
     @fluxScripts

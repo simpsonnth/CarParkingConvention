@@ -16,21 +16,21 @@
 <div {{ $attributes->class([
     'rounded-lg bg-zinc-50 dark:bg-zinc-900/50',
     'px-3 py-3' => ! $compact,
-    'flex min-h-0 flex-1 flex-col justify-center px-2 py-1.5' => $compact,
+    'flex min-h-0 flex-col justify-center px-3 py-2.5 md:flex-1 md:px-2 md:py-1.5' => $compact,
 ]) }}>
     @if ($label !== '')
         <p @class([
             'font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400',
             'text-[11px]' => ! $compact,
-            'text-[10px] leading-none' => $compact,
+            'text-[11px] leading-none md:text-[10px]' => $compact,
         ])>{{ $label }}</p>
     @endif
 
-    <p @class(['mt-1' => ! $compact, 'mt-0.5' => $compact])>
+    <p @class(['mt-1' => ! $compact, 'mt-1 md:mt-0.5' => $compact])>
         <span @class([
             'font-semibold tabular-nums tracking-tight',
             'text-2xl' => ! $compact,
-            'text-lg sm:text-xl lg:text-2xl' => $compact,
+            'text-xl sm:text-xl lg:text-2xl' => $compact,
             $reading->ratioTextClass(),
         ])>{{ $reading->used }}{{ $usedSuffix }} / {{ $reading->capacity }}</span>
     </p>
