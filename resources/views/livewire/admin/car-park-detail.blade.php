@@ -16,6 +16,9 @@
                 @endif
             </div>
             <flux:subheading>{{ $carPark->location ?? 'No location specified' }}</flux:subheading>
+            @if (filled($carPark->postcode))
+                <p class="mt-1 text-sm font-medium text-zinc-700 dark:text-zinc-300">{{ $carPark->postcode }}</p>
+            @endif
             @if ($carPark->hasNavigation())
                 <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-400 font-mono">
                     {{ $carPark->latitude }}, {{ $carPark->longitude }}
@@ -308,6 +311,13 @@
             </div>
 
             <flux:input wire:model="location" label="Location" placeholder="e.g. Behind Main Hall" />
+
+            <div class="space-y-1">
+                <flux:input wire:model="postcode" label="Postcode" placeholder="e.g. Twickenham TW2 7PS" />
+                @error('postcode')
+                    <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                @enderror
+            </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
                 <div class="space-y-1">

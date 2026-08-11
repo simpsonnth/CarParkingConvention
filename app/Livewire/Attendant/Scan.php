@@ -472,6 +472,7 @@ class Scan extends Component
         if ($pass === null) {
             Flux::toast('Pass not found or already clocked out.', variant: 'warning');
             $this->existingParkedPass = null;
+            $this->refreshLookupResults();
 
             return;
         }
@@ -483,6 +484,7 @@ class Scan extends Component
 
         $this->existingParkedPass = null;
         Flux::toast('Vehicle '.($pass->vehicle_reg ?? '').' clocked out.');
+        $this->refreshLookupResults();
     }
 
     public function lookup(LookupParkingRegistration $action): void
@@ -529,6 +531,18 @@ class Scan extends Component
 
         $this->clearLookup();
         $this->scanRegistration($registration);
+    }
+
+    protected function refreshLookupResults(): void
+    {
+        if (! $this->lookupSearched || trim($this->lookupQuery) === '') {
+            return;
+        }
+
+        $this->lookupResults = app(LookupParkingRegistration::class)->execute($this->lookupQuery);
+        $this->lookupError = $this->lookupResults === []
+            ? 'No active registration found for that plate or ticket number.'
+            : null;
     }
 
     public function checkInAnotherCar(): void

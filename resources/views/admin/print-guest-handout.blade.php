@@ -137,6 +137,14 @@
             letter-spacing: 0.04em;
             text-transform: uppercase;
         }
+        .handout-postcode {
+            margin-top: 1.5mm;
+            font-size: 2.8mm;
+            font-weight: 700;
+            color: #f8fafc;
+            text-shadow: 0 1px 2px rgba(0,0,0,.45);
+            letter-spacing: 0.02em;
+        }
         .hero-bottom {
             position: absolute;
             left: 0;
@@ -372,6 +380,9 @@
                     <div class="hero-title-block">
                         <h1 class="handout-title">{{ __('parking_qr.guest_label') }}</h1>
                         <div class="handout-park">{{ $carPark->name }}</div>
+                        @if(filled($carPark->postcode))
+                            <div class="handout-postcode">{{ $carPark->postcode }}</div>
+                        @endif
                     </div>
                 </div>
                 <div class="hero-bottom">

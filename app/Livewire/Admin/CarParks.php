@@ -33,6 +33,8 @@ class CarParks extends Component
 
     public string $longitude = '';
 
+    public string $postcode = '';
+
     public string $color = '';
 
     public string $travelDirections = '';
@@ -124,6 +126,7 @@ class CarParks extends Component
             'location',
             'latitude',
             'longitude',
+            'postcode',
             'color',
             'travelDirections',
             'carParkId',
@@ -146,6 +149,7 @@ class CarParks extends Component
         $this->location = (string) ($carPark->location ?? '');
         $this->latitude = $carPark->latitude !== null ? (string) $carPark->latitude : '';
         $this->longitude = $carPark->longitude !== null ? (string) $carPark->longitude : '';
+        $this->postcode = (string) ($carPark->postcode ?? '');
         $this->color = (string) ($carPark->color ?? '');
         $this->travelDirections = (string) ($carPark->travel_directions ?? '');
         $this->existingMapImage = $carPark->map_image_path ?? '';
@@ -166,6 +170,7 @@ class CarParks extends Component
             'location' => 'nullable|string',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
+            'postcode' => 'nullable|string|max:32',
             'color' => 'nullable|string|max:50',
             'travelDirections' => 'nullable|string|max:2000',
             'mapImage' => 'nullable|image|max:10240',
@@ -180,6 +185,7 @@ class CarParks extends Component
             'location' => $this->location !== '' ? $this->location : null,
             'latitude' => $this->latitude !== '' ? (float) $this->latitude : null,
             'longitude' => $this->longitude !== '' ? (float) $this->longitude : null,
+            'postcode' => $this->postcode !== '' ? trim($this->postcode) : null,
             'color' => $this->color !== '' ? $this->color : null,
             'travel_directions' => $this->normalizedTravelDirections(),
         ];
@@ -221,6 +227,7 @@ class CarParks extends Component
             'location',
             'latitude',
             'longitude',
+            'postcode',
             'color',
             'travelDirections',
             'carParkId',

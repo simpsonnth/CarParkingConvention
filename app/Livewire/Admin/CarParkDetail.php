@@ -36,6 +36,8 @@ class CarParkDetail extends Component
 
     public string $longitude = '';
 
+    public string $postcode = '';
+
     public string $color = '';
 
     public string $travelDirections = '';
@@ -67,6 +69,7 @@ class CarParkDetail extends Component
         $this->location = (string) ($this->carPark->location ?? '');
         $this->latitude = $this->carPark->latitude !== null ? (string) $this->carPark->latitude : '';
         $this->longitude = $this->carPark->longitude !== null ? (string) $this->carPark->longitude : '';
+        $this->postcode = (string) ($this->carPark->postcode ?? '');
         $this->color = (string) ($this->carPark->color ?? '');
         $this->travelDirections = (string) ($this->carPark->travel_directions ?? '');
         $this->existingMapImage = $this->carPark->map_image_path ?? '';
@@ -87,6 +90,7 @@ class CarParkDetail extends Component
             'location' => 'nullable|string',
             'latitude' => 'nullable|numeric|between:-90,90',
             'longitude' => 'nullable|numeric|between:-180,180',
+            'postcode' => 'nullable|string|max:32',
             'color' => 'nullable|string|max:50',
             'travelDirections' => 'nullable|string|max:2000',
             'mapImage' => 'nullable|image|max:10240',
@@ -101,6 +105,7 @@ class CarParkDetail extends Component
             'location' => $this->location !== '' ? $this->location : null,
             'latitude' => $this->latitude !== '' ? (float) $this->latitude : null,
             'longitude' => $this->longitude !== '' ? (float) $this->longitude : null,
+            'postcode' => $this->postcode !== '' ? trim($this->postcode) : null,
             'color' => $this->color !== '' ? $this->color : null,
             'travel_directions' => $this->normalizedTravelDirections(),
         ];

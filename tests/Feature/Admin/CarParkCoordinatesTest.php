@@ -47,6 +47,7 @@ test('admin can create car park with latitude and longitude', function () {
         ->set('capacitySunday', 30)
         ->set('latitude', '51.4585056')
         ->set('longitude', '-0.3426077')
+        ->set('postcode', 'Isleworth TW7 7LA')
         ->call('save')
         ->assertHasNoErrors();
 
@@ -55,6 +56,7 @@ test('admin can create car park with latitude and longitude', function () {
     expect($park)->not->toBeNull()
         ->and($park->latitude)->toEqualWithDelta(51.4585056, 0.0000001)
         ->and($park->longitude)->toEqualWithDelta(-0.3426077, 0.0000001)
+        ->and($park->postcode)->toBe('Isleworth TW7 7LA')
         ->and($park->navigationUrl())->not->toBeNull();
 });
 

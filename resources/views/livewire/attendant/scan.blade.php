@@ -191,7 +191,34 @@
                         </div>
                     </div>
 
-                    @if(! empty($result['is_circuit_overseer']))
+                    @if(! empty($result['is_parked']))
+                        <div class="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-900/20 p-4 space-y-3">
+                            <div class="flex items-center gap-2 text-sm font-bold text-amber-800 dark:text-amber-200">
+                                <flux:icon name="truck" class="size-5" />
+                                Already parked
+                            </div>
+                            @if(! empty($result['clocked_in_at']))
+                                <div class="text-sm text-amber-900 dark:text-amber-100">
+                                    <span class="font-semibold">Clocked in at</span>
+                                    <span class="font-mono">{{ $result['clocked_in_at'] }}</span>
+                                    @if(! empty($result['parked_car_park_name']))
+                                        <span class="text-amber-700/80 dark:text-amber-200/80">· {{ $result['parked_car_park_name'] }}</span>
+                                    @endif
+                                </div>
+                            @endif
+                            @if(! empty($result['parked_pass_id']))
+                                <flux:button
+                                    type="button"
+                                    variant="danger"
+                                    wire:click="clockOut({{ (int) $result['parked_pass_id'] }})"
+                                    wire:confirm="Clock out this vehicle?"
+                                    class="w-full h-12 text-base font-bold rounded-xl"
+                                >
+                                    Clock out
+                                </flux:button>
+                            @endif
+                        </div>
+                    @elseif(! empty($result['is_circuit_overseer']))
                         <p class="text-center text-xs text-amber-600 dark:text-amber-400">
                             Circuit overseer ticket — use walk-in check-in if needed.
                         </p>

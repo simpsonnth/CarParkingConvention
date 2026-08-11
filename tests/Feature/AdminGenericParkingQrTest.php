@@ -143,6 +143,7 @@ test('admin can print visiting guest handout with map and navigation qr', functi
         'color' => '#0f766e',
         'latitude' => 51.44958137563192,
         'longitude' => -0.3505309665999623,
+        'postcode' => 'Twickenham TW2 7PS',
         'map_image_path' => '/storage/car-park-maps/guest-print.png',
         'travel_directions' => 'Enter via Gate C.',
     ]);
@@ -155,6 +156,7 @@ test('admin can print visiting guest handout with map and navigation qr', functi
         ->assertOk()
         ->assertSee(__('parking_qr.guest_label'))
         ->assertSee('Guest Print Park')
+        ->assertSee('Twickenham TW2 7PS')
         ->assertSee(__('parking_qr.guest_nav_label'))
         ->assertSee(urlencode($navUrl))
         ->assertSee('/storage/car-park-maps/guest-print.png')

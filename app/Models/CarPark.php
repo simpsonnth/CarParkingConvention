@@ -22,6 +22,7 @@ class CarPark extends Model
         'location',
         'latitude',
         'longitude',
+        'postcode',
         'map_image_path',
         'travel_directions',
         'color',

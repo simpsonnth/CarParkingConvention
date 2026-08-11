@@ -186,3 +186,36 @@ test('circuit overseer lookup shows details but cannot check in', function () {
     expect($results[0]['can_check_in'])->toBeFalse()
         ->and($results[0]['is_circuit_overseer'])->toBeTrue();
 });
+
+test('lookup shows clock out and clock-in time when vehicle is already parked', function () {
+    ['attendant' => $attendant, 'registration' => $registration, 'congregation' => $congregation, 'park' => $park] = createVehicleLookupFixtures();
+
+    $pass = \App\Models\ParkingPass::query()->create([
+        'congregation_id' => $congregation->id,
+        'car_park_id' => $park->id,
+        'status' => 'parked',
+        'vehicle_reg' => 'LK12PAR',
+        'contact_number' => '07700999888',
+        'scanned_at' => now()->setTime(14, 32),
+        'scanned_by_user_id' => $attendant->id,
+    ]);
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class)
+        ->set('lookupQuery', 'LK12PAR')
+        ->call('lookup')
+        ->assertSee('Already parked')
+        ->assertSee('Clocked in at')
+        ->assertSee('14:32')
+        ->assertSee('Clock out')
+        ->assertDontSee('Check in this vehicle')
+        ->call('clockOut', $pass->id)
+        ->assertSee('Check in this vehicle')
+        ->assertDontSee('Already parked');
+
+    expect($pass->fresh()->status)->toBe('left');
+
+    $results = app(LookupParkingRegistration::class)->execute('LK12PAR');
+    expect($results[0]['is_parked'])->toBeFalse()
+        ->and($results[0]['can_check_in'])->toBeTrue();
+});

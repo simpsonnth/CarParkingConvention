@@ -241,6 +241,15 @@
                         class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" />
                 </div>
 
+                <div class="space-y-2">
+                    <label for="postcode" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Postcode</label>
+                    <input type="text" wire:model="postcode" id="postcode" placeholder="e.g. Twickenham TW2 7PS"
+                        class="block w-full rounded-lg border-zinc-200 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200" />
+                    @error('postcode')
+                        <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div class="space-y-2">
                         <label for="latitude" class="block text-sm font-medium text-zinc-700 dark:text-zinc-300">Latitude</label>

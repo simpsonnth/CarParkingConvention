@@ -6,6 +6,7 @@ namespace App\Actions\Attendant;
 
 use App\Models\CarPark;
 use App\Models\Congregation;
+use App\Models\ParkingPass;
 use App\Models\ParkingRegistration;
 use App\Services\ParkingRegistrationDuplicateSignals;
 use Illuminate\Support\Collection;
@@ -34,7 +35,11 @@ final class LookupParkingRegistration
      *     car_park_name: ?string,
      *     car_park_color: ?string,
      *     car_park_is_individual: bool,
-     *     can_check_in: bool
+     *     can_check_in: bool,
+     *     is_parked: bool,
+     *     parked_pass_id: ?int,
+     *     clocked_in_at: ?string,
+     *     parked_car_park_name: ?string
      * }>
      */
     public function execute(string $query): array
@@ -44,11 +49,14 @@ final class LookupParkingRegistration
             return [];
         }
 
-        $registrations = $this->findRegistrations($term);
+        $registrations = $this->findRegistrations($term)->take(self::MAX_RESULTS);
+        $parkedByPlate = $this->findParkedPassesByPlate($registrations);
 
         return $registrations
-            ->take(self::MAX_RESULTS)
-            ->map(fn (ParkingRegistration $registration): array => $this->toResult($registration))
+            ->map(fn (ParkingRegistration $registration): array => $this->toResult(
+                $registration,
+                $this->parkedPassForRegistration($registration, $parkedByPlate),
+            ))
             ->values()
             ->all();
     }
@@ -82,6 +90,60 @@ final class LookupParkingRegistration
     }
 
     /**
+     * @param  Collection<int, ParkingRegistration>  $registrations
+     * @return array<string, ParkingPass>
+     */
+    private function findParkedPassesByPlate(Collection $registrations): array
+    {
+        $plates = $registrations
+            ->pluck('vehicle_registration')
+            ->map(fn ($plate) => $this->signals->normalizeVehicleRegistration(is_string($plate) ? $plate : null))
+            ->filter()
+            ->unique()
+            ->values();
+
+        if ($plates->isEmpty()) {
+            return [];
+        }
+
+        $passes = ParkingPass::query()
+            ->parkedToday()
+            ->with('carPark')
+            ->where(function ($query) use ($plates): void {
+                foreach ($plates as $plate) {
+                    $query->orWhereRaw(
+                        "REPLACE(UPPER(COALESCE(vehicle_reg, '')), ' ', '') = ?",
+                        [$plate]
+                    );
+                }
+            })
+            ->orderByDesc('scanned_at')
+            ->get();
+
+        $byPlate = [];
+        foreach ($passes as $pass) {
+            $key = $this->signals->normalizeVehicleRegistration($pass->vehicle_reg);
+            if ($key === null || isset($byPlate[$key])) {
+                continue;
+            }
+
+            $byPlate[$key] = $pass;
+        }
+
+        return $byPlate;
+    }
+
+    /**
+     * @param  array<string, ParkingPass>  $parkedByPlate
+     */
+    private function parkedPassForRegistration(ParkingRegistration $registration, array $parkedByPlate): ?ParkingPass
+    {
+        $key = $this->signals->normalizeVehicleRegistration($registration->vehicle_registration);
+
+        return $key !== null ? ($parkedByPlate[$key] ?? null) : null;
+    }
+
+    /**
      * @return array{
      *     id: int,
      *     ticket_number: string,
@@ -95,12 +157,18 @@ final class LookupParkingRegistration
      *     car_park_name: ?string,
      *     car_park_color: ?string,
      *     car_park_is_individual: bool,
-     *     can_check_in: bool
+     *     can_check_in: bool,
+     *     is_parked: bool,
+     *     parked_pass_id: ?int,
+     *     clocked_in_at: ?string,
+     *     parked_car_park_name: ?string
      * }
      */
-    private function toResult(ParkingRegistration $registration): array
+    private function toResult(ParkingRegistration $registration, ?ParkingPass $parkedPass): array
     {
         $effective = $this->resolveEffectiveCarPark($registration);
+        $isParked = $parkedPass !== null;
+        $isCircuitOverseer = (bool) $registration->is_circuit_overseer;
 
         return [
             'id' => $registration->id,
@@ -111,11 +179,15 @@ final class LookupParkingRegistration
             'email' => $registration->email,
             'congregation' => (string) $registration->congregation,
             'vehicle_type' => (string) ($registration->vehicle_type ?: 'car'),
-            'is_circuit_overseer' => (bool) $registration->is_circuit_overseer,
+            'is_circuit_overseer' => $isCircuitOverseer,
             'car_park_name' => $effective['name'],
             'car_park_color' => $effective['color'],
             'car_park_is_individual' => $effective['is_individual'],
-            'can_check_in' => ! (bool) $registration->is_circuit_overseer,
+            'can_check_in' => ! $isCircuitOverseer && ! $isParked,
+            'is_parked' => $isParked,
+            'parked_pass_id' => $parkedPass?->id,
+            'clocked_in_at' => $parkedPass?->scanned_at?->timezone(config('app.timezone'))->format('H:i'),
+            'parked_car_park_name' => $parkedPass?->carPark?->name,
         ];
     }
 
