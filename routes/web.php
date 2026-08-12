@@ -30,6 +30,12 @@ Route::get('/scan/walk-in', App\Livewire\Attendant\Scan::class)
 Route::get('/scan/{code?}', App\Livewire\Attendant\Scan::class)
     ->middleware(['auth', 'permission:scan.access'])
     ->name('attendant.scan');
+Route::get('/toolbox-talk', App\Livewire\Attendant\ToolboxTalkPicker::class)
+    ->middleware(['auth', 'permission:scan.access'])
+    ->name('attendant.toolbox-talk');
+Route::get('/toolbox-talk/present/{date}/{carPark?}', App\Livewire\Attendant\ToolboxTalkPresent::class)
+    ->middleware(['auth', 'permission:scan.access'])
+    ->name('attendant.toolbox-talk.present');
 
 Route::middleware('public.route')->group(function () {
     Route::get('/parking-registration', App\Livewire\Public\Register::class)->name('parking.register');
@@ -337,6 +343,9 @@ Route::middleware(['auth'])->group(function () {
         })
             ->middleware('permission:toolbox-feedback.view')
             ->name('toolbox-feedback.export');
+        Route::get('/toolbox-talks', App\Livewire\Admin\ToolboxTalks::class)
+            ->middleware('permission:toolbox-talks.view')
+            ->name('toolbox-talks');
         Route::get('/lessons-learned', App\Livewire\Admin\LessonsLearned::class)
             ->middleware('permission:lessons-learned.view')
             ->name('lessons-learned');

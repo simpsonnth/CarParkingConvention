@@ -3,6 +3,7 @@
 return [
     'title' => 'Toolbox talk feedback',
     'subtitle' => 'Share feedback and suggestions for the morning toolbox talks at the convention.',
+    'back_to_scan' => 'Back to scanner',
     'submitter_name' => 'Your name',
     'submitter_email' => 'Your email',
     'submitter_phone' => 'Your telephone number (optional)',

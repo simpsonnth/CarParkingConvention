@@ -3,6 +3,7 @@
 return [
     'title' => 'Lessons learned',
     'subtitle' => 'Share what worked well and what did not for next year\'s convention.',
+    'back_to_scan' => 'Back to scanner',
     'reporter_name' => 'Your name',
     'category' => 'Area',
     'category_parking' => 'Parking',

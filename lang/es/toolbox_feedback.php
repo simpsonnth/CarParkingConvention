@@ -3,6 +3,7 @@
 return [
     'title' => 'Comentarios para la charla matutina',
     'subtitle' => 'Comparta comentarios y sugerencias para las charlas matutinas de la convención.',
+    'back_to_scan' => 'Volver al escáner',
     'submitter_name' => 'Su nombre',
     'submitter_email' => 'Su correo electrónico',
     'submitter_phone' => 'Su teléfono (opcional)',

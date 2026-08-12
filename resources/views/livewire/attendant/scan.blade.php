@@ -306,6 +306,35 @@
             @endif
         </div>
 
+        <div class="bg-white dark:bg-zinc-800 p-6 rounded-2xl border border-zinc-200 dark:border-zinc-700 shadow-xl space-y-4">
+            <div class="text-center space-y-1">
+                <div class="text-xs font-bold uppercase tracking-widest text-zinc-400">{{ __('toolbox_talks.scan_resources') }}</div>
+            </div>
+            <div class="space-y-2">
+                <a
+                    href="{{ route('attendant.toolbox-talk') }}"
+                    class="flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3.5 text-base font-bold text-white hover:bg-indigo-500"
+                >
+                    <flux:icon name="presentation-chart-bar" class="size-5" />
+                    {{ __('toolbox_talks.scan_toolbox_talk') }}
+                </a>
+                <a
+                    href="{{ route('management.lessons-learned') }}"
+                    class="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-base font-bold text-zinc-800 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-700"
+                >
+                    <flux:icon name="light-bulb" class="size-5" />
+                    {{ __('toolbox_talks.scan_lessons') }}
+                </a>
+                <a
+                    href="{{ route('management.toolbox-feedback') }}"
+                    class="flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3.5 text-base font-bold text-zinc-800 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-700"
+                >
+                    <flux:icon name="chat-bubble-left-right" class="size-5" />
+                    {{ __('toolbox_talks.scan_feedback') }}
+                </a>
+            </div>
+        </div>
+
         <div class="space-y-6">
             {{-- Result Card --}}
             @if ($lastScanResult)

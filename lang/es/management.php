@@ -4,6 +4,7 @@ return [
     'nav_group' => 'Gestión',
     'nav_parking_incidents' => 'Casi accidentes y accidentes',
     'nav_toolbox_feedback' => 'Comentarios para charlas',
+    'nav_toolbox_talks' => 'Charlas toolbox',
     'nav_lessons_learned' => 'Lecciones aprendidas',
     'nav_ticket_change_requests' => 'Solicitudes de cambio de billete',
     'nav_hotel_guest_parking' => 'Aparcamiento huéspedes Radisson',

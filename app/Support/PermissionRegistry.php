@@ -83,6 +83,10 @@ final class PermissionRegistry
                 'toolbox-feedback.view',
                 'toolbox-feedback.manage',
             ],
+            'Toolbox Talks' => [
+                'toolbox-talks.view',
+                'toolbox-talks.manage',
+            ],
             'Lessons Learned' => [
                 'lessons-learned.view',
                 'lessons-learned.manage',

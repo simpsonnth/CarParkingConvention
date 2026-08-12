@@ -1,9 +1,15 @@
 <div class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-zinc-50 dark:bg-zinc-900">
     <div class="w-full max-w-3xl bg-white dark:bg-zinc-800 rounded-3xl shadow-xl p-4 sm:p-8 border border-zinc-100 dark:border-zinc-700">
-        <div class="flex flex-wrap justify-end gap-2 mb-6">
-            <a href="{{ route('locale.set', 'en') }}" class="text-sm font-medium px-3 py-1.5 rounded-lg {{ app()->getLocale() === 'en' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">English</a>
-            <a href="{{ route('locale.set', 'pt') }}" class="text-sm font-medium px-3 py-1.5 rounded-lg {{ app()->getLocale() === 'pt' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">Português</a>
-            <a href="{{ route('locale.set', 'es') }}" class="text-sm font-medium px-3 py-1.5 rounded-lg {{ app()->getLocale() === 'es' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">Español</a>
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-6">
+            <a href="{{ route('attendant.scan') }}"
+                class="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+                ← {{ __('lessons_learned.back_to_scan') }}
+            </a>
+            <div class="flex flex-wrap justify-end gap-2">
+                <a href="{{ route('locale.set', 'en') }}" class="text-sm font-medium px-3 py-1.5 rounded-lg {{ app()->getLocale() === 'en' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">English</a>
+                <a href="{{ route('locale.set', 'pt') }}" class="text-sm font-medium px-3 py-1.5 rounded-lg {{ app()->getLocale() === 'pt' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">Português</a>
+                <a href="{{ route('locale.set', 'es') }}" class="text-sm font-medium px-3 py-1.5 rounded-lg {{ app()->getLocale() === 'es' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300' : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200' }}">Español</a>
+            </div>
         </div>
 
         <div class="text-center mb-8">
@@ -18,6 +24,12 @@
                 <button type="button" wire:click="submitAnother" class="text-sm font-semibold text-green-800 dark:text-green-200 hover:underline">
                     {{ __('lessons_learned.submit_another') }}
                 </button>
+                <div class="mt-4">
+                    <a href="{{ route('attendant.scan') }}"
+                        class="inline-flex w-full items-center justify-center rounded-xl border border-green-300 bg-white px-4 py-3 text-sm font-bold text-green-800 hover:bg-green-50 dark:border-green-700 dark:bg-green-950/40 dark:text-green-200 dark:hover:bg-green-900/40">
+                        {{ __('lessons_learned.back_to_scan') }}
+                    </a>
+                </div>
             </div>
         @else
             <form wire:submit="submit" class="space-y-5">
@@ -78,5 +90,12 @@
                 </button>
             </form>
         @endif
+
+        <div class="mt-6 text-center">
+            <a href="{{ route('attendant.scan') }}"
+                class="inline-flex w-full items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm font-bold text-zinc-800 hover:bg-zinc-100 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-700">
+                {{ __('lessons_learned.back_to_scan') }}
+            </a>
+        </div>
     </div>
 </div>

@@ -4,6 +4,7 @@ return [
     'nav_group' => 'Management',
     'nav_parking_incidents' => 'Near misses & accidents',
     'nav_toolbox_feedback' => 'Toolbox feedback',
+    'nav_toolbox_talks' => 'Toolbox talks',
     'nav_lessons_learned' => 'Lessons learned',
     'nav_ticket_change_requests' => 'Ticket change requests',
     'nav_hotel_guest_parking' => 'Radisson hotel guest parking',

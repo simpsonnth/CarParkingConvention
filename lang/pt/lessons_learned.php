@@ -3,6 +3,7 @@
 return [
     'title' => 'Lições aprendidas',
     'subtitle' => 'Partilhe o que funcionou bem e o que não funcionou para a convenção do próximo ano.',
+    'back_to_scan' => 'Voltar ao scanner',
     'reporter_name' => 'O seu nome',
     'category' => 'Área',
     'category_parking' => 'Estacionamento',
