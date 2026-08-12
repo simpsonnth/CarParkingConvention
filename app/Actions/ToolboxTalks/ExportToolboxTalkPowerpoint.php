@@ -9,6 +9,7 @@ use Illuminate\Support\Carbon;
 use PhpOffice\PhpPresentation\DocumentLayout;
 use PhpOffice\PhpPresentation\IOFactory;
 use PhpOffice\PhpPresentation\PhpPresentation;
+use PhpOffice\PhpPresentation\Shape\RichText;
 use PhpOffice\PhpPresentation\Shape\RichText\Paragraph;
 use PhpOffice\PhpPresentation\Slide\Background\Color as BackgroundColor;
 use PhpOffice\PhpPresentation\Slide\Background\Image as BackgroundImage;
@@ -19,11 +20,13 @@ use PhpOffice\PhpPresentation\Style\Color;
 class ExportToolboxTalkPowerpoint
 {
     /** Layout coordinates assume 16:9 at 96dpi (~960×540). */
-    private const MARGIN_X = 56;
+    private const MARGIN_X = 48;
 
-    private const CONTENT_WIDTH = 848;
+    private const CONTENT_WIDTH = 864;
 
     private const SLIDE_HEIGHT = 540;
+
+    private const BOTTOM_MARGIN = 28;
 
     public function __construct(
         private readonly BuildToolboxTalkDeck $buildDeck,
@@ -136,43 +139,52 @@ class ExportToolboxTalkPowerpoint
         $slide = $presentation->createSlide();
         $this->applyDarkBackground($slide);
 
-        $y = 36;
+        $y = 28;
         $section = trim((string) ($slideData['section_label'] ?? ''));
         if ($section !== '') {
             $chip = $slide->createRichTextShape()
-                ->setHeight(30)
+                ->setHeight(26)
                 ->setWidth(self::CONTENT_WIDTH)
                 ->setOffsetX(self::MARGIN_X)
                 ->setOffsetY($y);
+            $this->lockTextBox($chip);
             $chipRun = $chip->createTextRun(mb_strtoupper($section));
             $chipRun->getFont()->setBold(true)->setSize(12)->setColor(new Color('FF5EEAD4'));
-            $y += 34;
+            $y += 28;
         }
 
+        $titleText = (string) $slideData['title'];
+        $titleLines = $this->estimateWrappedLines($titleText, 26, indentChars: 0);
+        $titleHeight = $titleLines >= 2 ? 70 : 44;
+
         $titleShape = $slide->createRichTextShape()
-            ->setHeight(78)
+            ->setHeight($titleHeight)
             ->setWidth(self::CONTENT_WIDTH)
             ->setOffsetX(self::MARGIN_X)
             ->setOffsetY($y);
+        $this->lockTextBox($titleShape);
         $titlePara = $titleShape->getActiveParagraph();
-        $titlePara->setLineSpacing(112);
-        $titlePara->setSpacingAfter(8);
-        $titleRun = $titleShape->createTextRun($slideData['title']);
+        $titlePara->setLineSpacing(110);
+        $titlePara->setSpacingAfter(0);
+        $titleRun = $titleShape->createTextRun($titleText);
         $titleRun->getFont()->setBold(true)->setSize(26)->setColor(new Color('FFFFFFFF'));
-        $y += 86;
+        $y += $titleHeight + 10;
 
         $bodyText = trim((string) ($slideData['body'] ?? ''));
         if ($bodyText === '') {
             return;
         }
 
+        $bodyHeight = max(80, self::SLIDE_HEIGHT - $y - self::BOTTOM_MARGIN);
         $body = $slide->createRichTextShape()
-            ->setHeight(max(100, self::SLIDE_HEIGHT - $y - 36))
+            ->setHeight($bodyHeight)
             ->setWidth(self::CONTENT_WIDTH)
             ->setOffsetX(self::MARGIN_X)
             ->setOffsetY($y);
+        $this->lockTextBox($body);
 
         $lines = $this->normalizeBodyLines($bodyText);
+        $layout = $this->pickBodyLayout($lines, $bodyHeight);
         $firstParagraph = true;
 
         foreach ($lines as $line) {
@@ -184,44 +196,144 @@ class ExportToolboxTalkPowerpoint
                 : $body->createParagraph();
             $firstParagraph = false;
 
-            $this->styleBodyParagraph($paragraph, $isBullet);
+            $this->styleBodyParagraph($paragraph, $isBullet, $layout);
 
-            $fontSize = $this->bodyFontSize(count($lines), $isBullet);
             $run = $paragraph->createTextRun($text);
             $run->getFont()
-                ->setSize($fontSize)
+                ->setSize($isBullet ? $layout['bulletFont'] : $layout['introFont'])
                 ->setColor(new Color($isBullet ? 'FFE2E8F0' : 'FFF8FAFC'));
         }
     }
 
-    private function bodyFontSize(int $lineCount, bool $isBullet): int
+    /**
+     * Prevent PhpPresentation's default spAutoFit from growing the box past the slide.
+     */
+    private function lockTextBox(RichText $shape): void
     {
-        if ($lineCount >= 8) {
-            return $isBullet ? 15 : 16;
-        }
-
-        if ($lineCount >= 5) {
-            return $isBullet ? 17 : 18;
-        }
-
-        return $isBullet ? 19 : 20;
+        $shape->setAutoFit(RichText::AUTOFIT_NORMAL);
+        $shape->setVerticalOverflow(RichText::OVERFLOW_CLIP);
+        $shape->setHorizontalOverflow(RichText::OVERFLOW_CLIP);
+        $shape->setInsetTop(0);
+        $shape->setInsetBottom(0);
+        $shape->setInsetLeft(0);
+        $shape->setInsetRight(0);
     }
 
-    private function styleBodyParagraph(Paragraph $paragraph, bool $isBullet): void
+    /**
+     * @param  list<array{bullet: bool, text: string}>  $lines
+     * @return array{bulletFont: int, introFont: int, lineSpacing: int, bulletBefore: int, bulletAfter: int, introBefore: int, introAfter: int}
+     */
+    private function pickBodyLayout(array $lines, int $availableHeightPx): array
+    {
+        $candidates = [
+            [
+                'bulletFont' => 18,
+                'introFont' => 19,
+                'lineSpacing' => 128,
+                'bulletBefore' => 7,
+                'bulletAfter' => 7,
+                'introBefore' => 2,
+                'introAfter' => 10,
+            ],
+            [
+                'bulletFont' => 16,
+                'introFont' => 17,
+                'lineSpacing' => 122,
+                'bulletBefore' => 5,
+                'bulletAfter' => 5,
+                'introBefore' => 2,
+                'introAfter' => 8,
+            ],
+            [
+                'bulletFont' => 15,
+                'introFont' => 16,
+                'lineSpacing' => 118,
+                'bulletBefore' => 4,
+                'bulletAfter' => 4,
+                'introBefore' => 1,
+                'introAfter' => 6,
+            ],
+            [
+                'bulletFont' => 14,
+                'introFont' => 15,
+                'lineSpacing' => 114,
+                'bulletBefore' => 3,
+                'bulletAfter' => 3,
+                'introBefore' => 1,
+                'introAfter' => 5,
+            ],
+            [
+                'bulletFont' => 13,
+                'introFont' => 14,
+                'lineSpacing' => 110,
+                'bulletBefore' => 2,
+                'bulletAfter' => 2,
+                'introBefore' => 0,
+                'introAfter' => 4,
+            ],
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($this->estimateBodyHeightPx($lines, $candidate) <= $availableHeightPx) {
+                return $candidate;
+            }
+        }
+
+        return $candidates[array_key_last($candidates)];
+    }
+
+    /**
+     * @param  list<array{bullet: bool, text: string}>  $lines
+     * @param  array{bulletFont: int, introFont: int, lineSpacing: int, bulletBefore: int, bulletAfter: int, introBefore: int, introAfter: int}  $layout
+     */
+    private function estimateBodyHeightPx(array $lines, array $layout): float
+    {
+        $height = 0.0;
+
+        foreach ($lines as $line) {
+            $font = $line['bullet'] ? $layout['bulletFont'] : $layout['introFont'];
+            $wrapped = $this->estimateWrappedLines(
+                $line['text'],
+                $font,
+                indentChars: $line['bullet'] ? 6 : 0,
+            );
+            $before = $line['bullet'] ? $layout['bulletBefore'] : $layout['introBefore'];
+            $after = $line['bullet'] ? $layout['bulletAfter'] : $layout['introAfter'];
+
+            // PhpPresentation spacing values are in points; convert with 96dpi.
+            $height += ($before + $after) * (96 / 72);
+            $height += $wrapped * $font * (96 / 72) * ($layout['lineSpacing'] / 100);
+        }
+
+        return $height;
+    }
+
+    private function estimateWrappedLines(string $text, int $fontPt, int $indentChars): int
+    {
+        // Approximate average glyph width for Calibri/Arial-like fonts.
+        $charsPerLine = (int) floor(self::CONTENT_WIDTH / max(1, $fontPt * 0.56)) - $indentChars;
+        $charsPerLine = max(18, $charsPerLine);
+
+        return max(1, (int) ceil(mb_strlen($text) / $charsPerLine));
+    }
+
+    /**
+     * @param  array{bulletFont: int, introFont: int, lineSpacing: int, bulletBefore: int, bulletAfter: int, introBefore: int, introAfter: int}  $layout
+     */
+    private function styleBodyParagraph(Paragraph $paragraph, bool $isBullet, array $layout): void
     {
         $paragraph->setLineSpacingMode(Paragraph::LINE_SPACING_MODE_PERCENT);
-        $paragraph->setLineSpacing(140);
-        $paragraph->setSpacingBefore($isBullet ? 10 : 6);
-        $paragraph->setSpacingAfter($isBullet ? 12 : 14);
+        $paragraph->setLineSpacing($layout['lineSpacing']);
+        $paragraph->setSpacingBefore($isBullet ? $layout['bulletBefore'] : $layout['introBefore']);
+        $paragraph->setSpacingAfter($isBullet ? $layout['bulletAfter'] : $layout['introAfter']);
 
         $alignment = $paragraph->getAlignment();
         $alignment->setHorizontal(Alignment::HORIZONTAL_LEFT);
         $alignment->setVertical(Alignment::VERTICAL_TOP);
 
         if ($isBullet) {
-            // Hanging indent so wrapped lines align under the text, not the bullet.
-            $alignment->setMarginLeft(36);
-            $alignment->setIndent(-22);
+            $alignment->setMarginLeft(28);
+            $alignment->setIndent(-18);
 
             $bullet = new Bullet;
             $bullet->setBulletType(Bullet::TYPE_BULLET)

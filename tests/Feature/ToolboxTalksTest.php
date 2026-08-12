@@ -204,7 +204,51 @@ test('admin can download toolbox talk powerpoint for a date', function () {
 
     expect($slideXml)->not->toBe('')
         ->and($slideXml)->toContain('<a:buChar')
-        ->and($slideXml)->toContain('marL="342900"');
+        ->and($slideXml)->toContain('<a:normAutofit')
+        ->and($slideXml)->toContain('marL="266700"');
+});
+
+test('powerpoint export shrinks dense slides so text stays in bounds', function () {
+    $date = now()->toDateString();
+    ToolboxTalk::firstOrCreateCore($date)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'Weather — Staying Safe On Duty',
+        'body' => "August sun and sudden rain — be ready for both.\n"
+            ."• Heat: wear a hat, keep fluids with you, and watch for dehydration and hot tarmac underfoot.\n"
+            ."• Unwell: if you feel dizzy, sick, or overheating, tell your Key Man immediately and step out of the sun.\n"
+            ."• Rain: keep umbrellas ready for guests, and make sure your hi-vis stays visible in poor light.\n"
+            .'• Whatever the weather, your hi-vis stays on — it is how drivers see you before they move.',
+    ]);
+
+    $pptx = app(\App\Actions\ToolboxTalks\ExportToolboxTalkPowerpoint::class)->handle($date, null);
+    $tmp = tempnam(sys_get_temp_dir(), 'pptx-dense-');
+    expect($tmp)->not->toBeFalse();
+    $path = $tmp.'.pptx';
+    @unlink($tmp);
+    file_put_contents($path, $pptx['content']);
+
+    $zip = new ZipArchive;
+    expect($zip->open($path))->toBeTrue();
+    $slideXml = '';
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $xml = $zip->getFromIndex($i);
+        $name = $zip->getNameIndex($i);
+        if (is_string($name) && str_contains($name, 'ppt/slides/slide') && is_string($xml) && str_contains($xml, 'hi-vis stays on')) {
+            $slideXml = $xml;
+            break;
+        }
+    }
+    $zip->close();
+    @unlink($path);
+
+    expect($slideXml)->not->toBe('')
+        ->and($slideXml)->toContain('<a:normAutofit')
+        ->and($slideXml)->not->toContain('<a:spAutoFit');
+
+    preg_match_all('/sz="(\d+)"/', $slideXml, $sizes);
+    $bodySizes = array_map(fn ($s) => ((int) $s) / 100, $sizes[1] ?? []);
+    // Dense content should drop below the roomy 18pt body size.
+    expect(min($bodySizes))->toBeLessThanOrEqual(16);
 });
 
 test('copy toolbox talk from date action copies matching deck key only', function () {
