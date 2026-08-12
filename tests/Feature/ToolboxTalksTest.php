@@ -168,7 +168,7 @@ test('admin can download toolbox talk powerpoint for a date', function () {
     ToolboxTalk::firstOrCreateCore($date)->slides()->create([
         'sort_order' => 0,
         'title' => 'Safety First',
-        'body' => "• Drink water\n• Stay shaded",
+        'body' => "Every space counts.\n• Drink water\n• Stay shaded",
     ]);
 
     $response = $this->actingAs($admin)
@@ -177,6 +177,34 @@ test('admin can download toolbox talk powerpoint for a date', function () {
     $response->assertOk();
     expect($response->headers->get('content-disposition'))->toContain('.pptx')
         ->and($response->headers->get('content-type'))->toContain('presentationml.presentation');
+
+    $tmp = tempnam(sys_get_temp_dir(), 'pptx-');
+    expect($tmp)->not->toBeFalse();
+    $pptxPath = $tmp.'.pptx';
+    @unlink($tmp);
+    file_put_contents($pptxPath, $response->streamedContent());
+
+    $zip = new ZipArchive;
+    expect($zip->open($pptxPath))->toBeTrue();
+
+    $slideXml = '';
+    for ($i = 0; $i < $zip->numFiles; $i++) {
+        $name = $zip->getNameIndex($i);
+        if (! is_string($name) || ! str_starts_with($name, 'ppt/slides/slide') || ! str_ends_with($name, '.xml')) {
+            continue;
+        }
+        $xml = $zip->getFromIndex($i);
+        if (is_string($xml) && str_contains($xml, 'Drink water')) {
+            $slideXml = $xml;
+            break;
+        }
+    }
+    $zip->close();
+    @unlink($pptxPath);
+
+    expect($slideXml)->not->toBe('')
+        ->and($slideXml)->toContain('<a:buChar')
+        ->and($slideXml)->toContain('marL="342900"');
 });
 
 test('copy toolbox talk from date action copies matching deck key only', function () {
