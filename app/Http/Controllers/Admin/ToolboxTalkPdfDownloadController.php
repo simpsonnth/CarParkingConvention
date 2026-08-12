@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin;
 
-use App\Actions\ToolboxTalks\ExportToolboxTalkPowerpoint;
+use App\Actions\ToolboxTalks\ExportToolboxTalkPdf;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class ToolboxTalkPptxDownloadController
+class ToolboxTalkPdfDownloadController
 {
     public function __invoke(
         Request $request,
         string $date,
-        ExportToolboxTalkPowerpoint $export,
+        ExportToolboxTalkPdf $export,
     ): StreamedResponse {
         abort_unless($request->user()?->can('toolbox-talks.view'), 403);
 
@@ -25,7 +25,7 @@ class ToolboxTalkPptxDownloadController
             },
             $result['filename'],
             [
-                'Content-Type' => 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'Content-Type' => 'application/pdf',
             ]
         );
     }

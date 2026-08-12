@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Actions\ToolboxTalks;
 
-use App\Models\CarPark;
 use Illuminate\Support\Carbon;
 use PhpOffice\PhpPresentation\DocumentLayout;
 use PhpOffice\PhpPresentation\IOFactory;
@@ -34,18 +33,20 @@ class ExportToolboxTalkPowerpoint
     ) {}
 
     /**
+     * Full briefing: title + Core + every car park (cover dividers + add-ons).
+     *
      * @return array{filename: string, content: string}
      */
-    public function handle(Carbon|string $date, ?int $carParkId = null): array
+    public function handle(Carbon|string $date): array
     {
         $talkDate = Carbon::parse($date)->toDateString();
-        $deck = $this->buildDeck->handle($talkDate, $carParkId);
+        $deck = $this->buildDeck->handleFull($talkDate);
 
         $presentation = new PhpPresentation();
         $presentation->getLayout()->setDocumentLayout(DocumentLayout::LAYOUT_SCREEN_16X9);
         $presentation->removeSlideByIndex(0);
 
-        $this->addTitleSlide($presentation, $talkDate, $carParkId);
+        $this->addTitleSlide($presentation, $talkDate);
 
         foreach ($deck as $slideData) {
             if (($slideData['type'] ?? 'content') === 'cover') {
@@ -84,55 +85,46 @@ class ExportToolboxTalkPowerpoint
             throw new \RuntimeException('Unable to read generated PowerPoint file.');
         }
 
-        $suffix = $carParkId !== null ? '-park-'.$carParkId : '-core';
-
         return [
-            'filename' => 'toolbox-talk-'.$talkDate.$suffix.'.pptx',
+            'filename' => 'toolbox-talk-'.$talkDate.'-full.pptx',
             'content' => $content,
         ];
     }
 
-    private function addTitleSlide(PhpPresentation $presentation, string $talkDate, ?int $carParkId): void
+    private function addTitleSlide(PhpPresentation $presentation, string $talkDate): void
     {
         $slide = $presentation->createSlide();
-        $this->applyCoverBackground($slide, $carParkId);
-
-        $parkName = $carParkId !== null
-            ? CarPark::query()->whereKey($carParkId)->value('name')
-            : null;
-        $kickerText = is_string($parkName) && $parkName !== ''
-            ? mb_strtoupper($parkName)
-            : mb_strtoupper(__('toolbox_talks.section_core'));
+        $this->applyCoverBackground($slide, null);
 
         $kicker = $slide->createRichTextShape()
             ->setHeight(36)
             ->setWidth(self::CONTENT_WIDTH)
             ->setOffsetX(self::MARGIN_X)
-            ->setOffsetY(150);
+            ->setOffsetY(140);
         $this->lockTextBox($kicker);
         $kicker->getActiveParagraph()->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $kickerRun = $kicker->createTextRun($kickerText);
+        $kickerRun = $kicker->createTextRun(mb_strtoupper(__('toolbox_talks.section_core')));
         $kickerRun->getFont()->setBold(true)->setSize(14)->setColor(new Color('FF5EEAD4'));
 
         $title = $slide->createRichTextShape()
             ->setHeight(120)
             ->setWidth(self::CONTENT_WIDTH)
             ->setOffsetX(self::MARGIN_X)
-            ->setOffsetY(200);
+            ->setOffsetY(190);
         $this->lockTextBox($title);
         $title->getActiveParagraph()->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $run = $title->createTextRun(__('toolbox_talks.pptx_title'));
         $run->getFont()->setBold(true)->setSize(36)->setColor(new Color('FFFFFFFF'));
 
         $sub = $slide->createRichTextShape()
-            ->setHeight(60)
+            ->setHeight(80)
             ->setWidth(self::CONTENT_WIDTH)
             ->setOffsetX(self::MARGIN_X)
-            ->setOffsetY(340);
+            ->setOffsetY(330);
         $this->lockTextBox($sub);
         $sub->getActiveParagraph()->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $subRun = $sub->createTextRun(__('toolbox_talks.pptx_subtitle', ['date' => $talkDate]));
-        $subRun->getFont()->setSize(20)->setColor(new Color('FFCCFBF1'));
+        $subRun = $sub->createTextRun(__('toolbox_talks.pptx_full_subtitle', ['date' => $talkDate]));
+        $subRun->getFont()->setSize(18)->setColor(new Color('FFCCFBF1'));
     }
 
     /**

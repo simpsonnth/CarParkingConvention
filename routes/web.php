@@ -347,9 +347,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/toolbox-talks', App\Livewire\Admin\ToolboxTalks::class)
             ->middleware('permission:toolbox-talks.view')
             ->name('toolbox-talks');
-        Route::get('/toolbox-talks/download-pptx/{date}/{carPark?}', App\Http\Controllers\Admin\ToolboxTalkPptxDownloadController::class)
+        Route::get('/toolbox-talks/download-pptx/{date}', App\Http\Controllers\Admin\ToolboxTalkPptxDownloadController::class)
             ->middleware('permission:toolbox-talks.view')
             ->name('toolbox-talks.download-pptx');
+        Route::get('/toolbox-talks/download-pdf/{date}', App\Http\Controllers\Admin\ToolboxTalkPdfDownloadController::class)
+            ->middleware('permission:toolbox-talks.view')
+            ->name('toolbox-talks.download-pdf');
         Route::get('/lessons-learned', App\Livewire\Admin\LessonsLearned::class)
             ->middleware('permission:lessons-learned.view')
             ->name('lessons-learned');

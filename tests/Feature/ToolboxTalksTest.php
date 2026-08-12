@@ -180,15 +180,55 @@ test('copy action replaces slides when confirmed via admin overwrite flow', func
         ->assertSet('slides.0.title', 'From Yesterday');
 });
 
+test('full download deck includes core and every car park with cover dividers', function () {
+    $date = now()->toDateString();
+    $west = makeCarPark('West Full');
+    $north = makeCarPark('North Full');
+
+    ToolboxTalk::firstOrCreateCore($date)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'Core Safety',
+        'body' => 'Shared',
+    ]);
+    ToolboxTalk::firstOrCreatePark($date, $west->id)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'West Gate',
+        'body' => 'West note',
+    ]);
+    ToolboxTalk::firstOrCreatePark($date, $north->id)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'North Stack',
+        'body' => 'North note',
+    ]);
+
+    $deck = app(BuildToolboxTalkDeck::class)->handleFull($date);
+    $titles = array_column($deck, 'title');
+
+    expect($titles)->toContain('Core Safety')
+        ->and($titles)->toContain('West Full')
+        ->and($titles)->toContain('West Gate')
+        ->and($titles)->toContain('North Full')
+        ->and($titles)->toContain('North Stack');
+
+    $covers = array_values(array_filter($deck, fn (array $s): bool => ($s['type'] ?? '') === 'cover'));
+    expect($covers)->toHaveCount(2);
+});
+
 test('admin can download toolbox talk powerpoint for a date', function () {
     $admin = User::factory()->create();
     $admin->givePermissionTo('toolbox-talks.view');
     $date = now()->toDateString();
+    $park = makeCarPark('Download Park');
 
     ToolboxTalk::firstOrCreateCore($date)->slides()->create([
         'sort_order' => 0,
         'title' => 'Safety First',
         'body' => "Every space counts.\n• Drink water\n• Stay shaded",
+    ]);
+    ToolboxTalk::firstOrCreatePark($date, $park->id)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'Park Note',
+        'body' => 'Local tip',
     ]);
 
     $response = $this->actingAs($admin)
@@ -196,6 +236,7 @@ test('admin can download toolbox talk powerpoint for a date', function () {
 
     $response->assertOk();
     expect($response->headers->get('content-disposition'))->toContain('.pptx')
+        ->and($response->headers->get('content-disposition'))->toContain('-full.pptx')
         ->and($response->headers->get('content-type'))->toContain('presentationml.presentation');
 
     $tmp = tempnam(sys_get_temp_dir(), 'pptx-');
@@ -207,6 +248,7 @@ test('admin can download toolbox talk powerpoint for a date', function () {
     $zip = new ZipArchive;
     expect($zip->open($pptxPath))->toBeTrue();
 
+    $allXml = '';
     $slideXml = '';
     for ($i = 0; $i < $zip->numFiles; $i++) {
         $name = $zip->getNameIndex($i);
@@ -214,9 +256,12 @@ test('admin can download toolbox talk powerpoint for a date', function () {
             continue;
         }
         $xml = $zip->getFromIndex($i);
-        if (is_string($xml) && str_contains($xml, 'Drink water')) {
+        if (! is_string($xml)) {
+            continue;
+        }
+        $allXml .= $xml;
+        if (str_contains($xml, 'Drink water')) {
             $slideXml = $xml;
-            break;
         }
     }
     $zip->close();
@@ -225,7 +270,37 @@ test('admin can download toolbox talk powerpoint for a date', function () {
     expect($slideXml)->not->toBe('')
         ->and($slideXml)->toContain('<a:buChar')
         ->and($slideXml)->toContain('<a:normAutofit')
-        ->and($slideXml)->toContain('marL="266700"');
+        ->and($slideXml)->toContain('marL="266700"')
+        ->and($allXml)->toContain('Download Park')
+        ->and($allXml)->toContain('Park Note');
+});
+
+test('admin can download toolbox talk pdf for a date', function () {
+    $admin = User::factory()->create();
+    $admin->givePermissionTo('toolbox-talks.view');
+    $date = now()->toDateString();
+    $park = makeCarPark('Pdf Park');
+
+    ToolboxTalk::firstOrCreateCore($date)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'Hydration',
+        'body' => "Stay cool.\n• Drink water",
+    ]);
+    ToolboxTalk::firstOrCreatePark($date, $park->id)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'Pdf Gate',
+        'body' => 'Gate note',
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.toolbox-talks.download-pdf', ['date' => $date]));
+
+    $response->assertOk();
+    $content = $response->streamedContent();
+    expect($response->headers->get('content-disposition'))->toContain('.pdf')
+        ->and($response->headers->get('content-type'))->toContain('application/pdf')
+        ->and(str_starts_with($content, '%PDF'))->toBeTrue()
+        ->and(strlen($content))->toBeGreaterThan(1000);
 });
 
 test('powerpoint export shrinks dense slides so text stays in bounds', function () {

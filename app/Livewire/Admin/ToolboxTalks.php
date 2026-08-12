@@ -279,19 +279,16 @@ class ToolboxTalks extends Component
             return null;
         }
 
-        if ($this->activeTab === 'core') {
-            return route('admin.toolbox-talks.download-pptx', ['date' => $this->talkDate]);
-        }
+        return route('admin.toolbox-talks.download-pptx', ['date' => $this->talkDate]);
+    }
 
-        $parkId = (int) $this->activeTab;
-        if ($parkId < 1) {
+    public function downloadPdfUrl(): ?string
+    {
+        if ($this->talkDate === '' || strtotime($this->talkDate) === false) {
             return null;
         }
 
-        return route('admin.toolbox-talks.download-pptx', [
-            'date' => $this->talkDate,
-            'carPark' => $parkId,
-        ]);
+        return route('admin.toolbox-talks.download-pdf', ['date' => $this->talkDate]);
     }
 
     private function loadSlides(): void
@@ -338,6 +335,7 @@ class ToolboxTalks extends Component
             'yesterdaySlides' => $this->showYesterday ? $this->yesterdaySlides() : [],
             'presentUrl' => $this->presentUrl(),
             'downloadPptxUrl' => $this->downloadPptxUrl(),
+            'downloadPdfUrl' => $this->downloadPdfUrl(),
         ]);
     }
 }
