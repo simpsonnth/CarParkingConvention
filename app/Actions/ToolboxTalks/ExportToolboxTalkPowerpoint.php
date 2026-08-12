@@ -194,56 +194,58 @@ class ExportToolboxTalkPowerpoint
         $slide = $presentation->createSlide();
         $this->applyJhaBackground($slide);
 
-        $y = 18;
+        $marginX = 28;
+        $contentWidth = 960 - ($marginX * 2);
+
+        $y = 10;
         $section = trim((string) ($slideData['section_label'] ?? ''));
         if ($section !== '') {
             $chip = $slide->createRichTextShape()
-                ->setHeight(20)
-                ->setWidth(self::CONTENT_WIDTH)
-                ->setOffsetX(self::MARGIN_X)
+                ->setHeight(14)
+                ->setWidth($contentWidth)
+                ->setOffsetX($marginX)
                 ->setOffsetY($y);
             $this->lockTextBox($chip);
             $chipRun = $chip->createTextRun(mb_strtoupper($section));
-            $chipRun->getFont()->setBold(true)->setSize(10)->setColor(new Color('FF92400E'));
-            $y += 20;
+            $chipRun->getFont()->setBold(true)->setSize(8)->setColor(new Color('FF92400E'));
+            $y += 14;
         }
 
         $titleText = (string) $slideData['title'];
-        $titleLines = $this->estimateWrappedLines($titleText, 16, indentChars: 0);
-        $titleHeight = $titleLines >= 2 ? 42 : 28;
+        $titleLines = $this->estimateWrappedLines($titleText, 12, indentChars: 0);
+        $titleHeight = $titleLines >= 2 ? 30 : 18;
 
         $titleShape = $slide->createRichTextShape()
             ->setHeight($titleHeight)
-            ->setWidth(self::CONTENT_WIDTH)
-            ->setOffsetX(self::MARGIN_X)
+            ->setWidth($contentWidth)
+            ->setOffsetX($marginX)
             ->setOffsetY($y);
         $this->lockTextBox($titleShape);
         $titlePara = $titleShape->getActiveParagraph();
-        $titlePara->setLineSpacing(108);
+        $titlePara->setLineSpacing(100);
         $titlePara->setSpacingAfter(0);
         $titleRun = $titleShape->createTextRun($titleText);
-        $titleRun->getFont()->setBold(true)->setSize(16)->setColor(new Color('FF1C1917'));
-        $y += $titleHeight + 6;
+        $titleRun->getFont()->setBold(true)->setSize(12)->setColor(new Color('FF1C1917'));
+        $y += $titleHeight + 4;
 
         $bodyText = trim((string) ($slideData['body'] ?? ''));
         if ($bodyText === '') {
             return;
         }
 
-        $bodyHeight = max(80, self::SLIDE_HEIGHT - $y - 18);
+        $bodyHeight = max(80, self::SLIDE_HEIGHT - $y - 10);
         $body = $slide->createRichTextShape()
             ->setHeight($bodyHeight)
-            ->setWidth(self::CONTENT_WIDTH)
-            ->setOffsetX(self::MARGIN_X)
+            ->setWidth($contentWidth)
+            ->setOffsetX($marginX)
             ->setOffsetY($y);
         $this->lockTextBox($body);
 
-        $lines = $this->normalizeBodyLines($bodyText);
+        $lines = $this->normalizeJhaBodyLines($bodyText);
         $layout = $this->pickJhaBodyLayout($lines, $bodyHeight);
         $firstParagraph = true;
 
         foreach ($lines as $line) {
-            $isBullet = $line['bullet'];
             $text = $line['text'];
 
             $paragraph = $firstParagraph
@@ -251,12 +253,12 @@ class ExportToolboxTalkPowerpoint
                 : $body->createParagraph();
             $firstParagraph = false;
 
-            $this->styleJhaBodyParagraph($paragraph, $isBullet, $layout);
+            $this->styleJhaBodyParagraph($paragraph, true, $layout);
 
             $run = $paragraph->createTextRun($text);
             $run->getFont()
-                ->setSize($isBullet ? $layout['bulletFont'] : $layout['introFont'])
-                ->setColor(new Color($isBullet ? 'FF292524' : 'FF1C1917'));
+                ->setSize($layout['bulletFont'])
+                ->setColor(new Color('FF1C1917'));
         }
     }
 
@@ -531,40 +533,31 @@ class ExportToolboxTalkPowerpoint
     {
         $candidates = [
             [
-                'bulletFont' => 12,
-                'introFont' => 12,
-                'lineSpacing' => 108,
-                'bulletBefore' => 1,
-                'bulletAfter' => 1,
-                'introBefore' => 0,
-                'introAfter' => 3,
-            ],
-            [
-                'bulletFont' => 11,
-                'introFont' => 11,
-                'lineSpacing' => 104,
-                'bulletBefore' => 1,
-                'bulletAfter' => 1,
-                'introBefore' => 0,
-                'introAfter' => 2,
-            ],
-            [
-                'bulletFont' => 10,
-                'introFont' => 10,
+                'bulletFont' => 9,
+                'introFont' => 9,
                 'lineSpacing' => 100,
                 'bulletBefore' => 0,
                 'bulletAfter' => 1,
                 'introBefore' => 0,
-                'introAfter' => 2,
+                'introAfter' => 1,
             ],
             [
-                'bulletFont' => 9,
-                'introFont' => 9,
+                'bulletFont' => 8,
+                'introFont' => 8,
                 'lineSpacing' => 98,
                 'bulletBefore' => 0,
                 'bulletAfter' => 0,
                 'introBefore' => 0,
-                'introAfter' => 1,
+                'introAfter' => 0,
+            ],
+            [
+                'bulletFont' => 7,
+                'introFont' => 7,
+                'lineSpacing' => 96,
+                'bulletBefore' => 0,
+                'bulletAfter' => 0,
+                'introBefore' => 0,
+                'introAfter' => 0,
             ],
         ];
 
@@ -592,8 +585,9 @@ class ExportToolboxTalkPowerpoint
         $alignment->setVertical(Alignment::VERTICAL_TOP);
 
         if ($isBullet) {
-            $alignment->setMarginLeft(18);
-            $alignment->setIndent(-12);
+            // Tight hanging indent so wrapped lines line up under the text, not the bullet.
+            $alignment->setMarginLeft(14);
+            $alignment->setIndent(-10);
 
             $bullet = new Bullet;
             $bullet->setBulletType(Bullet::TYPE_BULLET)
@@ -605,6 +599,37 @@ class ExportToolboxTalkPowerpoint
             $alignment->setIndent(0);
             $paragraph->setBulletStyle((new Bullet)->setBulletType(Bullet::TYPE_NONE));
         }
+    }
+
+    /**
+     * JHA bodies are always bullet lists; strip markers and keep one bullet per logical line.
+     *
+     * @return list<array{bullet: bool, text: string}>
+     */
+    private function normalizeJhaBodyLines(string $bodyText): array
+    {
+        $raw = preg_split("/\R/u", $bodyText) ?: [];
+        $lines = [];
+
+        foreach ($raw as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+
+            $text = preg_replace('/^(?:[•\-\*\x{00B7}]|\d+[\.\)])(?:\s+|$)/u', '', $line) ?? $line;
+            $text = trim($text);
+            if ($text === '') {
+                continue;
+            }
+
+            $lines[] = [
+                'bullet' => true,
+                'text' => $text,
+            ];
+        }
+
+        return $lines;
     }
 
     private function applyCoverBackground($slide, ?int $carParkId, ?string $cover = null): void

@@ -10,32 +10,22 @@ return [
             [
                 'title' => 'AM & PM Security Sweep of Car Parks — Suspicious objects/Packages/Items/Persons',
                 'body' =>
-                    '• Each morning before car parks are open to delegates (after toolbox talk),
-'.
-                    '• 2 assigned captains
-'.
-                    '• should do a sweep of the car park area. Any suspicious/dangerous items should be reported to the Key man on duty that morning. Assistant Parking Overseers/Parking overseer to be contacted by Key Man. Contact will then be made to Twickenham Security & Nathan Sanderson (Convention Committee overseer)
+                    '• Each morning before car parks are open to delegates (after toolbox talk), 2 assigned captains should do a sweep of the car park area. Any suspicious/dangerous items should be reported to the Key man on duty that morning. Assistant Parking Overseers/Parking overseer to be contacted by Key Man. Contact will then be made to Twickenham Security & Nathan Sanderson (Convention Committee overseer)
 '.
                     '• Vehicle Fire
 '.
                     '• Harm to persons or property
 '.
-                    '• In the event of a fire the following steps should be taken (DO NOT ATTEMPT TO MANAGE FIRE YOURSELF, DIRECT ALL PERSONS AWAY FROM FIRE, AT LEAST 100M). 1. Call 999 and request Fire brigade - Give Location. 2. Inform Key men, Assistant Overseer, Overseer and Nathan Sanderson. Inform Twickenham Security
-'.
-                    '• by physically walking over to the North car office',
+                    '• In the event of a fire the following steps should be taken (DO NOT ATTEMPT TO MANAGE FIRE YOURSELF, DIRECT ALL PERSONS AWAY FROM FIRE, AT LEAST 100M). 1. Call 999 and request Fire brigade - Give Location. 2. Inform Key men, Assistant Overseer, Overseer and Nathan Sanderson. Inform Twickenham Security by physically walking over to the North car office',
             ],
             [
                 'title' => 'In these emergency cases, it should be escalated quickly in the following chain:',
                 'body' =>
                     '• 1 and 2: Channel 8, West Car Park: Channel 9, North: Channel 10. Once radioed in the Overseer and his assistants will escalate quickly through the chain. The Radio Directory for Twickenham has the radio call codes to be used.
 '.
-                    '• Congregation point to emergencies will be the following:
+                    '• Congregation point to emergencies will be the following: 1 & 2 – Stoop
 '.
-                    '• 1 & 2 – Stoop
-'.
-                    '• North:
-'.
-                    '• Access Storage Unit
+                    '• North: Access Storage Unit
 '.
                     '• West: Entrance South Entrance Statues in front of hotel',
             ],
@@ -82,21 +72,11 @@ return [
 '.
                     '• Delegates being struck by a vehicle is a high risk.
 '.
-                    '• Delegates to be held until it is safe to cross
+                    '• Delegates to be held until it is safe to cross & directed to pedestrian entrance to stadium.
 '.
-                    '• & directed to pedestrian entrance to stadium.
+                    '• The stopping of persons is preferred to the stopping of vehicles entering to give way to persons as this could cause congestion of vehicles on the roadway therefore creating hazards for drivers.
 '.
-                    '• The stopping of persons is preferred to the stopping of
-'.
-                    '• vehicles entering to give way to persons as this could cause
-'.
-                    '• congestion of vehicles on the roadway therefore creating
-'.
-                    '• hazards for drivers.
-'.
-                    '• 3x Parking attendants to be at the entrance to
-'.
-                    '• Manage delegates.
+                    '• 3x Parking attendants to be at the entrance to Manage delegates.
 '.
                     '• Cars entering car park
 '.
@@ -104,20 +84,12 @@ return [
 '.
                     '• 5mph & Slow traffic signs to be installed at the entrance and throughout the car park.
 '.
-                    '• Trained parking attendants to use clear hand signals to ‘slow down’. (extends one or both arms to the side, parallel to the shoulders,
-'.
-                    '• and slowly moves them up and down. The palms
-'.
-                    '• of the hands face down.',
+                    '• Trained parking attendants to use clear hand signals to ‘slow down’. (extends one or both arms to the side, parallel to the shoulders, and slowly moves them up and down. The palms of the hands face down.',
             ],
             [
                 'title' => '2. Cars entering car park (Continued)',
                 'body' =>
-                    '• The motions should be slow, distinct,
-'.
-                    '• and deliberate. Hi visibility Clothing to be worn by all parking
-'.
-                    '• attendants at all times to enable drivers to see those giving instructions.
+                    '• The motions should be slow, distinct, and deliberate. Hi visibility Clothing to be worn by all parking attendants at all times to enable drivers to see those giving instructions.
 '.
                     '• Barriers, Cones, barrier tape and signs to be used to clearly identify and separate delegates and vehicles.
 '.
@@ -207,21 +179,11 @@ return [
 '.
                     '• Arrival of Coaches to car park
 '.
-                    '• Delegates to be held until it is safe to cross
+                    '• Delegates to be held until it is safe to cross & directed to pedestrian entrance to stadium.
 '.
-                    '• & directed to pedestrian entrance to stadium.
+                    '• The stopping of persons is preferred to the stopping of coaches entering to give way to persons as this could cause congestion of vehicles on the roadway therefore creating hazards for drivers.
 '.
-                    '• The stopping of persons is preferred to the stopping of
-'.
-                    '• coaches entering to give way to persons as this could cause
-'.
-                    '• congestion of vehicles on the roadway therefore creating
-'.
-                    '• hazards for drivers.
-'.
-                    '• 3x Parking attendants to be at the entrance to
-'.
-                    '• Manage delegates.
+                    '• 3x Parking attendants to be at the entrance to Manage delegates.
 '.
                     '• Coaches entering car park
 '.
@@ -229,22 +191,14 @@ return [
 '.
                     '• 5mph & Slow traffic signs to be installed at the entrance and throughout the car park.
 '.
-                    '• Trained parking attendants to use clear hand signals to ‘slow down’. (extends one or both arms to the side, parallel to the shoulders,
-'.
-                    '• and slowly moves them up and down. The palms
-'.
-                    '• of the hands face down.',
+                    '• Trained parking attendants to use clear hand signals to ‘slow down’. (extends one or both arms to the side, parallel to the shoulders, and slowly moves them up and down. The palms of the hands face down.',
             ],
             [
                 'title' => '2. Coaches entering car park (Continued)',
                 'body' =>
                     '• Delegates/Pedestrians/parking attendants being struck inside car park
 '.
-                    '• The motions should be slow, distinct,
-'.
-                    '• and deliberate. Hi visibility Clothing to be worn by all parking
-'.
-                    '• attendants at all times to enable drivers to see those giving instructions.
+                    '• The motions should be slow, distinct, and deliberate. Hi visibility Clothing to be worn by all parking attendants at all times to enable drivers to see those giving instructions.
 '.
                     '• Barriers, Cones, barrier tape and signs to be used to clearly identify and separate delegates and vehicles.
 '.
@@ -273,15 +227,9 @@ return [
 '.
                     '• That separates them from moving vehicles.
 '.
-                    '• Assigned Coach Captain / Spotter must be present for any reversing
+                    '• Assigned Coach Captain / Spotter must be present for any reversing maneuvers
 '.
-                    '• maneuvers
-'.
-                    '• . The risk goes up significantly on reversing. The spotter must maintain visual contact with the driver at all times and use clear hand signals. Pedestrians must be held at a safe distance behind barriers until the
-'.
-                    '• maneuver
-'.
-                    '• is complete.
+                    '• . The risk goes up significantly on reversing. The spotter must maintain visual contact with the driver at all times and use clear hand signals. Pedestrians must be held at a safe distance behind barriers until the maneuver is complete.
 '.
                     '• Delegates exiting coach to get belongings and make their way to stadium. Cars Parking may not realise doors are opening. Delegates could walk out as cars/
 '.
@@ -434,9 +382,7 @@ return [
 '.
                     '• The stopping of delegates to allow vehicles to enter the car park is non negotiable. Cars travelling on the A road will need to enter safely and without delay in order to prevent forcing other road uses to slow down in an unsafe manner.
 '.
-                    '• 3x Parking attendants to be at the entrance to
-'.
-                    '• Manage delegates on footpath.
+                    '• 3x Parking attendants to be at the entrance to Manage delegates on footpath.
 '.
                     '• 4x Parking attendants to be inside the car park at around 20m from entrance to direct cars to area they will be parked for the day.',
             ],
@@ -449,19 +395,13 @@ return [
 '.
                     '• Trained parking attendants to use clear hand signals to ‘slow down’.
 '.
-                    '• (extends one or both arms to the side, parallel to the shoulders,
-'.
-                    '• and slowly moves them up and down. The palms
-'.
-                    '• of the hands face down
+                    '• (extends one or both arms to the side, parallel to the shoulders, and slowly moves them up and down. The palms of the hands face down
 '.
                     '• .
 '.
                     '• The motions should be slow, distinct, and deliberate)
 '.
-                    '• Hi visibility Clothing to be worn by all parking
-'.
-                    '• attendants at all times to enable drivers to see those giving instructions.
+                    '• Hi visibility Clothing to be worn by all parking attendants at all times to enable drivers to see those giving instructions.
 '.
                     '• Barriers, Cones, barrier tape and signs to be used to clearly identify and separate delegates and vehicles.',
             ],
@@ -570,11 +510,7 @@ return [
 '.
                     '• Delegates and Coach Drivers will be eager to get away from the car park after a long day.
 '.
-                    '• Parking attendants to ensure a safe distance from lines of vehicles is maintained at all times. 3m minimum between exiting
-'.
-                    '• que
-'.
-                    '• lines
+                    '• Parking attendants to ensure a safe distance from lines of vehicles is maintained at all times. 3m minimum between exiting que lines
 '.
                     '• Clear communication by means of hand signals, as well as eye contact with driver of vehicles next due to leave should be used to indicate they should make way to exit onto roadway.
 '.
@@ -608,21 +544,11 @@ return [
 '.
                     '• Delegates being struck by a vehicle is a high risk .
 '.
-                    '• Delegates to be held until it is safe to cross
+                    '• Delegates to be held until it is safe to cross & directed to pedestrian entrance to stadium.
 '.
-                    '• & directed to pedestrian entrance to stadium.
+                    '• The stopping of persons is preferred to the stopping of vehicles entering to give way to persons as this could cause congestion of vehicles on the roadway therefore creating hazards for drivers.
 '.
-                    '• The stopping of persons is preferred to the stopping of
-'.
-                    '• vehicles entering to give way to persons as this could cause
-'.
-                    '• congestion of vehicles on the roadway therefore creating
-'.
-                    '• hazards for drivers.
-'.
-                    '• 3x Parking attendants to be at the entrance to
-'.
-                    '• Manage delegates.
+                    '• 3x Parking attendants to be at the entrance to Manage delegates.
 '.
                     '• Cars entering car park
 '.
@@ -630,18 +556,12 @@ return [
 '.
                     '• 5mph & Slow traffic signs to be installed at the entrance and throughout the car park.
 '.
-                    '• Trained parking attendants to use clear hand signals to ‘slow down’. (extends one or both arms to the side, parallel to the shoulders,
-'.
-                    '• and slowly moves them up and down. The palms
-'.
-                    '• of the hands face down.',
+                    '• Trained parking attendants to use clear hand signals to ‘slow down’. (extends one or both arms to the side, parallel to the shoulders, and slowly moves them up and down. The palms of the hands face down.',
             ],
             [
                 'title' => 'The motions should be slow, distinct,',
                 'body' =>
-                    '• and deliberate. Hi visibility Clothing to be worn by all parking
-'.
-                    '• attendants at all times to enable drivers to see those giving instructions.
+                    '• and deliberate. Hi visibility Clothing to be worn by all parking attendants at all times to enable drivers to see those giving instructions.
 '.
                     '• Barriers, Cones, barrier tape and signs to be used to clearly identify and separate delegates and vehicles.
 '.
@@ -777,11 +697,7 @@ return [
 '.
                     '• Car parking attendants to determine order of lanes to release cars. Fixed number of cars from each exiting lane should be determined and stuck to in order to assist delegates exiting in a balanced and fair way.
 '.
-                    '• Parking attendants to ensure a safe distance from lines of vehicles is maintained at all times. 3m minimum between exiting
-'.
-                    '• que
-'.
-                    '• lines
+                    '• Parking attendants to ensure a safe distance from lines of vehicles is maintained at all times. 3m minimum between exiting que lines
 '.
                     '• Clear communication by means of hand signals, as well as eye contact with driver of vehicles next due to leave should be used to indicate they should make way to exit onto roadway.',
             ],
@@ -790,11 +706,7 @@ return [
                 'body' =>
                     '• Whitton Dene is a busy Road. There is also a footpath that exiting traffic will cross
 '.
-                    '• Parking attendants
-'.
-                    '• should instruct
-'.
-                    '• cars to leave the car park only when safe and clear to do so. Pedestrians wishing to walk across entrance of car park should be managed by parking attendants. When a number of delegates or pedestrians are waiting (6 or more) Vehicles should give way.',
+                    '• Parking attendants should instruct cars to leave the car park only when safe and clear to do so. Pedestrians wishing to walk across entrance of car park should be managed by parking attendants. When a number of delegates or pedestrians are waiting (6 or more) Vehicles should give way.',
             ],
             [
                 'title' => '4. Cars exit car park onto roadway',

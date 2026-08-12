@@ -61,7 +61,11 @@ class ExportToolboxTalkPdf
                 'background' => $type === 'cover'
                     ? $this->coverDataUri($isJhaCover ? null : $parkId, $isJhaCover ? 'jha' : null)
                     : null,
-                'lines' => $type === 'content' ? $this->normalizeBodyLines((string) ($slide['body'] ?? '')) : [],
+                'lines' => $type === 'content'
+                    ? ($isJhaContent
+                        ? $this->normalizeJhaBodyLines((string) ($slide['body'] ?? ''))
+                        : $this->normalizeBodyLines((string) ($slide['body'] ?? '')))
+                    : [],
             ];
         }
 
@@ -191,6 +195,35 @@ class ExportToolboxTalkPdf
                     $lines[$i]['bullet'] = true;
                 }
             }
+        }
+
+        return $lines;
+    }
+
+    /**
+     * @return list<array{bullet: bool, text: string}>
+     */
+    private function normalizeJhaBodyLines(string $bodyText): array
+    {
+        $raw = preg_split("/\R/u", $bodyText) ?: [];
+        $lines = [];
+
+        foreach ($raw as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+
+            $text = preg_replace('/^(?:[•\-\*\x{00B7}]|\d+[\.\)])(?:\s+|$)/u', '', $line) ?? $line;
+            $text = trim($text);
+            if ($text === '') {
+                continue;
+            }
+
+            $lines[] = [
+                'bullet' => true,
+                'text' => $text,
+            ];
         }
 
         return $lines;

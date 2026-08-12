@@ -128,46 +128,49 @@
             color: #e2e8f0;
         }
 
-        /* Classic dense JHA briefing slides (match source hazard decks). */
+        /* Compact JHA briefing slides — small type, tight hanging bullets. */
         .slide.jha-content {
             background: #fffbeb;
             color: #1c1917;
         }
 
         .slide.jha-content .content-inner {
-            padding: 16pt 28pt 14pt;
+            padding: 10pt 18pt 8pt;
         }
 
         .slide.jha-content .chip {
-            margin: 0 0 6pt;
-            font-size: 9pt;
-            letter-spacing: 1pt;
+            margin: 0 0 3pt;
+            font-size: 7.5pt;
+            letter-spacing: 0.8pt;
             color: #92400e;
         }
 
         .slide.jha-content .content-title {
-            margin: 0 0 6pt;
-            font-size: 14pt;
-            line-height: 1.15;
+            margin: 0 0 4pt;
+            font-size: 11pt;
+            line-height: 1.1;
             color: #1c1917;
         }
 
         .slide.jha-content .intro {
-            margin: 0 0 3pt;
-            font-size: 10pt;
-            line-height: 1.2;
+            margin: 0 0 2pt;
+            font-size: 8pt;
+            line-height: 1.15;
             color: #1c1917;
         }
 
         .slide.jha-content ul.bullets {
-            padding: 0 0 0 12pt;
+            margin: 0;
+            padding: 0 0 0 11pt;
+            list-style-type: disc;
         }
 
         .slide.jha-content ul.bullets li {
-            margin: 0 0 2pt;
-            font-size: 10pt;
-            line-height: 1.2;
-            color: #292524;
+            margin: 0 0 1.5pt;
+            padding: 0;
+            font-size: 8pt;
+            line-height: 1.15;
+            color: #1c1917;
         }
     </style>
 </head>
