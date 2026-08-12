@@ -81,6 +81,53 @@ test('admin lesson create stores attachments and allows download', function () {
         ->assertOk();
 });
 
+test('admin can stream voice notes for in-page playback', function () {
+    $admin = User::factory()->create();
+    $admin->givePermissionTo('lessons-learned.view');
+
+    $lesson = LessonLearnedModel::query()->create([
+        'source' => LessonLearnedModel::SOURCE_ADMIN,
+        'created_by_user_id' => $admin->id,
+        'reporter_name' => 'Admin',
+        'category' => LessonLearnedModel::CATEGORY_PARKING,
+        'convention_day' => 'all_days',
+        'worked_well' => 'Ok',
+    ]);
+
+    Storage::disk('local')->put('lessons-learned/'.$lesson->id.'/voice.webm', 'fake-audio');
+
+    $attachment = LessonLearnedAttachment::query()->create([
+        'lesson_learned_id' => $lesson->id,
+        'disk' => 'local',
+        'path' => 'lessons-learned/'.$lesson->id.'/voice.webm',
+        'original_name' => 'voice.webm',
+        'mime_type' => 'audio/webm',
+        'size_bytes' => 10,
+        'kind' => LessonLearnedAttachment::KIND_VOICE_NOTE,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.lessons-learned.attachments.stream', $attachment))
+        ->assertOk()
+        ->assertHeader('content-type', 'audio/webm');
+
+    $fileAttachment = LessonLearnedAttachment::query()->create([
+        'lesson_learned_id' => $lesson->id,
+        'disk' => 'local',
+        'path' => 'lessons-learned/'.$lesson->id.'/notes.pdf',
+        'original_name' => 'notes.pdf',
+        'mime_type' => 'application/pdf',
+        'size_bytes' => 10,
+        'kind' => LessonLearnedAttachment::KIND_FILE,
+    ]);
+
+    Storage::disk('local')->put($fileAttachment->path, 'pdf');
+
+    $this->actingAs($admin)
+        ->get(route('admin.lessons-learned.attachments.stream', $fileAttachment))
+        ->assertNotFound();
+});
+
 test('deleting a lesson removes attachment files from disk', function () {
     $admin = User::factory()->create();
     $admin->givePermissionTo('lessons-learned.view');

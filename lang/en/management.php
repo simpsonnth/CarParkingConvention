@@ -147,6 +147,7 @@ return [
         'kind_file' => 'File',
         'kind_voice_note' => 'Voice note',
         'delete_attachment_confirm' => 'Delete this attachment from storage?',
+        'audio_unsupported' => 'Your browser does not support audio playback.',
     ],
 
     'ticket_change_requests' => [

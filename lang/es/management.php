@@ -147,6 +147,7 @@ return [
         'kind_file' => 'Archivo',
         'kind_voice_note' => 'Nota de voz',
         'delete_attachment_confirm' => '¿Eliminar este adjunto del almacenamiento?',
+        'audio_unsupported' => 'Su navegador no admite la reproducción de audio.',
     ],
 
     'ticket_change_requests' => [

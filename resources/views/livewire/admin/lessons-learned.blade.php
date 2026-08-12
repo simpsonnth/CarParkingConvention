@@ -135,20 +135,33 @@
             @if($editingId && $editingAttachments->isNotEmpty())
                 <div class="space-y-2">
                     <div class="text-sm font-medium">{{ __('management.lessons_learned.existing_attachments') }}</div>
-                    <ul class="space-y-2">
+                    <ul class="space-y-3">
                         @foreach($editingAttachments as $attachment)
-                            <li class="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700">
-                                <div class="min-w-0">
-                                    <a href="{{ route('admin.lessons-learned.attachments.download', $attachment) }}" class="font-semibold text-indigo-600 hover:underline dark:text-indigo-400 truncate block">
-                                        {{ $attachment->original_name }}
-                                    </a>
-                                    <div class="text-xs text-zinc-500">
-                                        {{ $attachment->isVoiceNote() ? __('management.lessons_learned.kind_voice_note') : __('management.lessons_learned.kind_file') }}
+                            <li class="rounded-lg border border-zinc-200 px-3 py-3 text-sm dark:border-zinc-700 space-y-2">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <a href="{{ route('admin.lessons-learned.attachments.download', $attachment) }}" class="font-semibold text-indigo-600 hover:underline dark:text-indigo-400 truncate block">
+                                            {{ $attachment->original_name }}
+                                        </a>
+                                        <div class="text-xs text-zinc-500">
+                                            {{ $attachment->isVoiceNote() ? __('management.lessons_learned.kind_voice_note') : __('management.lessons_learned.kind_file') }}
+                                        </div>
                                     </div>
+                                    <flux:button type="button" size="sm" variant="danger" wire:click="deleteExistingAttachment({{ $attachment->id }})" wire:confirm="{{ __('management.lessons_learned.delete_attachment_confirm') }}">
+                                        {{ __('management.lessons_learned.remove') }}
+                                    </flux:button>
                                 </div>
-                                <flux:button type="button" size="sm" variant="danger" wire:click="deleteExistingAttachment({{ $attachment->id }})" wire:confirm="{{ __('management.lessons_learned.delete_attachment_confirm') }}">
-                                    {{ __('management.lessons_learned.remove') }}
-                                </flux:button>
+                                @if($attachment->isVoiceNote())
+                                    <audio
+                                        controls
+                                        preload="metadata"
+                                        class="w-full"
+                                        wire:ignore
+                                        src="{{ route('admin.lessons-learned.attachments.stream', $attachment) }}"
+                                    >
+                                        {{ __('management.lessons_learned.audio_unsupported') }}
+                                    </audio>
+                                @endif
                             </li>
                         @endforeach
                     </ul>
@@ -193,18 +206,31 @@
                 @if($viewing->attachments->isNotEmpty())
                     <div>
                         <p class="font-semibold mb-2">{{ __('management.lessons_learned.attachments') }}</p>
-                        <ul class="space-y-2">
+                        <ul class="space-y-3">
                             @foreach($viewing->attachments as $attachment)
-                                <li class="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-700">
-                                    <div class="min-w-0">
-                                        <div class="truncate font-medium">{{ $attachment->original_name }}</div>
-                                        <div class="text-xs text-zinc-500">
-                                            {{ $attachment->isVoiceNote() ? __('management.lessons_learned.kind_voice_note') : __('management.lessons_learned.kind_file') }}
+                                <li class="rounded-lg border border-zinc-200 px-3 py-3 dark:border-zinc-700 space-y-2">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <div class="truncate font-medium">{{ $attachment->original_name }}</div>
+                                            <div class="text-xs text-zinc-500">
+                                                {{ $attachment->isVoiceNote() ? __('management.lessons_learned.kind_voice_note') : __('management.lessons_learned.kind_file') }}
+                                            </div>
                                         </div>
+                                        <a href="{{ route('admin.lessons-learned.attachments.download', $attachment) }}" class="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400 shrink-0">
+                                            {{ __('management.lessons_learned.download') }}
+                                        </a>
                                     </div>
-                                    <a href="{{ route('admin.lessons-learned.attachments.download', $attachment) }}" class="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400">
-                                        {{ __('management.lessons_learned.download') }}
-                                    </a>
+                                    @if($attachment->isVoiceNote())
+                                        <audio
+                                            controls
+                                            preload="metadata"
+                                            class="w-full"
+                                            wire:ignore
+                                            src="{{ route('admin.lessons-learned.attachments.stream', $attachment) }}"
+                                        >
+                                            {{ __('management.lessons_learned.audio_unsupported') }}
+                                        </audio>
+                                    @endif
                                 </li>
                             @endforeach
                         </ul>
