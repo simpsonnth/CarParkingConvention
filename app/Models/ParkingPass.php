@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\GeoCoordinates;
+use App\Support\NearestCarParkResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -61,15 +63,47 @@ class ParkingPass extends Model
 
     public function checkInNavigationUrl(): ?string
     {
+        return $this->checkInGoogleMapsUrl();
+    }
+
+    public function checkInGoogleMapsUrl(): ?string
+    {
         if (! $this->hasCheckInLocation()) {
             return null;
         }
 
         return sprintf(
             'https://www.google.com/maps/dir/?api=1&destination=%s,%s',
-            rtrim(rtrim(number_format((float) $this->check_in_latitude, 7, '.', ''), '0'), '.'),
-            rtrim(rtrim(number_format((float) $this->check_in_longitude, 7, '.', ''), '0'), '.')
+            GeoCoordinates::format((float) $this->check_in_latitude),
+            GeoCoordinates::format((float) $this->check_in_longitude),
         );
+    }
+
+    public function checkInAppleMapsUrl(): ?string
+    {
+        if (! $this->hasCheckInLocation()) {
+            return null;
+        }
+
+        return sprintf(
+            'https://maps.apple.com/?daddr=%s,%s',
+            GeoCoordinates::format((float) $this->check_in_latitude),
+            GeoCoordinates::format((float) $this->check_in_longitude),
+        );
+    }
+
+    public function closestCheckInCarParkName(): ?string
+    {
+        if (! $this->hasCheckInLocation()) {
+            return null;
+        }
+
+        $nearest = app(NearestCarParkResolver::class)->resolve(
+            (float) $this->check_in_latitude,
+            (float) $this->check_in_longitude,
+        );
+
+        return $nearest['name'] ?? null;
     }
 
     /** Scope: actively parked today (ignores stale multi-day leftovers). */

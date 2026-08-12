@@ -40,7 +40,10 @@ final class LookupParkingRegistration
      *     parked_pass_id: ?int,
      *     clocked_in_at: ?string,
      *     parked_car_park_name: ?string,
-     *     parked_check_in_maps_url: ?string
+     *     parked_check_in_maps_url: ?string,
+     *     parked_check_in_google_maps_url: ?string,
+     *     parked_check_in_apple_maps_url: ?string,
+     *     parked_gps_closest_car_park_name: ?string
      * }>
      */
     public function execute(string $query): array
@@ -163,7 +166,10 @@ final class LookupParkingRegistration
      *     parked_pass_id: ?int,
      *     clocked_in_at: ?string,
      *     parked_car_park_name: ?string,
-     *     parked_check_in_maps_url: ?string
+     *     parked_check_in_maps_url: ?string,
+     *     parked_check_in_google_maps_url: ?string,
+     *     parked_check_in_apple_maps_url: ?string,
+     *     parked_gps_closest_car_park_name: ?string
      * }
      */
     private function toResult(ParkingRegistration $registration, ?ParkingPass $parkedPass): array
@@ -171,6 +177,8 @@ final class LookupParkingRegistration
         $effective = $this->resolveEffectiveCarPark($registration);
         $isParked = $parkedPass !== null;
         $isCircuitOverseer = (bool) $registration->is_circuit_overseer;
+        $googleMapsUrl = $parkedPass?->checkInGoogleMapsUrl();
+        $appleMapsUrl = $parkedPass?->checkInAppleMapsUrl();
 
         return [
             'id' => $registration->id,
@@ -190,7 +198,10 @@ final class LookupParkingRegistration
             'parked_pass_id' => $parkedPass?->id,
             'clocked_in_at' => $parkedPass?->scanned_at?->timezone(config('app.timezone'))->format('H:i'),
             'parked_car_park_name' => $parkedPass?->carPark?->name,
-            'parked_check_in_maps_url' => $parkedPass?->checkInNavigationUrl(),
+            'parked_check_in_maps_url' => $googleMapsUrl,
+            'parked_check_in_google_maps_url' => $googleMapsUrl,
+            'parked_check_in_apple_maps_url' => $appleMapsUrl,
+            'parked_gps_closest_car_park_name' => $parkedPass?->closestCheckInCarParkName(),
         ];
     }
 

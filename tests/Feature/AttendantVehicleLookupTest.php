@@ -223,8 +223,22 @@ test('lookup shows clock out and clock-in time when vehicle is already parked', 
         ->and($results[0]['parked_check_in_maps_url'])->toBeNull();
 });
 
-test('lookup includes open in maps url when parked pass has check-in coordinates', function () {
+test('lookup includes maps chooser and closest car park when parked pass has check-in coordinates', function () {
     ['attendant' => $attendant, 'congregation' => $congregation, 'park' => $park] = createVehicleLookupFixtures();
+
+    $park->update([
+        'name' => 'Lookup Park',
+        'latitude' => 51.454889526524305,
+        'longitude' => -0.3434177482924672,
+    ]);
+
+    CarPark::query()->create([
+        'name' => 'North',
+        'capacity' => 100,
+        'location' => 'North',
+        'latitude' => 51.457957634545735,
+        'longitude' => -0.34176550753929336,
+    ]);
 
     ParkingPass::query()->create([
         'congregation_id' => $congregation->id,
@@ -234,17 +248,21 @@ test('lookup includes open in maps url when parked pass has check-in coordinates
         'contact_number' => '07700999888',
         'scanned_at' => now(),
         'scanned_by_user_id' => $attendant->id,
-        'check_in_latitude' => 51.507351,
-        'check_in_longitude' => -0.127758,
+        'check_in_latitude' => 51.45796,
+        'check_in_longitude' => -0.34177,
     ]);
 
     $results = app(LookupParkingRegistration::class)->execute('LK12PAR');
 
     expect($results)->toHaveCount(1)
         ->and($results[0]['is_parked'])->toBeTrue()
-        ->and($results[0]['parked_check_in_maps_url'])->toBe(
-            'https://www.google.com/maps/dir/?api=1&destination=51.507351,-0.127758'
-        );
+        ->and($results[0]['parked_check_in_google_maps_url'])->toBe(
+            'https://www.google.com/maps/dir/?api=1&destination=51.45796,-0.34177'
+        )
+        ->and($results[0]['parked_check_in_apple_maps_url'])->toBe(
+            'https://maps.apple.com/?daddr=51.45796,-0.34177'
+        )
+        ->and($results[0]['parked_gps_closest_car_park_name'])->toBe('North');
 
     Livewire::actingAs($attendant)
         ->test(Scan::class)
@@ -252,5 +270,10 @@ test('lookup includes open in maps url when parked pass has check-in coordinates
         ->call('lookup')
         ->assertSee('Already parked')
         ->assertSee('Find my car')
-        ->assertSeeHtml('href="https://www.google.com/maps/dir/?api=1&amp;destination=51.507351,-0.127758"');
+        ->assertSee('GPS closest to')
+        ->assertSee('North')
+        ->assertSee('Apple Maps')
+        ->assertSee('Google Maps')
+        ->assertSeeHtml('href="https://www.google.com/maps/dir/?api=1&amp;destination=51.45796,-0.34177"')
+        ->assertSeeHtml('href="https://maps.apple.com/?daddr=51.45796,-0.34177"');
 });

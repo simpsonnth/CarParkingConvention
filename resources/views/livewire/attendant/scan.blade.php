@@ -246,19 +246,20 @@
                                     @endif
                                 </div>
                             @endif
-                            @if(! empty($result['parked_check_in_maps_url']))
+                            @if(! empty($result['parked_check_in_google_maps_url']) && ! empty($result['parked_check_in_apple_maps_url']))
+                                @if(! empty($result['parked_gps_closest_car_park_name']))
+                                    <div class="text-sm text-amber-900 dark:text-amber-100">
+                                        <span class="font-semibold">GPS closest to</span>
+                                        {{ $result['parked_gps_closest_car_park_name'] }}
+                                    </div>
+                                @endif
                                 <p class="text-xs text-amber-800/80 dark:text-amber-100/80">
                                     Location was recorded when this vehicle was clocked in.
                                 </p>
-                                <a
-                                    href="{{ $result['parked_check_in_maps_url'] }}"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="inline-flex w-full items-center justify-center gap-2 h-12 rounded-xl bg-indigo-600 px-4 text-base font-bold text-white shadow-sm hover:bg-indigo-500"
-                                >
-                                    <flux:icon name="map-pin" class="size-5" />
-                                    Find my car
-                                </a>
+                                <x-find-my-car-chooser
+                                    :google-url="$result['parked_check_in_google_maps_url']"
+                                    :apple-url="$result['parked_check_in_apple_maps_url']"
+                                />
                             @endif
                             @if(! empty($result['parked_pass_id']))
                                 <flux:button
@@ -355,17 +356,18 @@
                                         {{ $lastScanPass->vehicle_reg }}
                                     </div>
                                 @endif
-                                @if($lastScanPass->hasCheckInLocation() && $lastScanPass->checkInNavigationUrl())
+                                @if($lastScanPass->hasCheckInLocation() && $lastScanPass->checkInGoogleMapsUrl() && $lastScanPass->checkInAppleMapsUrl())
+                                    @if($lastScanPass->closestCheckInCarParkName())
+                                        <div class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                                            GPS closest to {{ $lastScanPass->closestCheckInCarParkName() }}
+                                        </div>
+                                    @endif
                                     <div class="mt-3">
-                                        <a
-                                            href="{{ $lastScanPass->checkInNavigationUrl() }}"
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            class="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
-                                        >
-                                            <flux:icon name="map-pin" class="size-4" />
-                                            Find my car
-                                        </a>
+                                        <x-find-my-car-chooser
+                                            appearance="link"
+                                            :google-url="$lastScanPass->checkInGoogleMapsUrl()"
+                                            :apple-url="$lastScanPass->checkInAppleMapsUrl()"
+                                        />
                                     </div>
                                 @endif
                             @endif
@@ -395,17 +397,18 @@
                                 {{ $lastScanPass->vehicle_reg }}
                             </div>
                         @endif
-                        @if($lastScanPass->hasCheckInLocation() && $lastScanPass->checkInNavigationUrl())
+                        @if($lastScanPass->hasCheckInLocation() && $lastScanPass->checkInGoogleMapsUrl() && $lastScanPass->checkInAppleMapsUrl())
+                            @if($lastScanPass->closestCheckInCarParkName())
+                                <div class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                                    GPS closest to {{ $lastScanPass->closestCheckInCarParkName() }}
+                                </div>
+                            @endif
                             <div class="mt-3">
-                                <a
-                                    href="{{ $lastScanPass->checkInNavigationUrl() }}"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
-                                >
-                                    <flux:icon name="map-pin" class="size-4" />
-                                    Find my car
-                                </a>
+                                <x-find-my-car-chooser
+                                    appearance="link"
+                                    :google-url="$lastScanPass->checkInGoogleMapsUrl()"
+                                    :apple-url="$lastScanPass->checkInAppleMapsUrl()"
+                                />
                             </div>
                         @endif
                     </div>
