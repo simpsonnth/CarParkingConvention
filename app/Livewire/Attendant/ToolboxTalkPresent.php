@@ -67,9 +67,16 @@ class ToolboxTalkPresent extends Component
             : null;
 
         $slideCoverUrl = $this->coverUrl;
+        $isJhaCover = false;
         if (is_array($slide) && ($slide['type'] ?? '') === 'cover') {
-            $slideParkId = isset($slide['car_park_id']) ? (int) $slide['car_park_id'] : $this->carParkId;
-            $slideCoverUrl = app(ResolveToolboxTalkCover::class)->url($slideParkId);
+            $isJhaCover = ($slide['cover'] ?? null) === 'jha' || ($slide['section'] ?? null) === 'jha';
+            $resolver = app(ResolveToolboxTalkCover::class);
+            if ($isJhaCover) {
+                $slideCoverUrl = $resolver->jhaUrl();
+            } else {
+                $slideParkId = isset($slide['car_park_id']) ? (int) $slide['car_park_id'] : $this->carParkId;
+                $slideCoverUrl = $resolver->url($slideParkId);
+            }
         }
 
         return view('livewire.attendant.toolbox-talk-present', [
@@ -78,6 +85,7 @@ class ToolboxTalkPresent extends Component
             'parkName' => $parkName,
             'coverUrl' => $slideCoverUrl,
             'isCoverSlide' => is_array($slide) && ($slide['type'] ?? '') === 'cover',
+            'isJhaCover' => $isJhaCover,
         ]);
     }
 }

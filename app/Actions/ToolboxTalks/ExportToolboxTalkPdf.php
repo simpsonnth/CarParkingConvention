@@ -48,13 +48,17 @@ class ExportToolboxTalkPdf
         foreach ($deck as $slide) {
             $parkId = isset($slide['car_park_id']) ? (int) $slide['car_park_id'] : null;
             $type = (string) ($slide['type'] ?? 'content');
+            $isJhaCover = ($slide['cover'] ?? null) === 'jha' || ($slide['section'] ?? null) === 'jha';
 
             $slides[] = [
                 'type' => $type,
                 'title' => (string) $slide['title'],
                 'body' => (string) ($slide['body'] ?? ''),
                 'section_label' => (string) ($slide['section_label'] ?? ''),
-                'background' => $type === 'cover' ? $this->coverDataUri($parkId) : null,
+                'is_jha_cover' => $isJhaCover,
+                'background' => $type === 'cover'
+                    ? $this->coverDataUri($isJhaCover ? null : $parkId, $isJhaCover ? 'jha' : null)
+                    : null,
                 'lines' => $type === 'content' ? $this->normalizeBodyLines((string) ($slide['body'] ?? '')) : [],
             ];
         }
@@ -80,9 +84,11 @@ class ExportToolboxTalkPdf
     /**
      * Build a 16:9 cover image (cover-cropped + darkened) as a data URI for DomPDF.
      */
-    private function coverDataUri(?int $carParkId): ?string
+    private function coverDataUri(?int $carParkId, ?string $cover = null): ?string
     {
-        $path = $this->resolveCover->absolutePath($carParkId);
+        $path = $cover === 'jha'
+            ? $this->resolveCover->jhaAbsolutePath()
+            : $this->resolveCover->absolutePath($carParkId);
         if (! is_file($path)) {
             return null;
         }

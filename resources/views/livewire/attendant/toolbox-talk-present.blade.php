@@ -105,7 +105,11 @@
                         'w-fit' => ! $isCoverSlide,
                     ])>
                         <span class="size-1.5 rounded-full bg-teal-300"></span>
-                        {{ $isCoverSlide ? __('toolbox_talks.park_cover_kicker') : $slide['section_label'] }}
+                        @if($isCoverSlide)
+                            {{ ! empty($isJhaCover) ? __('toolbox_talks.jha_cover_kicker') : __('toolbox_talks.park_cover_kicker') }}
+                        @else
+                            {{ $slide['section_label'] }}
+                        @endif
                     </div>
 
                     <h1 @class([

@@ -49,6 +49,27 @@ class ResolveToolboxTalkCover
         return asset('images/guest-handout-hero.png');
     }
 
+    public function jhaAbsolutePath(): string
+    {
+        $relative = (string) config('toolbox-talks.cover_jha', 'images/toolbox-covers/jha.png');
+        $absolute = public_path($relative);
+        if (is_file($absolute)) {
+            return $absolute;
+        }
+
+        return $this->absolutePath(null);
+    }
+
+    public function jhaUrl(): string
+    {
+        $relative = (string) config('toolbox-talks.cover_jha', 'images/toolbox-covers/jha.png');
+        if (is_file(public_path($relative))) {
+            return asset($relative);
+        }
+
+        return $this->url(null);
+    }
+
     public function relativePath(?int $carParkId = null): string
     {
         $default = (string) config('toolbox-talks.cover_default', 'images/toolbox-covers/default.png');

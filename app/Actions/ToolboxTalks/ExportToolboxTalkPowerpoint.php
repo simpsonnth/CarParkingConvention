@@ -128,13 +128,18 @@ class ExportToolboxTalkPowerpoint
     }
 
     /**
-     * @param  array{type?: string, title: string, body?: string, section_label?: string, car_park_id?: int|null}  $slideData
+     * @param  array{type?: string, title: string, body?: string, section_label?: string, car_park_id?: int|null, cover?: string|null}  $slideData
      */
     private function addParkCoverSlide(PhpPresentation $presentation, array $slideData): void
     {
         $slide = $presentation->createSlide();
+        $isJha = ($slideData['cover'] ?? null) === 'jha' || ($slideData['section'] ?? null) === 'jha';
         $parkId = isset($slideData['car_park_id']) ? (int) $slideData['car_park_id'] : null;
-        $this->applyCoverBackground($slide, $parkId);
+        $this->applyCoverBackground($slide, $parkId, $isJha ? 'jha' : null);
+
+        $kickerLabel = $isJha
+            ? __('toolbox_talks.jha_cover_kicker')
+            : __('toolbox_talks.park_cover_kicker');
 
         $kicker = $slide->createRichTextShape()
             ->setHeight(36)
@@ -143,8 +148,9 @@ class ExportToolboxTalkPowerpoint
             ->setOffsetY(150);
         $this->lockTextBox($kicker);
         $kicker->getActiveParagraph()->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $kickerRun = $kicker->createTextRun(mb_strtoupper(__('toolbox_talks.park_cover_kicker')));
-        $kickerRun->getFont()->setBold(true)->setSize(14)->setColor(new Color('FF5EEAD4'));
+        $kickerRun = $kicker->createTextRun(mb_strtoupper($kickerLabel));
+        $kickerColor = $isJha ? 'FFFACC15' : 'FF5EEAD4';
+        $kickerRun->getFont()->setBold(true)->setSize(14)->setColor(new Color($kickerColor));
 
         $title = $slide->createRichTextShape()
             ->setHeight(140)
@@ -435,9 +441,12 @@ class ExportToolboxTalkPowerpoint
         return $lines;
     }
 
-    private function applyCoverBackground($slide, ?int $carParkId): void
+    private function applyCoverBackground($slide, ?int $carParkId, ?string $cover = null): void
     {
-        $hero = $this->resolveCover->absolutePath($carParkId);
+        $hero = $cover === 'jha'
+            ? $this->resolveCover->jhaAbsolutePath()
+            : $this->resolveCover->absolutePath($carParkId);
+
         if (is_file($hero)) {
             $background = new BackgroundImage;
             $background->setPath($hero);

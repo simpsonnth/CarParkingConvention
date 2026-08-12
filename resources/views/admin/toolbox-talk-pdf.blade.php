@@ -145,9 +145,15 @@
                 <table class="cover-copy-table">
                     <tr>
                         <td>
-                            <div class="cover-kicker">
-                                {{ $slide['type'] === 'title' ? $slide['section_label'] : __('toolbox_talks.park_cover_kicker') }}
-                            </div>
+                        <div class="cover-kicker">
+                            @if($slide['type'] === 'title')
+                                {{ $slide['section_label'] }}
+                            @elseif(! empty($slide['is_jha_cover']))
+                                {{ __('toolbox_talks.jha_cover_kicker') }}
+                            @else
+                                {{ __('toolbox_talks.park_cover_kicker') }}
+                            @endif
+                        </div>
                             <h1 class="cover-title">{{ $slide['title'] }}</h1>
                             @if(($slide['body'] ?? '') !== '')
                                 <p class="cover-body">{{ $slide['body'] }}</p>

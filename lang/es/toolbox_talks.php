@@ -36,8 +36,18 @@ return [
 
     'section_core' => 'Core',
     'section_park' => 'Complemento :park',
+    'section_jha' => 'JHAs',
+    'section_jha_doc' => 'JHA · :name',
     'park_cover_kicker' => 'Aparcamiento',
     'park_cover_subtitle' => 'Briefing del parque — accesos, apilado y puntos locales.',
+    'jha_cover_kicker' => 'JHA',
+    'jha_cover_title' => 'Análisis de riesgos laborales',
+    'jha_cover_subtitle' => 'Peligros del sitio, controles y respuestas de emergencia.',
+    'jha_help' => 'Edita este documento JHA para la fecha seleccionada. Usa Cargar JHAs estándar para importar el paquete completo.',
+    'tab_jha_group' => 'JHAs',
+    'load_jhas' => 'Cargar JHAs estándar',
+    'jhas_loaded_toast' => 'Se cargaron :count diapositiva(s) JHA.',
+    'confirm_overwrite_jhas' => 'Los mazos JHA de esta fecha ya tienen diapositivas. ¿Reemplazarlos con el paquete estándar?',
 
     'picker_eyebrow' => 'Charla toolbox',
     'picker_title' => 'Briefing de la mañana',

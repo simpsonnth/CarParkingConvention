@@ -36,8 +36,18 @@ return [
 
     'section_core' => 'Core',
     'section_park' => 'Complemento :park',
+    'section_jha' => 'JHAs',
+    'section_jha_doc' => 'JHA · :name',
     'park_cover_kicker' => 'Parque',
     'park_cover_subtitle' => 'Briefing do parque — portões, empilhamento e pontos locais.',
+    'jha_cover_kicker' => 'JHA',
+    'jha_cover_title' => 'Análises de risco do trabalho',
+    'jha_cover_subtitle' => 'Perigos do local, controlos e respostas de emergência.',
+    'jha_help' => 'Edite este documento JHA para a data selecionada. Use Carregar JHAs padrão para importar o pacote completo.',
+    'tab_jha_group' => 'JHAs',
+    'load_jhas' => 'Carregar JHAs padrão',
+    'jhas_loaded_toast' => 'Carregados :count slide(s) JHA.',
+    'confirm_overwrite_jhas' => 'Os conjuntos JHA desta data já têm slides. Substituir pelo pacote padrão?',
 
     'picker_eyebrow' => 'Reunião toolbox',
     'picker_title' => 'Briefing da manhã',

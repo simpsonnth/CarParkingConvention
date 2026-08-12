@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Actions\ToolboxTalks\BuildToolboxTalkDeck;
 use App\Actions\ToolboxTalks\CopyToolboxTalkFromDate;
+use App\Actions\ToolboxTalks\LoadStandardJhas;
 use App\Actions\ToolboxTalks\LoadStandardToolboxReminders;
 use App\Livewire\Admin\ToolboxTalks;
 use App\Livewire\Attendant\ToolboxTalkPresent;
@@ -214,6 +215,76 @@ test('full download deck includes core and every car park with cover dividers', 
     expect($covers)->toHaveCount(2);
 });
 
+test('load standard jhas seeds all configured decks for a date', function () {
+    $date = now()->toDateString();
+    $count = app(LoadStandardJhas::class)->handle($date);
+    $deckKeys = collect(config('toolbox-talks.jha_decks'))->pluck('key');
+
+    expect($count)->toBeGreaterThan(0)
+        ->and($deckKeys)->not->toBeEmpty();
+
+    foreach ($deckKeys as $key) {
+        $talk = ToolboxTalk::findJhaForDate($date, (string) $key);
+        expect($talk)->not->toBeNull()
+            ->and($talk->slides->count())->toBeGreaterThan(0);
+    }
+});
+
+test('full download deck appends jha cover after parks', function () {
+    $date = now()->toDateString();
+    $park = makeCarPark('West Jha');
+
+    ToolboxTalk::firstOrCreateCore($date)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'Core',
+        'body' => 'C',
+    ]);
+    ToolboxTalk::firstOrCreatePark($date, $park->id)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'Park tip',
+        'body' => 'P',
+    ]);
+    app(LoadStandardJhas::class)->handle($date);
+
+    $deck = app(BuildToolboxTalkDeck::class)->handleFull($date);
+    $titles = array_column($deck, 'title');
+    $jhaCoverIndex = array_search(__('toolbox_talks.jha_cover_title'), $titles, true);
+    $parkCoverIndex = array_search('West Jha', $titles, true);
+
+    expect($jhaCoverIndex)->not->toBeFalse()
+        ->and($parkCoverIndex)->not->toBeFalse()
+        ->and($jhaCoverIndex)->toBeGreaterThan($parkCoverIndex);
+
+    $jhaCover = $deck[$jhaCoverIndex];
+    expect($jhaCover['type'])->toBe('cover')
+        ->and($jhaCover['cover'] ?? null)->toBe('jha');
+});
+
+test('present mode filters jhas to all-parks plus matching park decks', function () {
+    $date = now()->toDateString();
+    $west = makeCarPark('West Filter');
+    $north = makeCarPark('North Filter');
+    app(LoadStandardJhas::class)->handle($date);
+
+    ToolboxTalk::firstOrCreateCore($date)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'Core',
+        'body' => 'C',
+    ]);
+
+    $westDeck = app(BuildToolboxTalkDeck::class)->handle($date, $west->id);
+    $labels = array_column($westDeck, 'section_label');
+
+    expect($labels)->toContain(__('toolbox_talks.section_jha_doc', ['name' => 'All car parks']))
+        ->and($labels)->toContain(__('toolbox_talks.section_jha_doc', ['name' => 'West — arrivals']))
+        ->and($labels)->not->toContain(__('toolbox_talks.section_jha_doc', ['name' => 'North — car arrivals']));
+
+    $northDeck = app(BuildToolboxTalkDeck::class)->handle($date, $north->id);
+    $northLabels = array_column($northDeck, 'section_label');
+    expect($northLabels)->toContain(__('toolbox_talks.section_jha_doc', ['name' => 'North — car arrivals']))
+        ->and($northLabels)->not->toContain(__('toolbox_talks.section_jha_doc', ['name' => 'West — arrivals']));
+});
+
 test('admin can download toolbox talk powerpoint for a date', function () {
     $admin = User::factory()->create();
     $admin->givePermissionTo('toolbox-talks.view');
@@ -230,6 +301,7 @@ test('admin can download toolbox talk powerpoint for a date', function () {
         'title' => 'Park Note',
         'body' => 'Local tip',
     ]);
+    app(LoadStandardJhas::class)->handle($date);
 
     $response = $this->actingAs($admin)
         ->get(route('admin.toolbox-talks.download-pptx', ['date' => $date]));
@@ -272,7 +344,8 @@ test('admin can download toolbox talk powerpoint for a date', function () {
         ->and($slideXml)->toContain('<a:normAutofit')
         ->and($slideXml)->toContain('marL="266700"')
         ->and($allXml)->toContain('Download Park')
-        ->and($allXml)->toContain('Park Note');
+        ->and($allXml)->toContain('Park Note')
+        ->and($allXml)->toContain(__('toolbox_talks.jha_cover_title'));
 });
 
 test('admin can download toolbox talk pdf for a date', function () {
@@ -291,18 +364,25 @@ test('admin can download toolbox talk pdf for a date', function () {
         'title' => 'Pdf Gate',
         'body' => 'Gate note',
     ]);
+    ToolboxTalk::firstOrCreateJha($date, 'all-car-parks')->slides()->create([
+        'sort_order' => 0,
+        'title' => 'JHA sample',
+        'body' => 'Control point',
+    ]);
 
     $response = $this->actingAs($admin)
         ->get(route('admin.toolbox-talks.download-pdf', ['date' => $date]));
 
     $response->assertOk();
     $content = $response->streamedContent();
-    $expectedPages = count(app(BuildToolboxTalkDeck::class)->handleFull($date)) + 1;
+    $deck = app(BuildToolboxTalkDeck::class)->handleFull($date);
+    $expectedPages = count($deck) + 1;
     $pdfPages = preg_match_all('/\/Type\s*\/Page[^s]/', $content);
 
     expect($response->headers->get('content-disposition'))->toContain('.pdf')
         ->and($response->headers->get('content-type'))->toContain('application/pdf')
         ->and(str_starts_with($content, '%PDF'))->toBeTrue()
+        ->and(collect($deck)->contains(fn (array $s): bool => ($s['cover'] ?? null) === 'jha'))->toBeTrue()
         ->and($pdfPages)->toBe($expectedPages);
 });
 

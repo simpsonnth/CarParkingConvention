@@ -36,8 +36,18 @@ return [
 
     'section_core' => 'Core',
     'section_park' => ':park add-on',
+    'section_jha' => 'JHAs',
+    'section_jha_doc' => 'JHA · :name',
     'park_cover_kicker' => 'Car park',
     'park_cover_subtitle' => 'Park-specific briefing — gates, stacking, and local points.',
+    'jha_cover_kicker' => 'JHA',
+    'jha_cover_title' => 'Job Hazard Analyses',
+    'jha_cover_subtitle' => 'Site hazards, controls, and emergency responses.',
+    'jha_help' => 'Edit this JHA document for the selected date. Use Load standard JHAs to import all documents from the seed pack.',
+    'tab_jha_group' => 'JHAs',
+    'load_jhas' => 'Load standard JHAs',
+    'jhas_loaded_toast' => 'Loaded :count JHA slide(s).',
+    'confirm_overwrite_jhas' => 'JHA decks for this date already have slides. Replace them with the standard JHA pack?',
 
     'picker_eyebrow' => 'Toolbox talk',
     'picker_title' => 'Morning briefing',

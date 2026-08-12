@@ -15,6 +15,8 @@ class ToolboxTalk extends Model
 
     public const SCOPE_PARK = 'park';
 
+    public const SCOPE_JHA = 'jha';
+
     protected $fillable = [
         'talk_date',
         'scope',
@@ -32,7 +34,7 @@ class ToolboxTalk extends Model
     /** @return list<string> */
     public static function scopeKeys(): array
     {
-        return [self::SCOPE_CORE, self::SCOPE_PARK];
+        return [self::SCOPE_CORE, self::SCOPE_PARK, self::SCOPE_JHA];
     }
 
     public static function deckKeyForCore(): string
@@ -43,6 +45,11 @@ class ToolboxTalk extends Model
     public static function deckKeyForPark(int $carParkId): string
     {
         return self::SCOPE_PARK.'-'.$carParkId;
+    }
+
+    public static function deckKeyForJha(string $jhaKey): string
+    {
+        return self::SCOPE_JHA.'-'.$jhaKey;
     }
 
     public static function findCoreForDate(Carbon|string $date): ?self
@@ -58,6 +65,14 @@ class ToolboxTalk extends Model
         return self::query()
             ->whereDate('talk_date', $date)
             ->where('deck_key', self::deckKeyForPark($carParkId))
+            ->first();
+    }
+
+    public static function findJhaForDate(Carbon|string $date, string $jhaKey): ?self
+    {
+        return self::query()
+            ->whereDate('talk_date', $date)
+            ->where('deck_key', self::deckKeyForJha($jhaKey))
             ->first();
     }
 
@@ -93,6 +108,22 @@ class ToolboxTalk extends Model
         ]);
     }
 
+    public static function firstOrCreateJha(Carbon|string $date, string $jhaKey): self
+    {
+        $dateString = Carbon::parse($date)->toDateString();
+        $existing = self::findJhaForDate($dateString, $jhaKey);
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        return self::query()->create([
+            'talk_date' => $dateString,
+            'scope' => self::SCOPE_JHA,
+            'car_park_id' => null,
+            'deck_key' => self::deckKeyForJha($jhaKey),
+        ]);
+    }
+
     public function carPark(): BelongsTo
     {
         return $this->belongsTo(CarPark::class);
@@ -106,5 +137,10 @@ class ToolboxTalk extends Model
     public function isCore(): bool
     {
         return $this->scope === self::SCOPE_CORE;
+    }
+
+    public function isJha(): bool
+    {
+        return $this->scope === self::SCOPE_JHA;
     }
 }

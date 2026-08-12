@@ -46,35 +46,60 @@
         </div>
     @endif
 
-    <div class="flex flex-wrap gap-2 border-b border-zinc-200 pb-3 dark:border-zinc-700">
-        <button
-            type="button"
-            wire:click="selectTab('core')"
-            @class([
-                'rounded-lg px-4 py-2 text-sm font-semibold transition',
-                'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' => $activeTab === 'core',
-                'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700' => $activeTab !== 'core',
-            ])
-        >
-            {{ __('toolbox_talks.tab_core') }}
-        </button>
-        @foreach($parks as $park)
+    <div class="space-y-3 border-b border-zinc-200 pb-3 dark:border-zinc-700">
+        <div class="flex flex-wrap gap-2">
             <button
                 type="button"
-                wire:click="selectTab('{{ $park->id }}')"
+                wire:click="selectTab('core')"
                 @class([
                     'rounded-lg px-4 py-2 text-sm font-semibold transition',
-                    'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' => $activeTab === (string) $park->id,
-                    'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700' => $activeTab !== (string) $park->id,
+                    'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' => $activeTab === 'core',
+                    'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700' => $activeTab !== 'core',
                 ])
             >
-                {{ $park->name }}
+                {{ __('toolbox_talks.tab_core') }}
             </button>
-        @endforeach
+            @foreach($parks as $park)
+                <button
+                    type="button"
+                    wire:click="selectTab('{{ $park->id }}')"
+                    @class([
+                        'rounded-lg px-4 py-2 text-sm font-semibold transition',
+                        'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900' => $activeTab === (string) $park->id,
+                        'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700' => $activeTab !== (string) $park->id,
+                    ])
+                >
+                    {{ $park->name }}
+                </button>
+            @endforeach
+        </div>
+        <div>
+            <div class="mb-2 text-[11px] font-bold uppercase tracking-widest text-amber-700 dark:text-amber-300">
+                {{ __('toolbox_talks.tab_jha_group') }}
+            </div>
+            <div class="flex flex-wrap gap-2">
+                @foreach($jhaDecks as $jha)
+                    @php $tab = 'jha-'.$jha['key']; @endphp
+                    <button
+                        type="button"
+                        wire:click="selectTab('{{ $tab }}')"
+                        @class([
+                            'rounded-lg px-3 py-2 text-sm font-semibold transition',
+                            'bg-amber-600 text-white' => $activeTab === $tab,
+                            'bg-amber-50 text-amber-950 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-100 dark:hover:bg-amber-900/50' => $activeTab !== $tab,
+                        ])
+                    >
+                        {{ $jha['label'] }}
+                    </button>
+                @endforeach
+            </div>
+        </div>
     </div>
 
     @if($activeTab === 'core')
         <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ __('toolbox_talks.core_help') }}</p>
+    @elseif($isJhaTab)
+        <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ __('toolbox_talks.jha_help') }}</p>
     @else
         <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ __('toolbox_talks.park_help') }}</p>
     @endif
@@ -90,6 +115,11 @@
         @if($activeTab === 'core')
             <flux:button type="button" wire:click="loadStandardReminders" variant="ghost" icon="clipboard-document-list">
                 {{ __('toolbox_talks.load_reminders') }}
+            </flux:button>
+        @endif
+        @if($isJhaTab)
+            <flux:button type="button" wire:click="loadStandardJhas" variant="ghost" icon="shield-exclamation">
+                {{ __('toolbox_talks.load_jhas') }}
             </flux:button>
         @endif
         <flux:button type="button" wire:click="save" variant="primary">{{ __('toolbox_talks.save') }}</flux:button>
@@ -110,6 +140,16 @@
             <p class="font-semibold text-amber-900 dark:text-amber-100">{{ __('toolbox_talks.confirm_overwrite_reminders') }}</p>
             <div class="mt-3 flex flex-wrap gap-2">
                 <flux:button type="button" wire:click="loadStandardReminders" variant="danger" size="sm">{{ __('toolbox_talks.confirm_yes') }}</flux:button>
+                <flux:button type="button" wire:click="cancelOverwritePrompts" variant="ghost" size="sm">{{ __('toolbox_talks.confirm_no') }}</flux:button>
+            </div>
+        </div>
+    @endif
+
+    @if($confirmOverwriteJhas)
+        <div class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm dark:border-amber-700 dark:bg-amber-950/40">
+            <p class="font-semibold text-amber-900 dark:text-amber-100">{{ __('toolbox_talks.confirm_overwrite_jhas') }}</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+                <flux:button type="button" wire:click="loadStandardJhas" variant="danger" size="sm">{{ __('toolbox_talks.confirm_yes') }}</flux:button>
                 <flux:button type="button" wire:click="cancelOverwritePrompts" variant="ghost" size="sm">{{ __('toolbox_talks.confirm_no') }}</flux:button>
             </div>
         </div>

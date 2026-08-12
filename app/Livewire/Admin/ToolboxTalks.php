@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Admin;
 
 use App\Actions\ToolboxTalks\CopyToolboxTalkFromDate;
+use App\Actions\ToolboxTalks\LoadStandardJhas;
 use App\Actions\ToolboxTalks\LoadStandardToolboxReminders;
 use App\Models\CarPark;
 use App\Models\ToolboxTalk;
@@ -19,7 +20,7 @@ class ToolboxTalks extends Component
 {
     public string $talkDate = '';
 
-    /** @var 'core'|string park id as string */
+    /** @var 'core'|string park id as string, or jha-{key} */
     public string $activeTab = 'core';
 
     /** @var list<array{id: ?int, title: string, body: string}> */
@@ -30,6 +31,8 @@ class ToolboxTalks extends Component
     public bool $confirmOverwriteCopy = false;
 
     public bool $confirmOverwriteReminders = false;
+
+    public bool $confirmOverwriteJhas = false;
 
     public string $flashMessage = '';
 
@@ -48,6 +51,7 @@ class ToolboxTalks extends Component
         $this->flashMessage = '';
         $this->confirmOverwriteCopy = false;
         $this->confirmOverwriteReminders = false;
+        $this->confirmOverwriteJhas = false;
         $this->loadSlides();
     }
 
@@ -69,6 +73,7 @@ class ToolboxTalks extends Component
         $this->flashMessage = '';
         $this->confirmOverwriteCopy = false;
         $this->confirmOverwriteReminders = false;
+        $this->confirmOverwriteJhas = false;
         $this->loadSlides();
     }
 
@@ -78,6 +83,7 @@ class ToolboxTalks extends Component
         $this->flashMessage = '';
         $this->confirmOverwriteCopy = false;
         $this->confirmOverwriteReminders = false;
+        $this->confirmOverwriteJhas = false;
         $this->loadSlides();
     }
 
@@ -203,6 +209,29 @@ class ToolboxTalks extends Component
         $this->notify(__('toolbox_talks.reminders_loaded_toast', ['count' => $count]));
     }
 
+    public function loadStandardJhas(LoadStandardJhas $loader): void
+    {
+        $this->validateOnly('talkDate');
+
+        $hasAny = ToolboxTalk::query()
+            ->whereDate('talk_date', $this->talkDate)
+            ->where('scope', ToolboxTalk::SCOPE_JHA)
+            ->whereHas('slides')
+            ->exists();
+
+        if ($hasAny && ! $this->confirmOverwriteJhas) {
+            $this->confirmOverwriteJhas = true;
+
+            return;
+        }
+
+        $count = $loader->handle($this->talkDate, overwrite: true);
+        $this->confirmOverwriteJhas = false;
+        $this->loadSlides();
+
+        $this->notify(__('toolbox_talks.jhas_loaded_toast', ['count' => $count]));
+    }
+
     public function dismissFlash(): void
     {
         $this->flashMessage = '';
@@ -223,6 +252,7 @@ class ToolboxTalks extends Component
     {
         $this->confirmOverwriteCopy = false;
         $this->confirmOverwriteReminders = false;
+        $this->confirmOverwriteJhas = false;
     }
 
     public function toggleYesterday(): void
@@ -236,9 +266,10 @@ class ToolboxTalks extends Component
     public function yesterdaySlides(): array
     {
         $yesterday = Carbon::parse($this->talkDate)->subDay()->toDateString();
-        $deckKey = $this->activeTab === 'core'
-            ? ToolboxTalk::deckKeyForCore()
-            : ToolboxTalk::deckKeyForPark((int) $this->activeTab);
+        $deckKey = $this->deckKeyForActiveTab();
+        if ($deckKey === null) {
+            return [];
+        }
 
         $talk = ToolboxTalk::query()
             ->whereDate('talk_date', $yesterday)
@@ -258,6 +289,10 @@ class ToolboxTalks extends Component
 
     public function presentUrl(): ?string
     {
+        if ($this->isJhaTab()) {
+            return null;
+        }
+
         if ($this->activeTab === 'core') {
             return route('attendant.toolbox-talk.present', ['date' => $this->talkDate]);
         }
@@ -291,6 +326,20 @@ class ToolboxTalks extends Component
         return route('admin.toolbox-talks.download-pdf', ['date' => $this->talkDate]);
     }
 
+    public function isJhaTab(): bool
+    {
+        return str_starts_with($this->activeTab, 'jha-');
+    }
+
+    public function jhaKeyFromTab(): ?string
+    {
+        if (! $this->isJhaTab()) {
+            return null;
+        }
+
+        return substr($this->activeTab, 4) ?: null;
+    }
+
     private function loadSlides(): void
     {
         $talk = $this->resolveTalk(create: false);
@@ -316,6 +365,17 @@ class ToolboxTalks extends Component
                 : ToolboxTalk::findCoreForDate($this->talkDate);
         }
 
+        if ($this->isJhaTab()) {
+            $jhaKey = $this->jhaKeyFromTab();
+            if ($jhaKey === null || ! $this->isKnownJhaKey($jhaKey)) {
+                return null;
+            }
+
+            return $create
+                ? ToolboxTalk::firstOrCreateJha($this->talkDate, $jhaKey)
+                : ToolboxTalk::findJhaForDate($this->talkDate, $jhaKey);
+        }
+
         $parkId = (int) $this->activeTab;
         if ($parkId < 1 || ! CarPark::query()->whereKey($parkId)->exists()) {
             return null;
@@ -326,16 +386,48 @@ class ToolboxTalks extends Component
             : ToolboxTalk::findParkForDate($this->talkDate, $parkId);
     }
 
+    private function deckKeyForActiveTab(): ?string
+    {
+        if ($this->activeTab === 'core') {
+            return ToolboxTalk::deckKeyForCore();
+        }
+
+        if ($this->isJhaTab()) {
+            $jhaKey = $this->jhaKeyFromTab();
+
+            return $jhaKey !== null ? ToolboxTalk::deckKeyForJha($jhaKey) : null;
+        }
+
+        $parkId = (int) $this->activeTab;
+
+        return $parkId > 0 ? ToolboxTalk::deckKeyForPark($parkId) : null;
+    }
+
+    private function isKnownJhaKey(string $key): bool
+    {
+        foreach (config('toolbox-talks.jha_decks', []) as $deck) {
+            if (($deck['key'] ?? null) === $key) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function render()
     {
         $parks = CarPark::query()->orderBy('name')->get(['id', 'name']);
+        /** @var list<array{key: string, label: string}> $jhaDecks */
+        $jhaDecks = config('toolbox-talks.jha_decks', []);
 
         return view('livewire.admin.toolbox-talks', [
             'parks' => $parks,
+            'jhaDecks' => $jhaDecks,
             'yesterdaySlides' => $this->showYesterday ? $this->yesterdaySlides() : [],
             'presentUrl' => $this->presentUrl(),
             'downloadPptxUrl' => $this->downloadPptxUrl(),
             'downloadPdfUrl' => $this->downloadPdfUrl(),
+            'isJhaTab' => $this->isJhaTab(),
         ]);
     }
 }
