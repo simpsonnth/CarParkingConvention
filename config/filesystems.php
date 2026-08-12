@@ -60,12 +60,18 @@ return [
             'report' => false,
         ],
 
-        'google' => [
-            'driver' => 'google',
-            'clientId' => env('GOOGLE_DRIVE_CLIENT_ID'),
-            'clientSecret' => env('GOOGLE_DRIVE_CLIENT_SECRET'),
-            'refreshToken' => env('GOOGLE_DRIVE_REFRESH_TOKEN'),
-            'folder' => env('GOOGLE_DRIVE_FOLDER_ID'),
+        'spaces' => [
+            'driver' => 's3',
+            'key' => env('DO_SPACES_KEY'),
+            'secret' => env('DO_SPACES_SECRET'),
+            'region' => env('DO_SPACES_REGION', 'lon1'),
+            'bucket' => env('DO_SPACES_BUCKET', 'nathanspace'),
+            'endpoint' => env('DO_SPACES_ENDPOINT', 'https://lon1.digitaloceanspaces.com'),
+            'url' => env('DO_SPACES_URL', 'https://nathanspace.lon1.digitaloceanspaces.com'),
+            'use_path_style_endpoint' => env('DO_SPACES_USE_PATH_STYLE_ENDPOINT', false),
+            'visibility' => 'private',
+            'throw' => true,
+            'report' => false,
         ],
 
     ],

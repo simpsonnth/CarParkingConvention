@@ -8,10 +8,10 @@ return [
     | Attachments disk
     |--------------------------------------------------------------------------
     |
-    | Production should use "google" (Google Drive). Tests use "local".
+    | Production should use "spaces" (DigitalOcean Spaces). Tests use "local".
     |
     */
-    'disk' => env('LESSONS_LEARNED_DISK', 'google'),
+    'disk' => env('LESSONS_LEARNED_DISK', 'spaces'),
 
     'max_upload_files' => 10,
 

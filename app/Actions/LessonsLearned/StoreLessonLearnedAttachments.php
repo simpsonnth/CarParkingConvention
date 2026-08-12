@@ -46,7 +46,11 @@ final class StoreLessonLearnedAttachments
                 $extension,
             );
 
-            Storage::disk($disk)->put($path, file_get_contents($file->getRealPath()) ?: '');
+            Storage::disk($disk)->put(
+                $path,
+                file_get_contents($file->getRealPath()) ?: '',
+                ['visibility' => 'private'],
+            );
 
             $lesson->attachments()->create([
                 'disk' => $disk,

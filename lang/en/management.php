@@ -135,7 +135,7 @@ return [
         'deleted_toast' => 'Lesson deleted.',
         'validation_lesson_content' => 'Please provide at least one of "what worked well", "what did not work well", a file, or a voice note.',
         'attachments' => 'Attachments',
-        'attachments_help' => 'Attach multiple files (photos, PDFs, documents). Files are stored in Google Drive.',
+        'attachments_help' => 'Attach multiple files (photos, PDFs, documents).',
         'voice_note' => 'Voice note',
         'voice_note_help' => 'Record a voice note in the browser. It uploads with this lesson.',
         'start_recording' => 'Start recording',

@@ -135,7 +135,7 @@ return [
         'deleted_toast' => 'Lección eliminada.',
         'validation_lesson_content' => 'Indique al menos uno de "lo que funcionó bien", "lo que no funcionó bien", un archivo o una nota de voz.',
         'attachments' => 'Adjuntos',
-        'attachments_help' => 'Adjunte varios archivos (fotos, PDF, documentos). Se guardan en Google Drive.',
+        'attachments_help' => 'Adjunte varios archivos (fotos, PDF, documentos).',
         'voice_note' => 'Nota de voz',
         'voice_note_help' => 'Grabe una nota de voz en el navegador. Se sube con esta lección.',
         'start_recording' => 'Empezar a grabar',
