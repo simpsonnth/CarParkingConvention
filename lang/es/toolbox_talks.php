@@ -36,6 +36,7 @@ return [
 
     'section_core' => 'Core',
     'section_park' => 'Complemento :park',
+    'park_rosebine_combined' => 'Rosebine 1 and 2',
     'section_jha' => 'JHAs',
     'section_jha_doc' => 'JHA · :name',
     'park_cover_kicker' => 'Aparcamiento',

@@ -215,6 +215,58 @@ test('full download deck includes core and every car park with cover dividers', 
     expect($covers)->toHaveCount(2);
 });
 
+test('full download combines rosebine cover when rosebine 2 has no slides', function () {
+    $date = now()->toDateString();
+    $r1 = makeCarPark('Rosebine 1');
+    $r2 = makeCarPark('Rosebine 2');
+
+    ToolboxTalk::firstOrCreatePark($date, $r1->id)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'Bridge flow',
+        'body' => 'Keep moving',
+    ]);
+    ToolboxTalk::firstOrCreatePark($date, $r2->id); // empty deck
+
+    $deck = app(BuildToolboxTalkDeck::class)->handleFull($date);
+    $titles = array_column($deck, 'title');
+
+    expect($titles)->toContain(__('toolbox_talks.park_rosebine_combined'))
+        ->and($titles)->toContain('Bridge flow')
+        ->and($titles)->not->toContain('Rosebine 1')
+        ->and($titles)->not->toContain('Rosebine 2');
+
+    $covers = array_values(array_filter(
+        $deck,
+        fn (array $s): bool => ($s['type'] ?? '') === 'cover' && str_contains((string) $s['title'], 'Rosebine'),
+    ));
+    expect($covers)->toHaveCount(1)
+        ->and($covers[0]['car_park_id'])->toBe($r1->id);
+});
+
+test('full download keeps separate rosebine covers when both have slides', function () {
+    $date = now()->toDateString();
+    $r1 = makeCarPark('Rosebine 1');
+    $r2 = makeCarPark('Rosebine 2');
+
+    ToolboxTalk::firstOrCreatePark($date, $r1->id)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'R1 tip',
+        'body' => 'One',
+    ]);
+    ToolboxTalk::firstOrCreatePark($date, $r2->id)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'R2 tip',
+        'body' => 'Two',
+    ]);
+
+    $deck = app(BuildToolboxTalkDeck::class)->handleFull($date);
+    $titles = array_column($deck, 'title');
+
+    expect($titles)->toContain('Rosebine 1')
+        ->and($titles)->toContain('Rosebine 2')
+        ->and($titles)->not->toContain(__('toolbox_talks.park_rosebine_combined'));
+});
+
 test('load standard jhas seeds all configured decks for a date', function () {
     $date = now()->toDateString();
     $count = app(LoadStandardJhas::class)->handle($date);

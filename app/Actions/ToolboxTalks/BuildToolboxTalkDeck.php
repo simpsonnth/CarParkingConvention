@@ -46,8 +46,31 @@ class BuildToolboxTalkDeck
         $slides = $this->coreSlides($talkDate);
 
         $parks = CarPark::query()->orderBy('name')->get(['id', 'name']);
+        $rosebine1 = $parks->first(fn (CarPark $p): bool => Str::lower(trim($p->name)) === 'rosebine 1');
+        $rosebine2 = $parks->first(fn (CarPark $p): bool => Str::lower(trim($p->name)) === 'rosebine 2');
+        $rosebine1HasSlides = $rosebine1 !== null && $this->parkHasSlides($talkDate, (int) $rosebine1->id);
+        $rosebine2HasSlides = $rosebine2 !== null && $this->parkHasSlides($talkDate, (int) $rosebine2->id);
+        // If one Rosebine deck is empty, fold both into a single "Rosebine 1 and 2" cover.
+        $combineOnto1 = $rosebine1 !== null && $rosebine2 !== null && ! $rosebine2HasSlides;
+        $combineOnto2 = $rosebine1 !== null && $rosebine2 !== null && ! $rosebine1HasSlides && $rosebine2HasSlides;
+
         foreach ($parks as $park) {
-            array_push($slides, ...$this->parkSectionSlides($talkDate, $park));
+            $isRosebine1 = $rosebine1 !== null && $park->id === $rosebine1->id;
+            $isRosebine2 = $rosebine2 !== null && $park->id === $rosebine2->id;
+
+            if ($combineOnto1 && $isRosebine2) {
+                continue;
+            }
+            if ($combineOnto2 && $isRosebine1) {
+                continue;
+            }
+
+            $displayName = null;
+            if (($combineOnto1 && $isRosebine1) || ($combineOnto2 && $isRosebine2)) {
+                $displayName = __('toolbox_talks.park_rosebine_combined');
+            }
+
+            array_push($slides, ...$this->parkSectionSlides($talkDate, $park, $displayName));
         }
 
         array_push($slides, ...$this->jhaSectionSlides($talkDate, parkName: null, includeAll: true));
@@ -79,16 +102,24 @@ class BuildToolboxTalkDeck
         return $slides;
     }
 
+    private function parkHasSlides(string $talkDate, int $carParkId): bool
+    {
+        $parkTalk = ToolboxTalk::findParkForDate($talkDate, $carParkId);
+
+        return $parkTalk !== null && $parkTalk->slides->isNotEmpty();
+    }
+
     /**
      * @return list<array{type: string, title: string, body: string, section: string, section_label: string, car_park_id: int}>
      */
-    private function parkSectionSlides(string $talkDate, CarPark $park): array
+    private function parkSectionSlides(string $talkDate, CarPark $park, ?string $displayName = null): array
     {
-        $label = __('toolbox_talks.section_park', ['park' => $park->name]);
+        $name = $displayName !== null && $displayName !== '' ? $displayName : (string) $park->name;
+        $label = __('toolbox_talks.section_park', ['park' => $name]);
         $slides = [
             [
                 'type' => 'cover',
-                'title' => $park->name,
+                'title' => $name,
                 'body' => __('toolbox_talks.park_cover_subtitle'),
                 'section' => 'cover',
                 'section_label' => $label,
