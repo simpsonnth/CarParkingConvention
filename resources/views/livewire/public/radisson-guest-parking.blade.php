@@ -1,4 +1,26 @@
-<div class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-zinc-50 dark:bg-zinc-900">
+<div
+    class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-zinc-50 dark:bg-zinc-900"
+    x-data="{
+        stillThereOpen: false,
+        idleMs: 5 * 60 * 1000,
+        timer: null,
+        startTimer() {
+            this.clearTimer();
+            this.timer = setTimeout(() => { this.stillThereOpen = true }, this.idleMs);
+        },
+        clearTimer() {
+            if (this.timer) {
+                clearTimeout(this.timer);
+                this.timer = null;
+            }
+        },
+        stayHere() {
+            this.stillThereOpen = false;
+            this.startTimer();
+        }
+    }"
+    x-init="startTimer()"
+>
     <div
         class="w-full max-w-lg bg-white dark:bg-zinc-800 rounded-3xl shadow-xl p-4 sm:p-8 border border-zinc-100 dark:border-zinc-700">
 
@@ -30,6 +52,10 @@
                     {{ __('radisson_guest_parking.complete_change_hint', ['code' => \App\Models\HotelGuestParkingRequest::PUBLIC_CODE]) }}
                 </p>
                 <div class="flex flex-col gap-3">
+                    <a href="{{ route('management.radisson-parking-check') }}"
+                        class="inline-flex items-center justify-center rounded-xl bg-teal-700 px-4 py-3.5 text-base font-bold text-white hover:bg-teal-600">
+                        {{ __('radisson_guest_parking.check_registration') }}
+                    </a>
                     <a href="{{ route('management.ticket-change-request', ['guest' => 'radisson']) }}"
                         class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-700">
                         {{ __('radisson_guest_parking.complete_change_link') }}
@@ -135,6 +161,39 @@
             <p class="text-xs text-zinc-400">
                 &copy; {{ date('Y') }} {{ __('radisson_guest_parking.footer') }}
             </p>
+        </div>
+    </div>
+
+    <div
+        x-show="stillThereOpen"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/60 p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="radisson-still-there-title"
+    >
+        <div class="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-700 dark:bg-zinc-800">
+            <h2 id="radisson-still-there-title" class="text-center text-2xl font-black text-zinc-900 dark:text-white">
+                {{ __('radisson_guest_parking.still_there_title') }}
+            </h2>
+            <p class="mt-3 text-center text-sm text-zinc-600 dark:text-zinc-400">
+                {{ __('radisson_guest_parking.still_there_body') }}
+            </p>
+            <div class="mt-6 flex flex-col gap-3">
+                <button
+                    type="button"
+                    x-on:click="stayHere()"
+                    class="inline-flex w-full items-center justify-center rounded-xl bg-indigo-600 px-4 py-3.5 text-base font-bold text-white hover:bg-indigo-500"
+                >
+                    {{ __('radisson_guest_parking.still_there_yes') }}
+                </button>
+                <a
+                    href="{{ route('management.radisson-parking-check') }}"
+                    class="inline-flex w-full items-center justify-center rounded-xl border border-teal-300 bg-teal-50 px-4 py-3.5 text-base font-bold text-teal-800 hover:bg-teal-100 dark:border-teal-700 dark:bg-teal-950/40 dark:text-teal-100 dark:hover:bg-teal-900/40"
+                >
+                    {{ __('radisson_guest_parking.check_registration') }}
+                </a>
+            </div>
         </div>
     </div>
 </div>

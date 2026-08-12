@@ -99,6 +99,7 @@ Route::middleware('public.route')->group(function () {
         Route::get('/lessons-learned', App\Livewire\Public\LessonLearned::class)->name('management.lessons-learned');
         Route::get('/ticket-change-request', App\Livewire\Public\TicketChangeRequest::class)->name('management.ticket-change-request');
         Route::get('/radisson-guest-parking', App\Livewire\Public\RadissonGuestParking::class)->name('management.radisson-guest-parking');
+        Route::get('/radisson-parking-check', App\Livewire\Public\RadissonParkingCheck::class)->name('management.radisson-parking-check');
     });
 });
 Route::get('/locale/{locale}', function (string $locale) {
@@ -388,6 +389,11 @@ Route::middleware(['auth'])->group(function () {
         })
             ->middleware('permission:parking-qr.view')
             ->name('parking-qr-codes.print-guest');
+        Route::get('/parking-qr-codes/print-radisson-info', function () {
+            return view('admin.print-radisson-info-sheet');
+        })
+            ->middleware('permission:parking-qr.view')
+            ->name('parking-qr-codes.print-radisson-info');
         Route::get('/routes-list', App\Livewire\Admin\PublicRoutesList::class)
             ->middleware('permission:routes.view')
             ->name('routes-list');

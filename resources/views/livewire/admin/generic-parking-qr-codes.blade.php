@@ -184,6 +184,46 @@
         </div>
     </div>
 
+    <div class="rounded-2xl border border-rose-200 bg-white p-6 shadow-sm dark:border-rose-800 dark:bg-zinc-900">
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex-1 space-y-3">
+                <flux:heading size="lg">{{ __('parking_qr.radisson_heading') }}</flux:heading>
+                <p class="text-sm text-zinc-600 dark:text-zinc-400">{{ __('parking_qr.radisson_description') }}</p>
+                <p class="text-xs font-mono text-zinc-500 break-all">{{ route('management.radisson-parking-check') }}</p>
+                <div class="flex flex-wrap gap-2">
+                    <flux:button
+                        variant="primary"
+                        icon="printer"
+                        onclick="window.open('{{ route('admin.parking-qr-codes.print-radisson-info') }}', '_blank')">
+                        {{ __('parking_qr.print_radisson_info') }}
+                    </flux:button>
+                    <flux:button
+                        variant="ghost"
+                        icon="arrow-top-right-on-square"
+                        :href="route('management.radisson-parking-check')"
+                        target="_blank">
+                        {{ __('parking_qr.open_radisson_check') }}
+                    </flux:button>
+                </div>
+            </div>
+            <div class="flex flex-col items-center rounded-xl border border-rose-200 bg-rose-50 p-6 dark:border-rose-800 dark:bg-rose-950/30">
+                @if($ticketLogo)
+                    <img src="{{ asset($ticketLogo) }}" alt="Logo" class="mb-4 h-10 w-auto">
+                @endif
+                <div class="mb-2 text-center text-[10px] font-bold uppercase tracking-widest text-zinc-400">{{ $convName }}</div>
+                <div class="mb-4 text-center text-lg font-black text-zinc-900 dark:text-white">{{ $convLoc }} {{ $convYear }}</div>
+                <img
+                    src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{ urlencode(route('management.radisson-parking-check')) }}"
+                    alt="{{ __('parking_qr.radisson_qr_alt') }}"
+                    class="h-auto w-full max-w-[200px]"
+                />
+                <div class="mt-4 text-center text-xs font-bold uppercase tracking-widest text-rose-700 dark:text-rose-300">
+                    {{ __('parking_qr.radisson_label') }}
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="space-y-4">
         <div>
             <flux:heading size="lg">{{ __('parking_qr.ticket_heading') }}</flux:heading>
