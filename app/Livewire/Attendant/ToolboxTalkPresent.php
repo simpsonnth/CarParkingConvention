@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Attendant;
 
 use App\Actions\ToolboxTalks\BuildToolboxTalkDeck;
+use App\Actions\ToolboxTalks\ResolveToolboxTalkCover;
 use App\Models\CarPark;
 use Illuminate\Support\Carbon;
 use Livewire\Attributes\Layout;
@@ -19,14 +20,21 @@ class ToolboxTalkPresent extends Component
 
     public int $index = 0;
 
-    /** @var list<array{title: string, body: string, section: string, section_label: string}> */
+    /** @var list<array{type?: string, title: string, body: string, section: string, section_label: string, car_park_id?: int|null}> */
     public array $deck = [];
 
-    public function mount(string $date, BuildToolboxTalkDeck $builder, ?CarPark $carPark = null): void
-    {
+    public string $coverUrl = '';
+
+    public function mount(
+        string $date,
+        BuildToolboxTalkDeck $builder,
+        ResolveToolboxTalkCover $resolveCover,
+        ?CarPark $carPark = null,
+    ): void {
         $this->talkDate = Carbon::parse($date)->toDateString();
         $this->carParkId = $carPark?->id;
         $this->deck = $builder->handle($this->talkDate, $this->carParkId);
+        $this->coverUrl = $resolveCover->url($this->carParkId);
         $this->index = 0;
     }
 
@@ -58,10 +66,18 @@ class ToolboxTalkPresent extends Component
             ? CarPark::query()->whereKey($this->carParkId)->value('name')
             : null;
 
+        $slideCoverUrl = $this->coverUrl;
+        if (is_array($slide) && ($slide['type'] ?? '') === 'cover') {
+            $slideParkId = isset($slide['car_park_id']) ? (int) $slide['car_park_id'] : $this->carParkId;
+            $slideCoverUrl = app(ResolveToolboxTalkCover::class)->url($slideParkId);
+        }
+
         return view('livewire.attendant.toolbox-talk-present', [
             'slide' => $slide,
             'total' => count($this->deck),
             'parkName' => $parkName,
+            'coverUrl' => $slideCoverUrl,
+            'isCoverSlide' => is_array($slide) && ($slide['type'] ?? '') === 'cover',
         ]);
     }
 }

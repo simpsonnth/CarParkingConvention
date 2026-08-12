@@ -34,6 +34,8 @@ return [
 
     'section_core' => 'Core',
     'section_park' => ':park add-on',
+    'park_cover_kicker' => 'Car park',
+    'park_cover_subtitle' => 'Park-specific briefing — gates, stacking, and local points.',
 
     'picker_eyebrow' => 'Toolbox talk',
     'picker_title' => 'Morning briefing',

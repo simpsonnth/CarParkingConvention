@@ -34,6 +34,8 @@ return [
 
     'section_core' => 'Core',
     'section_park' => 'Complemento :park',
+    'park_cover_kicker' => 'Aparcamiento',
+    'park_cover_subtitle' => 'Briefing del parque — accesos, apilado y puntos locales.',
 
     'picker_eyebrow' => 'Charla toolbox',
     'picker_title' => 'Briefing de la mañana',

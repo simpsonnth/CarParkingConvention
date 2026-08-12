@@ -11,9 +11,9 @@ use Illuminate\Support\Carbon;
 class BuildToolboxTalkDeck
 {
     /**
-     * Build Core → Park add-on slides for presentation.
+     * Build Core → park cover → park add-on slides for presentation.
      *
-     * @return list<array{title: string, body: string, section: string, section_label: string}>
+     * @return list<array{type: string, title: string, body: string, section: string, section_label: string, car_park_id?: int|null}>
      */
     public function handle(Carbon|string $date, ?int $carParkId = null): array
     {
@@ -24,6 +24,7 @@ class BuildToolboxTalkDeck
         if ($core !== null) {
             foreach ($core->slides as $slide) {
                 $slides[] = [
+                    'type' => 'content',
                     'title' => $slide->title,
                     'body' => (string) ($slide->body ?? ''),
                     'section' => ToolboxTalk::SCOPE_CORE,
@@ -34,16 +35,30 @@ class BuildToolboxTalkDeck
 
         if ($carParkId !== null) {
             $park = CarPark::query()->find($carParkId);
-            $parkTalk = ToolboxTalk::findParkForDate($talkDate, $carParkId);
-            if ($parkTalk !== null && $park !== null) {
+            if ($park !== null) {
                 $label = __('toolbox_talks.section_park', ['park' => $park->name]);
-                foreach ($parkTalk->slides as $slide) {
-                    $slides[] = [
-                        'title' => $slide->title,
-                        'body' => (string) ($slide->body ?? ''),
-                        'section' => ToolboxTalk::SCOPE_PARK,
-                        'section_label' => $label,
-                    ];
+
+                $slides[] = [
+                    'type' => 'cover',
+                    'title' => $park->name,
+                    'body' => __('toolbox_talks.park_cover_subtitle'),
+                    'section' => 'cover',
+                    'section_label' => $label,
+                    'car_park_id' => $park->id,
+                ];
+
+                $parkTalk = ToolboxTalk::findParkForDate($talkDate, $carParkId);
+                if ($parkTalk !== null) {
+                    foreach ($parkTalk->slides as $slide) {
+                        $slides[] = [
+                            'type' => 'content',
+                            'title' => $slide->title,
+                            'body' => (string) ($slide->body ?? ''),
+                            'section' => ToolboxTalk::SCOPE_PARK,
+                            'section_label' => $label,
+                            'car_park_id' => $park->id,
+                        ];
+                    }
                 }
             }
         }

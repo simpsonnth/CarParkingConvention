@@ -34,6 +34,8 @@ return [
 
     'section_core' => 'Core',
     'section_park' => 'Complemento :park',
+    'park_cover_kicker' => 'Parque',
+    'park_cover_subtitle' => 'Briefing do parque — portões, empilhamento e pontos locais.',
 
     'picker_eyebrow' => 'Reunião toolbox',
     'picker_title' => 'Briefing da manhã',

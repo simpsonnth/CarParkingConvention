@@ -1,33 +1,40 @@
 <div class="min-h-screen bg-zinc-100 px-4 py-8 dark:bg-zinc-950">
     <div class="mx-auto max-w-lg space-y-6">
-        <div class="text-center space-y-2">
+        <div class="space-y-2 text-center">
             <div class="text-xs font-bold uppercase tracking-widest text-zinc-400">{{ __('toolbox_talks.picker_eyebrow') }}</div>
             <h1 class="text-2xl font-bold text-zinc-900 dark:text-white">{{ __('toolbox_talks.picker_title') }}</h1>
             <p class="text-sm text-zinc-500 dark:text-zinc-400">{{ __('toolbox_talks.picker_subtitle') }}</p>
         </div>
 
-        <div class="rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl dark:border-zinc-700 dark:bg-zinc-800 space-y-4">
+        <div class="space-y-4 rounded-2xl border border-zinc-200 bg-white p-5 shadow-xl dark:border-zinc-700 dark:bg-zinc-800">
             <flux:input type="date" wire:model="talkDate" :label="__('toolbox_talks.talk_date')" />
 
             <p class="text-xs font-bold uppercase tracking-widest text-zinc-400">{{ __('toolbox_talks.choose_park') }}</p>
 
-            <div class="space-y-2">
+            <div class="grid gap-3">
                 @foreach($parks as $park)
-                    <flux:button
+                    <button
                         type="button"
-                        variant="filled"
                         wire:click="start({{ $park->id }})"
-                        class="w-full h-14 text-base font-bold rounded-xl"
+                        class="group relative h-28 w-full overflow-hidden rounded-2xl text-left shadow-md ring-1 ring-black/10 transition hover:ring-2 hover:ring-teal-400/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
                     >
-                        {{ $park->name }}
-                    </flux:button>
+                        <img
+                            src="{{ $parkCovers[$park->id] ?? $defaultCover }}"
+                            alt=""
+                            class="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                        >
+                        <div class="absolute inset-0 bg-gradient-to-r from-slate-950/85 via-slate-950/55 to-slate-950/25"></div>
+                        <div class="relative flex h-full items-end px-4 py-3">
+                            <span class="text-lg font-black tracking-tight text-white drop-shadow">{{ $park->name }}</span>
+                        </div>
+                    </button>
                 @endforeach
 
                 <flux:button
                     type="button"
                     variant="ghost"
                     wire:click="start"
-                    class="w-full h-12 text-base font-semibold rounded-xl"
+                    class="h-12 w-full rounded-xl text-base font-semibold"
                 >
                     {{ __('toolbox_talks.core_only') }}
                 </flux:button>

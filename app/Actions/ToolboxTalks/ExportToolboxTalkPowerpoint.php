@@ -30,6 +30,7 @@ class ExportToolboxTalkPowerpoint
 
     public function __construct(
         private readonly BuildToolboxTalkDeck $buildDeck,
+        private readonly ResolveToolboxTalkCover $resolveCover,
     ) {}
 
     /**
@@ -47,11 +48,18 @@ class ExportToolboxTalkPowerpoint
         $this->addTitleSlide($presentation, $talkDate, $carParkId);
 
         foreach ($deck as $slideData) {
+            if (($slideData['type'] ?? 'content') === 'cover') {
+                $this->addParkCoverSlide($presentation, $slideData);
+
+                continue;
+            }
+
             $this->addContentSlide($presentation, $slideData);
         }
 
         if ($deck === []) {
             $this->addContentSlide($presentation, [
+                'type' => 'content',
                 'title' => __('toolbox_talks.present_empty_title'),
                 'body' => __('toolbox_talks.present_empty_body'),
                 'section_label' => __('toolbox_talks.section_core'),
@@ -87,22 +95,23 @@ class ExportToolboxTalkPowerpoint
     private function addTitleSlide(PhpPresentation $presentation, string $talkDate, ?int $carParkId): void
     {
         $slide = $presentation->createSlide();
-        $hero = public_path('images/guest-handout-hero.png');
-        if (is_file($hero)) {
-            $background = new BackgroundImage;
-            $background->setPath($hero);
-            $slide->setBackground($background);
-        } else {
-            $this->applyDarkBackground($slide);
-        }
+        $this->applyCoverBackground($slide, $carParkId);
+
+        $parkName = $carParkId !== null
+            ? CarPark::query()->whereKey($carParkId)->value('name')
+            : null;
+        $kickerText = is_string($parkName) && $parkName !== ''
+            ? mb_strtoupper($parkName)
+            : mb_strtoupper(__('toolbox_talks.section_core'));
 
         $kicker = $slide->createRichTextShape()
             ->setHeight(36)
             ->setWidth(self::CONTENT_WIDTH)
             ->setOffsetX(self::MARGIN_X)
             ->setOffsetY(150);
+        $this->lockTextBox($kicker);
         $kicker->getActiveParagraph()->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $kickerRun = $kicker->createTextRun(mb_strtoupper(__('toolbox_talks.section_core')));
+        $kickerRun = $kicker->createTextRun($kickerText);
         $kickerRun->getFont()->setBold(true)->setSize(14)->setColor(new Color('FF5EEAD4'));
 
         $title = $slide->createRichTextShape()
@@ -110,6 +119,7 @@ class ExportToolboxTalkPowerpoint
             ->setWidth(self::CONTENT_WIDTH)
             ->setOffsetX(self::MARGIN_X)
             ->setOffsetY(200);
+        $this->lockTextBox($title);
         $title->getActiveParagraph()->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $run = $title->createTextRun(__('toolbox_talks.pptx_title'));
         $run->getFont()->setBold(true)->setSize(36)->setColor(new Color('FFFFFFFF'));
@@ -119,20 +129,59 @@ class ExportToolboxTalkPowerpoint
             ->setWidth(self::CONTENT_WIDTH)
             ->setOffsetX(self::MARGIN_X)
             ->setOffsetY(340);
+        $this->lockTextBox($sub);
         $sub->getActiveParagraph()->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-        $subtitle = __('toolbox_talks.pptx_subtitle', ['date' => $talkDate]);
-        if ($carParkId !== null) {
-            $parkName = CarPark::query()->whereKey($carParkId)->value('name');
-            if (is_string($parkName) && $parkName !== '') {
-                $subtitle .= '  ·  '.$parkName;
-            }
-        }
-        $subRun = $sub->createTextRun($subtitle);
+        $subRun = $sub->createTextRun(__('toolbox_talks.pptx_subtitle', ['date' => $talkDate]));
         $subRun->getFont()->setSize(20)->setColor(new Color('FFCCFBF1'));
     }
 
     /**
-     * @param  array{title: string, body: string, section_label?: string}  $slideData
+     * @param  array{type?: string, title: string, body?: string, section_label?: string, car_park_id?: int|null}  $slideData
+     */
+    private function addParkCoverSlide(PhpPresentation $presentation, array $slideData): void
+    {
+        $slide = $presentation->createSlide();
+        $parkId = isset($slideData['car_park_id']) ? (int) $slideData['car_park_id'] : null;
+        $this->applyCoverBackground($slide, $parkId);
+
+        $kicker = $slide->createRichTextShape()
+            ->setHeight(36)
+            ->setWidth(self::CONTENT_WIDTH)
+            ->setOffsetX(self::MARGIN_X)
+            ->setOffsetY(150);
+        $this->lockTextBox($kicker);
+        $kicker->getActiveParagraph()->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $kickerRun = $kicker->createTextRun(mb_strtoupper(__('toolbox_talks.park_cover_kicker')));
+        $kickerRun->getFont()->setBold(true)->setSize(14)->setColor(new Color('FF5EEAD4'));
+
+        $title = $slide->createRichTextShape()
+            ->setHeight(140)
+            ->setWidth(self::CONTENT_WIDTH)
+            ->setOffsetX(self::MARGIN_X)
+            ->setOffsetY(210);
+        $this->lockTextBox($title);
+        $title->getActiveParagraph()->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $titleRun = $title->createTextRun((string) $slideData['title']);
+        $titleRun->getFont()->setBold(true)->setSize(40)->setColor(new Color('FFFFFFFF'));
+
+        $body = trim((string) ($slideData['body'] ?? ''));
+        if ($body === '') {
+            return;
+        }
+
+        $sub = $slide->createRichTextShape()
+            ->setHeight(70)
+            ->setWidth(self::CONTENT_WIDTH)
+            ->setOffsetX(self::MARGIN_X)
+            ->setOffsetY(360);
+        $this->lockTextBox($sub);
+        $sub->getActiveParagraph()->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $subRun = $sub->createTextRun($body);
+        $subRun->getFont()->setSize(20)->setColor(new Color('FFCCFBF1'));
+    }
+
+    /**
+     * @param  array{type?: string, title: string, body: string, section_label?: string}  $slideData
      */
     private function addContentSlide(PhpPresentation $presentation, array $slideData): void
     {
@@ -392,6 +441,20 @@ class ExportToolboxTalkPowerpoint
         }
 
         return $lines;
+    }
+
+    private function applyCoverBackground($slide, ?int $carParkId): void
+    {
+        $hero = $this->resolveCover->absolutePath($carParkId);
+        if (is_file($hero)) {
+            $background = new BackgroundImage;
+            $background->setPath($hero);
+            $slide->setBackground($background);
+
+            return;
+        }
+
+        $this->applyDarkBackground($slide);
     }
 
     private function applyDarkBackground($slide): void

@@ -88,12 +88,32 @@ test('present deck concatenates core then park add-on in order', function () {
 
     $deck = app(BuildToolboxTalkDeck::class)->handle($date, $park->id);
 
-    expect($deck)->toHaveCount(3)
+    expect($deck)->toHaveCount(4)
         ->and($deck[0]['title'])->toBe('Core One')
         ->and($deck[0]['section'])->toBe('core')
         ->and($deck[1]['title'])->toBe('Core Two')
-        ->and($deck[2]['title'])->toBe('Park Gate')
-        ->and($deck[2]['section'])->toBe('park');
+        ->and($deck[2]['type'])->toBe('cover')
+        ->and($deck[2]['title'])->toBe('Rosebine')
+        ->and($deck[3]['title'])->toBe('Park Gate')
+        ->and($deck[3]['section'])->toBe('park');
+});
+
+test('toolbox talk covers are assigned per car park from the image pool', function () {
+    $resolver = app(\App\Actions\ToolboxTalks\ResolveToolboxTalkCover::class);
+    $west = makeCarPark('West');
+    $north = makeCarPark('North');
+    $rose = makeCarPark('Rosebine Cover');
+
+    $paths = [
+        $resolver->relativePath($west->id),
+        $resolver->relativePath($north->id),
+        $resolver->relativePath($rose->id),
+    ];
+
+    expect($paths)->toHaveCount(3)
+        ->and(count(array_unique($paths)))->toBeGreaterThanOrEqual(2)
+        ->and(is_file($resolver->absolutePath($west->id)))->toBeTrue()
+        ->and(is_file($resolver->absolutePath(null)))->toBeTrue();
 });
 
 test('load standard reminders seeds core slides from lang', function () {

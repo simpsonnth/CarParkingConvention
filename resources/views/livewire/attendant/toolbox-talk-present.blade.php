@@ -17,14 +17,18 @@
     x-on:keydown.window.space.prevent="$wire.next()"
     x-on:keydown.window.escape="window.location.href = @js(route('attendant.scan'))"
 >
-    {{-- Full-bleed hero --}}
-    <div class="pointer-events-none absolute inset-0 overflow-hidden">
+    {{-- Full-bleed park / default cover --}}
+    <div class="pointer-events-none absolute inset-0 overflow-hidden" wire:key="cover-{{ $coverUrl }}">
         <img
-            src="{{ asset('images/guest-handout-hero.png') }}"
+            src="{{ $coverUrl }}"
             alt=""
             class="h-full w-full object-cover"
         >
-        <div class="absolute inset-0 bg-gradient-to-b from-slate-950/75 via-slate-950/70 to-slate-950/90"></div>
+        <div @class([
+            'absolute inset-0 bg-gradient-to-b',
+            'from-slate-950/55 via-slate-950/45 to-slate-950/75' => $isCoverSlide ?? false,
+            'from-slate-950/75 via-slate-950/70 to-slate-950/90' => ! ($isCoverSlide ?? false),
+        ])></div>
         <div class="absolute inset-0 bg-gradient-to-r from-teal-950/40 via-transparent to-indigo-950/35"></div>
     </div>
 
@@ -91,30 +95,49 @@
                 wire:key="slide-{{ $index }}"
                 class="relative flex min-h-0 flex-1 flex-col px-4 pb-2 pt-1 sm:px-8 sm:pb-3 sm:pt-2 lg:px-14"
             >
-                <div class="flex min-h-0 flex-1 flex-col justify-center gap-3 overflow-y-auto overscroll-contain sm:gap-5">
-                    <div class="inline-flex w-fit items-center gap-2 rounded-full border border-teal-300/35 bg-teal-400/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-teal-50 sm:text-[11px]">
+                <div @class([
+                    'flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain',
+                    'items-center justify-center gap-4 text-center sm:gap-6' => $isCoverSlide,
+                    'justify-center gap-3 sm:gap-5' => ! $isCoverSlide,
+                ])>
+                    <div @class([
+                        'inline-flex items-center gap-2 rounded-full border border-teal-300/35 bg-teal-400/15 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-teal-50 sm:text-[11px]',
+                        'w-fit' => ! $isCoverSlide,
+                    ])>
                         <span class="size-1.5 rounded-full bg-teal-300"></span>
-                        {{ $slide['section_label'] }}
+                        {{ $isCoverSlide ? __('toolbox_talks.park_cover_kicker') : $slide['section_label'] }}
                     </div>
 
-                    <h1 class="text-[clamp(1.5rem,5.5vw,3.75rem)] font-black leading-[1.12] tracking-tight text-white drop-shadow-lg">
+                    <h1 @class([
+                        'font-black leading-[1.12] tracking-tight text-white drop-shadow-lg',
+                        'text-[clamp(2.25rem,8vw,5rem)]' => $isCoverSlide,
+                        'text-[clamp(1.5rem,5.5vw,3.75rem)]' => ! $isCoverSlide,
+                    ])>
                         {{ $slide['title'] }}
                     </h1>
 
                     @if($slide['body'] !== '')
-                        <div class="space-y-2.5 text-[clamp(0.95rem,2.8vw,1.65rem)] leading-snug text-slate-50/95 sm:space-y-3 sm:leading-relaxed">
-                            @foreach(preg_split("/\R/u", $slide['body']) ?: [] as $line)
-                                @php $line = trim($line); @endphp
-                                @continue($line === '')
-                                @if(str_starts_with($line, '•') || str_starts_with($line, '-'))
-                                    <div class="flex gap-2.5 sm:gap-3">
-                                        <span class="mt-[0.55em] size-2 shrink-0 rounded-full bg-teal-300 shadow-[0_0_10px_rgba(45,212,191,0.75)]"></span>
-                                        <p>{{ ltrim($line, "•-\t ") }}</p>
-                                    </div>
-                                @else
-                                    <p>{{ $line }}</p>
-                                @endif
-                            @endforeach
+                        <div @class([
+                            'text-slate-50/95',
+                            'max-w-3xl text-[clamp(1.05rem,2.8vw,1.75rem)] leading-relaxed' => $isCoverSlide,
+                            'space-y-2.5 text-[clamp(0.95rem,2.8vw,1.65rem)] leading-snug sm:space-y-3 sm:leading-relaxed' => ! $isCoverSlide,
+                        ])>
+                            @if($isCoverSlide)
+                                <p>{{ $slide['body'] }}</p>
+                            @else
+                                @foreach(preg_split("/\R/u", $slide['body']) ?: [] as $line)
+                                    @php $line = trim($line); @endphp
+                                    @continue($line === '')
+                                    @if(str_starts_with($line, '•') || str_starts_with($line, '-'))
+                                        <div class="flex gap-2.5 sm:gap-3">
+                                            <span class="mt-[0.55em] size-2 shrink-0 rounded-full bg-teal-300 shadow-[0_0_10px_rgba(45,212,191,0.75)]"></span>
+                                            <p>{{ ltrim($line, "•-\t ") }}</p>
+                                        </div>
+                                    @else
+                                        <p>{{ $line }}</p>
+                                    @endif
+                                @endforeach
+                            @endif
                         </div>
                     @endif
                 </div>
