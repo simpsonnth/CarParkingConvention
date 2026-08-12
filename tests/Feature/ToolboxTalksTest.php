@@ -160,6 +160,25 @@ test('copy action replaces slides when confirmed via admin overwrite flow', func
         ->assertSet('slides.0.title', 'From Yesterday');
 });
 
+test('admin can download toolbox talk powerpoint for a date', function () {
+    $admin = User::factory()->create();
+    $admin->givePermissionTo('toolbox-talks.view');
+    $date = now()->toDateString();
+
+    ToolboxTalk::firstOrCreateCore($date)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'Safety First',
+        'body' => "• Drink water\n• Stay shaded",
+    ]);
+
+    $response = $this->actingAs($admin)
+        ->get(route('admin.toolbox-talks.download-pptx', ['date' => $date]));
+
+    $response->assertOk();
+    expect($response->headers->get('content-disposition'))->toContain('.pptx')
+        ->and($response->headers->get('content-type'))->toContain('presentationml.presentation');
+});
+
 test('copy toolbox talk from date action copies matching deck key only', function () {
     $park = makeCarPark('West');
     $yesterday = now()->subDay()->toDateString();

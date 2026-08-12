@@ -273,6 +273,27 @@ class ToolboxTalks extends Component
         ]);
     }
 
+    public function downloadPptxUrl(): ?string
+    {
+        if ($this->talkDate === '' || strtotime($this->talkDate) === false) {
+            return null;
+        }
+
+        if ($this->activeTab === 'core') {
+            return route('admin.toolbox-talks.download-pptx', ['date' => $this->talkDate]);
+        }
+
+        $parkId = (int) $this->activeTab;
+        if ($parkId < 1) {
+            return null;
+        }
+
+        return route('admin.toolbox-talks.download-pptx', [
+            'date' => $this->talkDate,
+            'carPark' => $parkId,
+        ]);
+    }
+
     private function loadSlides(): void
     {
         $talk = $this->resolveTalk(create: false);
@@ -316,6 +337,7 @@ class ToolboxTalks extends Component
             'parks' => $parks,
             'yesterdaySlides' => $this->showYesterday ? $this->yesterdaySlides() : [],
             'presentUrl' => $this->presentUrl(),
+            'downloadPptxUrl' => $this->downloadPptxUrl(),
         ]);
     }
 }

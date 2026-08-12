@@ -13,6 +13,13 @@
                     {{ __('toolbox_talks.open_present') }}
                 </a>
             @endif
+            @if($downloadPptxUrl)
+                <a href="{{ $downloadPptxUrl }}"
+                    class="inline-flex items-center gap-2 rounded-lg border border-teal-200 bg-teal-50 px-3 py-2 text-sm font-medium text-teal-900 shadow-sm hover:bg-teal-100 dark:border-teal-800 dark:bg-teal-950/40 dark:text-teal-100 dark:hover:bg-teal-900/40">
+                    <flux:icon name="arrow-down-tray" class="size-4" />
+                    {{ __('toolbox_talks.download_pptx') }}
+                </a>
+            @endif
         </div>
     </div>
 
