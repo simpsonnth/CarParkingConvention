@@ -70,7 +70,64 @@ test('attendant can one-tap clock in from ticket scan', function () {
         ->and($pass->congregation_id)->toBe($congregation->id)
         ->and($pass->car_park_id)->toBe($park->id)
         ->and($pass->vehicle_reg)->toBe('TK12ET')
-        ->and($pass->scanned_by_user_id)->toBe($attendant->id);
+        ->and($pass->scanned_by_user_id)->toBe($attendant->id)
+        ->and($pass->check_in_latitude)->toBeNull()
+        ->and($pass->check_in_longitude)->toBeNull();
+});
+
+test('attendant clock in persists check-in coordinates when provided', function () {
+    ['attendant' => $attendant, 'registration' => $registration] = createTicketScanFixtures();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class, ['registration' => $registration])
+        ->set('checkInLatitude', 51.507351)
+        ->set('checkInLongitude', -0.127758)
+        ->call('confirm')
+        ->assertSet('lastScanResult', 'success')
+        ->assertSet('checkInLatitude', null)
+        ->assertSet('checkInLongitude', null)
+        ->assertSee('Find my car');
+
+    $pass = ParkingPass::query()->first();
+    expect($pass)->not->toBeNull()
+        ->and($pass->hasCheckInLocation())->toBeTrue()
+        ->and($pass->check_in_latitude)->toEqualWithDelta(51.507351, 0.000001)
+        ->and($pass->check_in_longitude)->toEqualWithDelta(-0.127758, 0.000001)
+        ->and($pass->checkInNavigationUrl())->toContain('51.507351')
+        ->and($pass->checkInNavigationUrl())->toContain('-0.127758');
+});
+
+test('attendant clock in succeeds without check-in coordinates', function () {
+    ['attendant' => $attendant, 'registration' => $registration] = createTicketScanFixtures();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class, ['registration' => $registration])
+        ->call('confirm')
+        ->assertSet('lastScanResult', 'success')
+        ->assertDontSee('Find my car');
+
+    $pass = ParkingPass::query()->first();
+    expect($pass)->not->toBeNull()
+        ->and($pass->check_in_latitude)->toBeNull()
+        ->and($pass->check_in_longitude)->toBeNull()
+        ->and($pass->checkInNavigationUrl())->toBeNull();
+});
+
+test('attendant clock in discards out-of-range check-in coordinates', function () {
+    ['attendant' => $attendant, 'registration' => $registration] = createTicketScanFixtures();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class, ['registration' => $registration])
+        ->set('checkInLatitude', 91.0)
+        ->set('checkInLongitude', -0.127758)
+        ->call('confirm')
+        ->assertSet('lastScanResult', 'success');
+
+    $pass = ParkingPass::query()->first();
+    expect($pass)->not->toBeNull()
+        ->and($pass->check_in_latitude)->toBeNull()
+        ->and($pass->check_in_longitude)->toBeNull()
+        ->and($pass->hasCheckInLocation())->toBeFalse();
 });
 
 test('ticket scan blocks clock in when vehicle already parked', function () {

@@ -71,6 +71,10 @@ class Scan extends Component
 
     public bool $lookupSearched = false;
 
+    public ?float $checkInLatitude = null;
+
+    public ?float $checkInLongitude = null;
+
     #[Layout('components.layouts.public')]
     public function mount($code = null, ?ParkingRegistration $registration = null): void
     {
@@ -432,6 +436,7 @@ class Scan extends Component
 
         try {
             $passNotes = $this->buildPassNotes();
+            [$checkInLatitude, $checkInLongitude] = $this->resolvedCheckInCoordinates();
 
             $pass = ParkingPass::query()->create([
                 'congregation_id' => $this->scannedCongregation->id,
@@ -446,6 +451,8 @@ class Scan extends Component
                 'notes' => $passNotes,
                 'scanned_at' => now(),
                 'scanned_by_user_id' => auth()->id(),
+                'check_in_latitude' => $checkInLatitude,
+                'check_in_longitude' => $checkInLongitude,
             ]);
 
             $this->syncParkingRegistration($formattedReg);
@@ -579,6 +586,8 @@ class Scan extends Component
             'lookupResults',
             'lookupError',
             'lookupSearched',
+            'checkInLatitude',
+            'checkInLongitude',
         );
 
         if ($walkIn) {
@@ -631,6 +640,38 @@ class Scan extends Component
         }
 
         return $rules;
+    }
+
+    /**
+     * Return sanitized check-in coordinates, or nulls when missing/invalid.
+     * Invalid client values are stripped so clock-in never fails on GPS.
+     *
+     * @return array{0: ?float, 1: ?float}
+     */
+    protected function resolvedCheckInCoordinates(): array
+    {
+        $lat = $this->checkInLatitude;
+        $lng = $this->checkInLongitude;
+
+        $this->checkInLatitude = null;
+        $this->checkInLongitude = null;
+
+        if ($lat === null || $lng === null) {
+            return [null, null];
+        }
+
+        if (! is_numeric($lat) || ! is_numeric($lng)) {
+            return [null, null];
+        }
+
+        $lat = (float) $lat;
+        $lng = (float) $lng;
+
+        if ($lat < -90.0 || $lat > 90.0 || $lng < -180.0 || $lng > 180.0) {
+            return [null, null];
+        }
+
+        return [$lat, $lng];
     }
 
     protected function resolveVehicleRegForCheckIn(): string
@@ -762,6 +803,8 @@ class Scan extends Component
             'lookupResults',
             'lookupError',
             'lookupSearched',
+            'checkInLatitude',
+            'checkInLongitude',
         );
 
         if ($walkIn) {

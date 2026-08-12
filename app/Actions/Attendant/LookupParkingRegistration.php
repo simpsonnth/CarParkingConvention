@@ -39,7 +39,8 @@ final class LookupParkingRegistration
      *     is_parked: bool,
      *     parked_pass_id: ?int,
      *     clocked_in_at: ?string,
-     *     parked_car_park_name: ?string
+     *     parked_car_park_name: ?string,
+     *     parked_check_in_maps_url: ?string
      * }>
      */
     public function execute(string $query): array
@@ -161,7 +162,8 @@ final class LookupParkingRegistration
      *     is_parked: bool,
      *     parked_pass_id: ?int,
      *     clocked_in_at: ?string,
-     *     parked_car_park_name: ?string
+     *     parked_car_park_name: ?string,
+     *     parked_check_in_maps_url: ?string
      * }
      */
     private function toResult(ParkingRegistration $registration, ?ParkingPass $parkedPass): array
@@ -188,6 +190,7 @@ final class LookupParkingRegistration
             'parked_pass_id' => $parkedPass?->id,
             'clocked_in_at' => $parkedPass?->scanned_at?->timezone(config('app.timezone'))->format('H:i'),
             'parked_car_park_name' => $parkedPass?->carPark?->name,
+            'parked_check_in_maps_url' => $parkedPass?->checkInNavigationUrl(),
         ];
     }
 

@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Str;
 
 class ParkingPass extends Model
 {
@@ -17,6 +18,8 @@ class ParkingPass extends Model
         'scanned_at',
         'left_at',
         'scanned_by_user_id',
+        'check_in_latitude',
+        'check_in_longitude',
         'name',
         'email',
         'days',
@@ -24,12 +27,17 @@ class ParkingPass extends Model
         'notes',
     ];
 
-    protected $casts = [
-        'scanned_at' => 'datetime',
-        'left_at' => 'datetime',
-        'days' => 'array',
-        'elderly_infirm_parking' => 'boolean',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'scanned_at' => 'datetime',
+            'left_at' => 'datetime',
+            'days' => 'array',
+            'elderly_infirm_parking' => 'boolean',
+            'check_in_latitude' => 'float',
+            'check_in_longitude' => 'float',
+        ];
+    }
 
     public function congregation(): BelongsTo
     {
@@ -44,6 +52,24 @@ class ParkingPass extends Model
     public function scannedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'scanned_by_user_id');
+    }
+
+    public function hasCheckInLocation(): bool
+    {
+        return $this->check_in_latitude !== null && $this->check_in_longitude !== null;
+    }
+
+    public function checkInNavigationUrl(): ?string
+    {
+        if (! $this->hasCheckInLocation()) {
+            return null;
+        }
+
+        return sprintf(
+            'https://www.google.com/maps/dir/?api=1&destination=%s,%s',
+            rtrim(rtrim(number_format((float) $this->check_in_latitude, 7, '.', ''), '0'), '.'),
+            rtrim(rtrim(number_format((float) $this->check_in_longitude, 7, '.', ''), '0'), '.')
+        );
     }
 
     /** Scope: actively parked today (ignores stale multi-day leftovers). */

@@ -4,6 +4,46 @@
 
 @script
 <script>
+    Alpine.data('attendantCheckInGeo', () => ({
+        locating: false,
+        async submitWithLocation() {
+            if (this.locating) {
+                return;
+            }
+
+            this.locating = true;
+
+            let latitude = null;
+            let longitude = null;
+
+            try {
+                if (navigator.geolocation) {
+                    const position = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: true,
+                            timeout: 8000,
+                            maximumAge: 0,
+                        });
+                    });
+
+                    latitude = position.coords.latitude;
+                    longitude = position.coords.longitude;
+                }
+            } catch (error) {
+                // Non-blocking: clock-in proceeds without coordinates.
+            }
+
+            this.$wire.checkInLatitude = latitude;
+            this.$wire.checkInLongitude = longitude;
+
+            try {
+                await this.$wire.confirm();
+            } finally {
+                this.locating = false;
+            }
+        },
+    }));
+
     const start = () => {
         if (typeof window.initAttendantScan === 'function') {
             window.initAttendantScan($wire);
@@ -206,6 +246,20 @@
                                     @endif
                                 </div>
                             @endif
+                            @if(! empty($result['parked_check_in_maps_url']))
+                                <p class="text-xs text-amber-800/80 dark:text-amber-100/80">
+                                    Location was recorded when this vehicle was clocked in.
+                                </p>
+                                <a
+                                    href="{{ $result['parked_check_in_maps_url'] }}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex w-full items-center justify-center gap-2 h-12 rounded-xl bg-indigo-600 px-4 text-base font-bold text-white shadow-sm hover:bg-indigo-500"
+                                >
+                                    <flux:icon name="map-pin" class="size-5" />
+                                    Find my car
+                                </a>
+                            @endif
                             @if(! empty($result['parked_pass_id']))
                                 <flux:button
                                     type="button"
@@ -301,6 +355,19 @@
                                         {{ $lastScanPass->vehicle_reg }}
                                     </div>
                                 @endif
+                                @if($lastScanPass->hasCheckInLocation() && $lastScanPass->checkInNavigationUrl())
+                                    <div class="mt-3">
+                                        <a
+                                            href="{{ $lastScanPass->checkInNavigationUrl() }}"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            class="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+                                        >
+                                            <flux:icon name="map-pin" class="size-4" />
+                                            Find my car
+                                        </a>
+                                    </div>
+                                @endif
                             @endif
                         </div>
                     </div>
@@ -326,6 +393,19 @@
                         @if($lastScanPass->vehicle_reg)
                             <div class="mt-3 inline-block px-3 py-1 bg-white/20 dark:bg-zinc-900/50 border border-white/30 dark:border-zinc-700/50 rounded-lg text-lg font-mono tracking-wider text-zinc-900 dark:text-white">
                                 {{ $lastScanPass->vehicle_reg }}
+                            </div>
+                        @endif
+                        @if($lastScanPass->hasCheckInLocation() && $lastScanPass->checkInNavigationUrl())
+                            <div class="mt-3">
+                                <a
+                                    href="{{ $lastScanPass->checkInNavigationUrl() }}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1.5 text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400"
+                                >
+                                    <flux:icon name="map-pin" class="size-4" />
+                                    Find my car
+                                </a>
                             </div>
                         @endif
                     </div>
@@ -455,7 +535,7 @@
                         </div>
                     </form>
                 @else
-                <form wire:submit.prevent="confirm" class="space-y-6">
+                <x-attendant-check-in-geo-form>
                     @if($lastScanResult === 'error' && $lastScanMessage)
                         <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3 text-red-600">
                             <flux:icon name="exclamation-circle" class="size-5 shrink-0" />
@@ -541,16 +621,17 @@
                                 CLOCK IN / PARK CAR
                             </flux:button>
                         @else
-                            <flux:button type="submit" variant="primary" wire:loading.attr="disabled" class="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-indigo-500/20">
-                                <span wire:loading.remove>CLOCK IN / PARK CAR</span>
-                                <span wire:loading>PROCESSING...</span>
+                            <flux:button type="submit" variant="primary" wire:loading.attr="disabled" x-bind:disabled="locating" class="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-indigo-500/20">
+                                <span x-show="!locating" wire:loading.remove wire:target="confirm">CLOCK IN / PARK CAR</span>
+                                <span x-show="locating" x-cloak>Getting location...</span>
+                                <span wire:loading wire:target="confirm">PROCESSING...</span>
                             </flux:button>
                         @endif
                         <flux:button type="button" variant="ghost" wire:click="cancel" class="w-full h-12">
                             Abort Scan
                         </flux:button>
                     </div>
-                </form>
+                </x-attendant-check-in-geo-form>
                 @endif
             </div>
         @else
@@ -589,7 +670,7 @@
                 @endif
             </div>
 
-            <form wire:submit.prevent="confirm" class="space-y-6">
+            <x-attendant-check-in-geo-form>
                 @if($lastScanResult === 'error' && $lastScanMessage)
                     <div class="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3 text-red-600 animate-in fade-in slide-in-from-top-2">
                         <flux:icon name="exclamation-circle" class="size-5 shrink-0" />
@@ -803,18 +884,20 @@
                             CLOCK IN / PARK CAR
                         </flux:button>
                     @else
-                        <flux:button type="submit" variant="primary" 
+                        <flux:button type="submit" variant="primary"
                             wire:loading.attr="disabled"
+                            x-bind:disabled="locating"
                             class="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-indigo-500/20">
-                            <span wire:loading.remove>CLOCK IN / PARK CAR</span>
-                            <span wire:loading>PROCESSING...</span>
+                            <span x-show="!locating" wire:loading.remove wire:target="confirm">CLOCK IN / PARK CAR</span>
+                            <span x-show="locating" x-cloak>Getting location...</span>
+                            <span wire:loading wire:target="confirm">PROCESSING...</span>
                         </flux:button>
                     @endif
                     <flux:button type="button" variant="ghost" wire:click="cancel" wire:loading.attr="disabled" class="w-full h-12">
                         {{ $walkInMode ? 'Cancel' : 'Abort Scan' }}
                     </flux:button>
                 </div>
-            </form>
+            </x-attendant-check-in-geo-form>
         </div>
         @endif
         </div>

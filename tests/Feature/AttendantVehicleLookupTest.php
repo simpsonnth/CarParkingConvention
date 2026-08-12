@@ -6,6 +6,7 @@ use App\Actions\Attendant\LookupParkingRegistration;
 use App\Livewire\Attendant\Scan;
 use App\Models\CarPark;
 use App\Models\Congregation;
+use App\Models\ParkingPass;
 use App\Models\ParkingRegistration;
 use App\Models\User;
 use Livewire\Livewire;
@@ -190,7 +191,7 @@ test('circuit overseer lookup shows details but cannot check in', function () {
 test('lookup shows clock out and clock-in time when vehicle is already parked', function () {
     ['attendant' => $attendant, 'registration' => $registration, 'congregation' => $congregation, 'park' => $park] = createVehicleLookupFixtures();
 
-    $pass = \App\Models\ParkingPass::query()->create([
+    $pass = ParkingPass::query()->create([
         'congregation_id' => $congregation->id,
         'car_park_id' => $park->id,
         'status' => 'parked',
@@ -208,6 +209,7 @@ test('lookup shows clock out and clock-in time when vehicle is already parked', 
         ->assertSee('Clocked in at')
         ->assertSee('14:32')
         ->assertSee('Clock out')
+        ->assertDontSee('Find my car')
         ->assertDontSee('Check in this vehicle')
         ->call('clockOut', $pass->id)
         ->assertSee('Check in this vehicle')
@@ -217,5 +219,38 @@ test('lookup shows clock out and clock-in time when vehicle is already parked', 
 
     $results = app(LookupParkingRegistration::class)->execute('LK12PAR');
     expect($results[0]['is_parked'])->toBeFalse()
-        ->and($results[0]['can_check_in'])->toBeTrue();
+        ->and($results[0]['can_check_in'])->toBeTrue()
+        ->and($results[0]['parked_check_in_maps_url'])->toBeNull();
+});
+
+test('lookup includes open in maps url when parked pass has check-in coordinates', function () {
+    ['attendant' => $attendant, 'congregation' => $congregation, 'park' => $park] = createVehicleLookupFixtures();
+
+    ParkingPass::query()->create([
+        'congregation_id' => $congregation->id,
+        'car_park_id' => $park->id,
+        'status' => 'parked',
+        'vehicle_reg' => 'LK12PAR',
+        'contact_number' => '07700999888',
+        'scanned_at' => now(),
+        'scanned_by_user_id' => $attendant->id,
+        'check_in_latitude' => 51.507351,
+        'check_in_longitude' => -0.127758,
+    ]);
+
+    $results = app(LookupParkingRegistration::class)->execute('LK12PAR');
+
+    expect($results)->toHaveCount(1)
+        ->and($results[0]['is_parked'])->toBeTrue()
+        ->and($results[0]['parked_check_in_maps_url'])->toBe(
+            'https://www.google.com/maps/dir/?api=1&destination=51.507351,-0.127758'
+        );
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class)
+        ->set('lookupQuery', 'LK12PAR')
+        ->call('lookup')
+        ->assertSee('Already parked')
+        ->assertSee('Find my car')
+        ->assertSeeHtml('href="https://www.google.com/maps/dir/?api=1&amp;destination=51.507351,-0.127758"');
 });
