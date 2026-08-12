@@ -132,6 +132,35 @@
                 @error('formDidntWorkWell') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
             </div>
 
+            @if($editingId && $editingAttachments->isNotEmpty())
+                <div class="space-y-2">
+                    <div class="text-sm font-medium">{{ __('management.lessons_learned.existing_attachments') }}</div>
+                    <ul class="space-y-2">
+                        @foreach($editingAttachments as $attachment)
+                            <li class="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700">
+                                <div class="min-w-0">
+                                    <a href="{{ route('admin.lessons-learned.attachments.download', $attachment) }}" class="font-semibold text-indigo-600 hover:underline dark:text-indigo-400 truncate block">
+                                        {{ $attachment->original_name }}
+                                    </a>
+                                    <div class="text-xs text-zinc-500">
+                                        {{ $attachment->isVoiceNote() ? __('management.lessons_learned.kind_voice_note') : __('management.lessons_learned.kind_file') }}
+                                    </div>
+                                </div>
+                                <flux:button type="button" size="sm" variant="danger" wire:click="deleteExistingAttachment({{ $attachment->id }})" wire:confirm="{{ __('management.lessons_learned.delete_attachment_confirm') }}">
+                                    {{ __('management.lessons_learned.remove') }}
+                                </flux:button>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <x-lesson-learned-uploads
+                label-prefix="management.lessons_learned"
+                :pending-attachments="$attachments"
+                :pending-voice-notes="$voiceNotes"
+            />
+
             <div class="flex justify-end gap-2 pt-2">
                 <flux:button type="button" variant="ghost" wire:click="closeFormModal">{{ __('management.lessons_learned.cancel') }}</flux:button>
                 <flux:button type="submit">{{ __('management.lessons_learned.save') }}</flux:button>
@@ -160,6 +189,26 @@
                 @if($viewing->didnt_work_well)
                     <p><span class="font-semibold">{{ __('management.lessons_learned.field_didnt_work_well') }}:</span></p>
                     <p class="whitespace-pre-wrap rounded-lg bg-zinc-50 p-3 dark:bg-zinc-900">{{ $viewing->didnt_work_well }}</p>
+                @endif
+                @if($viewing->attachments->isNotEmpty())
+                    <div>
+                        <p class="font-semibold mb-2">{{ __('management.lessons_learned.attachments') }}</p>
+                        <ul class="space-y-2">
+                            @foreach($viewing->attachments as $attachment)
+                                <li class="flex items-center justify-between gap-3 rounded-lg border border-zinc-200 px-3 py-2 dark:border-zinc-700">
+                                    <div class="min-w-0">
+                                        <div class="truncate font-medium">{{ $attachment->original_name }}</div>
+                                        <div class="text-xs text-zinc-500">
+                                            {{ $attachment->isVoiceNote() ? __('management.lessons_learned.kind_voice_note') : __('management.lessons_learned.kind_file') }}
+                                        </div>
+                                    </div>
+                                    <a href="{{ route('admin.lessons-learned.attachments.download', $attachment) }}" class="text-sm font-semibold text-indigo-600 hover:underline dark:text-indigo-400">
+                                        {{ __('management.lessons_learned.download') }}
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
                 @endif
             </div>
             <div class="mt-6 flex justify-end">

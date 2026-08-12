@@ -1,16 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire\Public;
 
+use App\Actions\LessonsLearned\StoreLessonLearnedAttachments;
+use App\Livewire\Concerns\HandlesLessonLearnedUploads;
 use App\Models\LessonLearned as LessonLearnedModel;
 use App\Support\ConventionDay;
 use Flux\Flux;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 #[Layout('components.layouts.public')]
 class LessonLearned extends Component
 {
+    use HandlesLessonLearnedUploads;
+    use WithFileUploads;
+
     public string $reporterName = '';
 
     public string $category = LessonLearnedModel::CATEGORY_PARKING;
@@ -33,32 +41,46 @@ class LessonLearned extends Component
             'workedWell',
             'didntWorkWell',
             'submitted',
+            'attachments',
+            'voiceNotes',
         ]);
         $this->category = LessonLearnedModel::CATEGORY_PARKING;
         $this->conventionDay = ConventionDay::ALL_DAYS;
     }
 
-    public function submit(): void
+    public function removeAttachment(int $index): void
     {
-        $this->validate([
+        unset($this->attachments[$index]);
+        $this->attachments = array_values($this->attachments);
+    }
+
+    public function removeVoiceNote(int $index): void
+    {
+        unset($this->voiceNotes[$index]);
+        $this->voiceNotes = array_values($this->voiceNotes);
+    }
+
+    public function submit(StoreLessonLearnedAttachments $storeAttachments): void
+    {
+        $this->validate(array_merge([
             'reporterName' => 'required|string|max:255',
             'category' => 'required|in:'.implode(',', LessonLearnedModel::categoryKeys()),
             'conventionDay' => 'required|in:'.implode(',', ConventionDay::lessonDayKeys()),
             'title' => 'nullable|string|max:255',
             'workedWell' => 'nullable|string|max:5000',
             'didntWorkWell' => 'nullable|string|max:5000',
-        ]);
+        ], $this->lessonUploadValidationRules()));
 
         $worked = trim($this->workedWell);
         $didnt = trim($this->didntWorkWell);
 
-        if ($worked === '' && $didnt === '') {
+        if ($worked === '' && $didnt === '' && $this->attachments === [] && $this->voiceNotes === []) {
             $this->addError('workedWell', __('lessons_learned.validation_lesson_content'));
 
             return;
         }
 
-        LessonLearnedModel::create([
+        $lesson = LessonLearnedModel::query()->create([
             'source' => LessonLearnedModel::SOURCE_PUBLIC,
             'created_by_user_id' => null,
             'reporter_name' => trim($this->reporterName),
@@ -68,6 +90,9 @@ class LessonLearned extends Component
             'worked_well' => $worked !== '' ? $worked : null,
             'didnt_work_well' => $didnt !== '' ? $didnt : null,
         ]);
+
+        $this->storeLessonUploads($lesson, $this->attachments, $this->voiceNotes, $storeAttachments);
+        $this->resetLessonUploads();
 
         $this->submitted = true;
 

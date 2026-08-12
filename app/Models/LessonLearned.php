@@ -1,9 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class LessonLearned extends Model
 {
@@ -49,8 +52,23 @@ class LessonLearned extends Model
         'didnt_work_well',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (LessonLearned $lesson): void {
+            $lesson->loadMissing('attachments');
+            foreach ($lesson->attachments as $attachment) {
+                $attachment->deleteFromDisk();
+            }
+        });
+    }
+
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(LessonLearnedAttachment::class);
     }
 }

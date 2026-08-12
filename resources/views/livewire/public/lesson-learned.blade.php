@@ -66,6 +66,12 @@
                         class="w-full rounded-xl border-zinc-200 dark:border-zinc-600 dark:bg-zinc-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 py-3 px-4"></textarea>
                     @error('didntWorkWell') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                 </div>
+
+                <x-lesson-learned-uploads
+                    :pending-attachments="$attachments"
+                    :pending-voice-notes="$voiceNotes"
+                />
+
                 <button type="submit"
                     class="w-full py-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-lg shadow-lg shadow-indigo-200 dark:shadow-none transition">
                     {{ __('lessons_learned.submit') }}

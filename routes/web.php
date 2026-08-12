@@ -340,6 +340,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/lessons-learned', App\Livewire\Admin\LessonsLearned::class)
             ->middleware('permission:lessons-learned.view')
             ->name('lessons-learned');
+        Route::get('/lessons-learned/attachments/{attachment}/download', App\Http\Controllers\Admin\LessonLearnedAttachmentDownloadController::class)
+            ->middleware('permission:lessons-learned.view')
+            ->name('lessons-learned.attachments.download');
         Route::get('/ticket-change-requests', App\Livewire\Admin\TicketChangeRequests::class)
             ->middleware('permission:ticket-change-requests.view')
             ->name('ticket-change-requests');

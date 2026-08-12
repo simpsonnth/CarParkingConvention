@@ -1,17 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire\Admin;
 
+use App\Actions\LessonsLearned\StoreLessonLearnedAttachments;
+use App\Livewire\Concerns\HandlesLessonLearnedUploads;
 use App\Models\LessonLearned;
+use App\Models\LessonLearnedAttachment;
 use App\Support\ConventionDay;
 use Flux\Flux;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 #[Layout('components.layouts.app')]
 class LessonsLearned extends Component
 {
+    use HandlesLessonLearnedUploads;
+    use WithFileUploads;
     use WithPagination;
 
     public string $search = '';
@@ -79,6 +87,7 @@ class LessonsLearned extends Component
         $this->formTitle = (string) ($lesson->title ?? '');
         $this->formWorkedWell = (string) ($lesson->worked_well ?? '');
         $this->formDidntWorkWell = (string) ($lesson->didnt_work_well ?? '');
+        $this->resetLessonUploads();
         $this->resetErrorBag();
         $this->formModalOpen = true;
     }
@@ -114,6 +123,33 @@ class LessonsLearned extends Component
         }
     }
 
+    public function removeAttachment(int $index): void
+    {
+        unset($this->attachments[$index]);
+        $this->attachments = array_values($this->attachments);
+    }
+
+    public function removeVoiceNote(int $index): void
+    {
+        unset($this->voiceNotes[$index]);
+        $this->voiceNotes = array_values($this->voiceNotes);
+    }
+
+    public function deleteExistingAttachment(int $attachmentId): void
+    {
+        if ($this->editingId === null) {
+            return;
+        }
+
+        $attachment = LessonLearnedAttachment::query()
+            ->where('lesson_learned_id', $this->editingId)
+            ->whereKey($attachmentId)
+            ->firstOrFail();
+
+        $attachment->deleteFromDisk();
+        $attachment->delete();
+    }
+
     private function resetFormFields(): void
     {
         $this->editingId = null;
@@ -123,24 +159,25 @@ class LessonsLearned extends Component
         $this->formTitle = '';
         $this->formWorkedWell = '';
         $this->formDidntWorkWell = '';
+        $this->resetLessonUploads();
         $this->resetErrorBag();
     }
 
-    public function save(): void
+    public function save(StoreLessonLearnedAttachments $storeAttachments): void
     {
-        $this->validate([
+        $this->validate(array_merge([
             'formReporterName' => 'required|string|max:255',
             'formCategory' => 'required|in:'.implode(',', LessonLearned::categoryKeys()),
             'formConventionDay' => 'required|in:'.implode(',', ConventionDay::lessonDayKeys()),
             'formTitle' => 'nullable|string|max:255',
             'formWorkedWell' => 'nullable|string|max:5000',
             'formDidntWorkWell' => 'nullable|string|max:5000',
-        ]);
+        ], $this->lessonUploadValidationRules()));
 
         $worked = trim($this->formWorkedWell);
         $didnt = trim($this->formDidntWorkWell);
 
-        if ($worked === '' && $didnt === '') {
+        if ($worked === '' && $didnt === '' && $this->attachments === [] && $this->voiceNotes === [] && $this->editingId === null) {
             $this->addError('formWorkedWell', __('management.lessons_learned.validation_lesson_content'));
 
             return;
@@ -160,11 +197,14 @@ class LessonsLearned extends Component
             $lesson->fill($payload);
             $lesson->save();
         } else {
-            LessonLearned::create(array_merge($payload, [
+            $lesson = LessonLearned::query()->create(array_merge($payload, [
                 'source' => LessonLearned::SOURCE_ADMIN,
                 'created_by_user_id' => auth()->id(),
             ]));
         }
+
+        $this->storeLessonUploads($lesson, $this->attachments, $this->voiceNotes, $storeAttachments);
+        $this->resetLessonUploads();
 
         $this->closeFormModal();
 
@@ -188,7 +228,7 @@ class LessonsLearned extends Component
 
     public function render()
     {
-        $query = LessonLearned::query()->with('createdBy');
+        $query = LessonLearned::query()->with(['createdBy', 'attachments']);
 
         if ($this->search !== '') {
             $term = '%'.addcslashes($this->search, '%_\\').'%';
@@ -212,13 +252,18 @@ class LessonsLearned extends Component
         $total = LessonLearned::query()->count();
 
         $viewing = $this->viewingId !== null
-            ? LessonLearned::query()->with('createdBy')->find($this->viewingId)
+            ? LessonLearned::query()->with(['createdBy', 'attachments'])->find($this->viewingId)
             : null;
+
+        $editingAttachments = $this->editingId !== null
+            ? LessonLearnedAttachment::query()->where('lesson_learned_id', $this->editingId)->orderBy('id')->get()
+            : collect();
 
         return view('livewire.admin.lessons-learned', [
             'rows' => $rows,
             'total' => $total,
             'viewing' => $viewing,
+            'editingAttachments' => $editingAttachments,
         ]);
     }
 }
