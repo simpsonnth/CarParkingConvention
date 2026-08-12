@@ -43,3 +43,21 @@ test('resolver returns null when no car parks have coordinates', function () {
 
     expect($nearest)->toBeNull();
 });
+
+test('resolver returns null when nearest park is beyond the near threshold', function () {
+    CarPark::query()->create([
+        'name' => 'North',
+        'capacity' => 100,
+        'location' => 'North',
+        'latitude' => 51.457957634545735,
+        'longitude' => -0.34176550753929336,
+    ]);
+
+    // Herne Bay — miles from the convention parks.
+    $nearest = app(NearestCarParkResolver::class)->resolve(
+        51.3714,
+        1.1280,
+    );
+
+    expect($nearest)->toBeNull();
+});

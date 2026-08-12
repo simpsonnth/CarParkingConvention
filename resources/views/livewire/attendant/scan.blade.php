@@ -247,12 +247,15 @@
                                 </div>
                             @endif
                             @if(! empty($result['parked_check_in_google_maps_url']) && ! empty($result['parked_check_in_apple_maps_url']))
-                                @if(! empty($result['parked_gps_closest_car_park_name']))
-                                    <div class="text-sm text-amber-900 dark:text-amber-100">
+                                <div class="text-sm text-amber-900 dark:text-amber-100">
+                                    @if(! empty($result['parked_gps_closest_car_park_name']))
                                         <span class="font-semibold">GPS closest to</span>
                                         {{ $result['parked_gps_closest_car_park_name'] }}
-                                    </div>
-                                @endif
+                                    @else
+                                        <span class="font-semibold">Not near any car park</span>
+                                        <span class="text-amber-800/80 dark:text-amber-100/80">— pin is more than 1 km from every park</span>
+                                    @endif
+                                </div>
                                 <p class="text-xs text-amber-800/80 dark:text-amber-100/80">
                                     Location was recorded when this vehicle was clocked in.
                                 </p>
@@ -357,11 +360,13 @@
                                     </div>
                                 @endif
                                 @if($lastScanPass->hasCheckInLocation() && $lastScanPass->checkInGoogleMapsUrl() && $lastScanPass->checkInAppleMapsUrl())
-                                    @if($lastScanPass->closestCheckInCarParkName())
-                                        <div class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                                    <div class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                                        @if($lastScanPass->closestCheckInCarParkName())
                                             GPS closest to {{ $lastScanPass->closestCheckInCarParkName() }}
-                                        </div>
-                                    @endif
+                                        @else
+                                            Not near any car park
+                                        @endif
+                                    </div>
                                     <div class="mt-3">
                                         <x-find-my-car-chooser
                                             appearance="link"
@@ -398,11 +403,13 @@
                             </div>
                         @endif
                         @if($lastScanPass->hasCheckInLocation() && $lastScanPass->checkInGoogleMapsUrl() && $lastScanPass->checkInAppleMapsUrl())
-                            @if($lastScanPass->closestCheckInCarParkName())
-                                <div class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                            <div class="mt-2 text-sm text-zinc-600 dark:text-zinc-300">
+                                @if($lastScanPass->closestCheckInCarParkName())
                                     GPS closest to {{ $lastScanPass->closestCheckInCarParkName() }}
-                                </div>
-                            @endif
+                                @else
+                                    Not near any car park
+                                @endif
+                            </div>
                             <div class="mt-3">
                                 <x-find-my-car-chooser
                                     appearance="link"

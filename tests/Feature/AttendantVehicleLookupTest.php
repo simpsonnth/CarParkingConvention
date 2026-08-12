@@ -277,3 +277,40 @@ test('lookup includes maps chooser and closest car park when parked pass has che
         ->assertSeeHtml('href="https://www.google.com/maps/dir/?api=1&amp;destination=51.45796,-0.34177"')
         ->assertSeeHtml('href="https://maps.apple.com/?daddr=51.45796,-0.34177"');
 });
+
+test('lookup shows not near any car park when check-in gps is far away', function () {
+    ['attendant' => $attendant, 'congregation' => $congregation, 'park' => $park] = createVehicleLookupFixtures();
+
+    CarPark::query()->create([
+        'name' => 'North',
+        'capacity' => 100,
+        'location' => 'North',
+        'latitude' => 51.457957634545735,
+        'longitude' => -0.34176550753929336,
+    ]);
+
+    ParkingPass::query()->create([
+        'congregation_id' => $congregation->id,
+        'car_park_id' => $park->id,
+        'status' => 'parked',
+        'vehicle_reg' => 'LK12PAR',
+        'contact_number' => '07700999888',
+        'scanned_at' => now(),
+        'scanned_by_user_id' => $attendant->id,
+        'check_in_latitude' => 51.3714,
+        'check_in_longitude' => 1.1280,
+    ]);
+
+    $results = app(LookupParkingRegistration::class)->execute('LK12PAR');
+
+    expect($results[0]['parked_gps_closest_car_park_name'])->toBeNull()
+        ->and($results[0]['parked_check_in_google_maps_url'])->not->toBeNull();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class)
+        ->set('lookupQuery', 'LK12PAR')
+        ->call('lookup')
+        ->assertSee('Not near any car park')
+        ->assertDontSee('GPS closest to')
+        ->assertSee('Find my car');
+});
