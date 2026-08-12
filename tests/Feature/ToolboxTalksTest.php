@@ -315,7 +315,7 @@ test('powerpoint export shrinks dense slides so text stays in bounds', function 
             .'• Whatever the weather, your hi-vis stays on — it is how drivers see you before they move.',
     ]);
 
-    $pptx = app(\App\Actions\ToolboxTalks\ExportToolboxTalkPowerpoint::class)->handle($date, null);
+    $pptx = app(\App\Actions\ToolboxTalks\ExportToolboxTalkPowerpoint::class)->handle($date);
     $tmp = tempnam(sys_get_temp_dir(), 'pptx-dense-');
     expect($tmp)->not->toBeFalse();
     $path = $tmp.'.pptx';
