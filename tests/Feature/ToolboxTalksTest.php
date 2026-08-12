@@ -297,10 +297,13 @@ test('admin can download toolbox talk pdf for a date', function () {
 
     $response->assertOk();
     $content = $response->streamedContent();
+    $expectedPages = count(app(BuildToolboxTalkDeck::class)->handleFull($date)) + 1;
+    $pdfPages = preg_match_all('/\/Type\s*\/Page[^s]/', $content);
+
     expect($response->headers->get('content-disposition'))->toContain('.pdf')
         ->and($response->headers->get('content-type'))->toContain('application/pdf')
         ->and(str_starts_with($content, '%PDF'))->toBeTrue()
-        ->and(strlen($content))->toBeGreaterThan(1000);
+        ->and($pdfPages)->toBe($expectedPages);
 });
 
 test('powerpoint export shrinks dense slides so text stays in bounds', function () {

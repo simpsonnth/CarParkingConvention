@@ -5,7 +5,6 @@
     <style>
         @page {
             margin: 0;
-            size: 960pt 540pt;
         }
 
         * {
@@ -20,126 +19,137 @@
             background: #0f172a;
         }
 
+        /*
+         * DomPDF creates a blank trailing page when a fixed-height block
+         * is exactly the page height and also has page-break-after.
+         * Keep slide height slightly under the paper size (540pt).
+         */
         .slide {
             width: 960pt;
-            height: 540pt;
-            page-break-after: always;
-            position: relative;
+            height: 520pt;
+            margin: 0;
+            padding: 0;
             overflow: hidden;
+            page-break-inside: avoid;
+            page-break-after: always;
             background: #0f172a;
         }
 
-        .slide:last-child {
+        .slide.last {
             page-break-after: auto;
         }
 
-        .slide-cover {
-            background-color: #0f172a;
-            background-repeat: no-repeat;
-            background-position: center center;
-            background-size: cover;
+        .cover-table {
+            width: 100%;
+            height: 520pt;
+            border-collapse: collapse;
         }
 
-        .cover-scrim {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(180deg, rgba(15, 23, 42, 0.55), rgba(15, 23, 42, 0.78));
-        }
-
-        .cover-inner {
-            position: relative;
-            z-index: 1;
-            height: 100%;
-            padding: 56pt 64pt;
+        .cover-table td {
+            vertical-align: middle;
             text-align: center;
+            padding: 40pt 56pt;
+            background-color: #0f172a;
+        }
+
+        .cover-photo {
+            width: 960pt;
+            height: 220pt;
+            object-fit: cover;
+            display: block;
         }
 
         .cover-kicker {
-            margin-top: 90pt;
-            font-size: 13pt;
+            font-size: 12pt;
             font-weight: bold;
-            letter-spacing: 0.16em;
+            letter-spacing: 2pt;
             text-transform: uppercase;
             color: #5eead4;
+            margin: 0 0 12pt;
         }
 
         .cover-title {
-            margin: 18pt 0 0;
-            font-size: 36pt;
+            font-size: 34pt;
             font-weight: bold;
             line-height: 1.15;
             color: #ffffff;
+            margin: 0;
         }
 
         .cover-body {
-            margin: 18pt auto 0;
-            max-width: 720pt;
-            font-size: 16pt;
-            line-height: 1.4;
+            margin: 14pt 0 0;
+            font-size: 15pt;
+            line-height: 1.35;
             color: #ccfbf1;
         }
 
         .content-inner {
-            padding: 36pt 48pt 32pt;
-            height: 100%;
+            padding: 32pt 44pt 28pt;
         }
 
         .chip {
             display: inline-block;
-            margin: 0 0 14pt;
+            margin: 0 0 12pt;
             font-size: 11pt;
             font-weight: bold;
-            letter-spacing: 0.14em;
+            letter-spacing: 1.5pt;
             text-transform: uppercase;
             color: #5eead4;
         }
 
         .content-title {
-            margin: 0 0 16pt;
-            font-size: 26pt;
+            margin: 0 0 14pt;
+            font-size: 24pt;
             font-weight: bold;
             line-height: 1.2;
             color: #ffffff;
         }
 
         .intro {
-            margin: 0 0 12pt;
-            font-size: 15pt;
+            margin: 0 0 10pt;
+            font-size: 14pt;
             line-height: 1.35;
             color: #f8fafc;
         }
 
         ul.bullets {
             margin: 0;
-            padding: 0 0 0 22pt;
+            padding: 0 0 0 20pt;
         }
 
         ul.bullets li {
-            margin: 0 0 8pt;
-            font-size: 14pt;
+            margin: 0 0 7pt;
+            font-size: 13pt;
             line-height: 1.35;
             color: #e2e8f0;
         }
     </style>
 </head>
 <body>
-@foreach($slides as $slide)
+@foreach($slides as $index => $slide)
     @php
         $isCover = in_array($slide['type'], ['cover', 'title'], true);
         $bg = $slide['background'] ?? null;
+        $isLast = $index === array_key_last($slides);
     @endphp
-    <div class="slide {{ $isCover ? 'slide-cover' : '' }}" @if($isCover && $bg) style="background-image: url('{{ $bg }}');" @endif>
+    <div class="slide{{ $isLast ? ' last' : '' }}">
         @if($isCover)
-            <div class="cover-scrim"></div>
-            <div class="cover-inner">
-                <div class="cover-kicker">
-                    {{ $slide['type'] === 'title' ? $slide['section_label'] : __('toolbox_talks.park_cover_kicker') }}
-                </div>
-                <h1 class="cover-title">{{ $slide['title'] }}</h1>
-                @if(($slide['body'] ?? '') !== '')
-                    <p class="cover-body">{{ $slide['body'] }}</p>
-                @endif
-            </div>
+            <table class="cover-table">
+                <tr>
+                    <td>
+                        @if($bg)
+                            <img class="cover-photo" src="{{ $bg }}" alt="">
+                        @endif
+                        <div class="cover-kicker">
+                            {{ $slide['type'] === 'title' ? $slide['section_label'] : __('toolbox_talks.park_cover_kicker') }}
+                        </div>
+                        <h1 class="cover-title">{{ $slide['title'] }}</h1>
+                        @if(($slide['body'] ?? '') !== '')
+                            <p class="cover-body">{{ $slide['body'] }}</p>
+                        @endif
+                    </td>
+                </tr>
+            </table>
         @else
             <div class="content-inner">
                 @if(($slide['section_label'] ?? '') !== '')

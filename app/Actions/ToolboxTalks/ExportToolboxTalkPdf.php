@@ -61,9 +61,11 @@ class ExportToolboxTalkPdf
         ])->render();
 
         $content = Pdf::loadHTML($html)
+            // Widescreen 16:9 in points (matches PPTX frame).
             ->setPaper([0.0, 0.0, 960.0, 540.0])
             ->setOption('isRemoteEnabled', true)
             ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('dpi', 96)
             ->output();
 
         return [
