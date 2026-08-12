@@ -89,7 +89,7 @@
 
     <div>{{ $rows->links() }}</div>
 
-    <flux:modal wire:model="formModalOpen" class="max-w-2xl">
+    <flux:modal wire:model="formModalOpen" class="max-w-4xl w-full">
         <flux:heading size="lg">{{ $editingId ? __('management.lessons_learned.modal_edit') : __('management.lessons_learned.modal_create') }}</flux:heading>
         <form wire:submit="save" class="mt-4 space-y-4">
             <flux:input wire:model="formReporterName" label="{{ __('management.lessons_learned.field_reporter') }}" />
@@ -168,7 +168,7 @@
         </form>
     </flux:modal>
 
-    <flux:modal wire:model="detailModalOpen" class="max-w-2xl">
+    <flux:modal wire:model="detailModalOpen" class="max-w-4xl w-full">
         @if($viewing)
             <flux:heading size="lg">{{ __('management.lessons_learned.modal_view') }}</flux:heading>
             <div class="mt-4 space-y-3 text-sm">
