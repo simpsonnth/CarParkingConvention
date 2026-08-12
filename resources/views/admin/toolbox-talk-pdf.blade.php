@@ -127,6 +127,48 @@
             line-height: 1.35;
             color: #e2e8f0;
         }
+
+        /* Classic dense JHA briefing slides (match source hazard decks). */
+        .slide.jha-content {
+            background: #fffbeb;
+            color: #1c1917;
+        }
+
+        .slide.jha-content .content-inner {
+            padding: 16pt 28pt 14pt;
+        }
+
+        .slide.jha-content .chip {
+            margin: 0 0 6pt;
+            font-size: 9pt;
+            letter-spacing: 1pt;
+            color: #92400e;
+        }
+
+        .slide.jha-content .content-title {
+            margin: 0 0 6pt;
+            font-size: 14pt;
+            line-height: 1.15;
+            color: #1c1917;
+        }
+
+        .slide.jha-content .intro {
+            margin: 0 0 3pt;
+            font-size: 10pt;
+            line-height: 1.2;
+            color: #1c1917;
+        }
+
+        .slide.jha-content ul.bullets {
+            padding: 0 0 0 12pt;
+        }
+
+        .slide.jha-content ul.bullets li {
+            margin: 0 0 2pt;
+            font-size: 10pt;
+            line-height: 1.2;
+            color: #292524;
+        }
     </style>
 </head>
 <body>
@@ -135,8 +177,9 @@
         $isCover = in_array($slide['type'], ['cover', 'title'], true);
         $bg = $slide['background'] ?? null;
         $isLast = $index === array_key_last($slides);
+        $isJhaContent = ! empty($slide['is_jha_content']);
     @endphp
-    <div class="slide{{ $isLast ? ' last' : '' }}">
+    <div class="slide{{ $isJhaContent ? ' jha-content' : '' }}{{ $isLast ? ' last' : '' }}">
         @if($isCover)
             @if($bg)
                 <img class="cover-bg" src="{{ $bg }}" alt="">

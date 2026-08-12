@@ -48,7 +48,8 @@ class ExportToolboxTalkPdf
         foreach ($deck as $slide) {
             $parkId = isset($slide['car_park_id']) ? (int) $slide['car_park_id'] : null;
             $type = (string) ($slide['type'] ?? 'content');
-            $isJhaCover = ($slide['cover'] ?? null) === 'jha' || ($slide['section'] ?? null) === 'jha';
+            $isJhaCover = ($slide['cover'] ?? null) === 'jha';
+            $isJhaContent = $type === 'content' && ($slide['section'] ?? null) === 'jha';
 
             $slides[] = [
                 'type' => $type,
@@ -56,6 +57,7 @@ class ExportToolboxTalkPdf
                 'body' => (string) ($slide['body'] ?? ''),
                 'section_label' => (string) ($slide['section_label'] ?? ''),
                 'is_jha_cover' => $isJhaCover,
+                'is_jha_content' => $isJhaContent,
                 'background' => $type === 'cover'
                     ? $this->coverDataUri($isJhaCover ? null : $parkId, $isJhaCover ? 'jha' : null)
                     : null,

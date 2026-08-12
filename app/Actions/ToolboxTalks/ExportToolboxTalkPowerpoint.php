@@ -55,6 +55,12 @@ class ExportToolboxTalkPowerpoint
                 continue;
             }
 
+            if (($slideData['section'] ?? '') === 'jha') {
+                $this->addJhaContentSlide($presentation, $slideData);
+
+                continue;
+            }
+
             $this->addContentSlide($presentation, $slideData);
         }
 
@@ -133,7 +139,7 @@ class ExportToolboxTalkPowerpoint
     private function addParkCoverSlide(PhpPresentation $presentation, array $slideData): void
     {
         $slide = $presentation->createSlide();
-        $isJha = ($slideData['cover'] ?? null) === 'jha' || ($slideData['section'] ?? null) === 'jha';
+        $isJha = ($slideData['cover'] ?? null) === 'jha';
         $parkId = isset($slideData['car_park_id']) ? (int) $slideData['car_park_id'] : null;
         $this->applyCoverBackground($slide, $parkId, $isJha ? 'jha' : null);
 
@@ -176,6 +182,82 @@ class ExportToolboxTalkPowerpoint
         $sub->getActiveParagraph()->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $subRun = $sub->createTextRun($body);
         $subRun->getFont()->setSize(20)->setColor(new Color('FFCCFBF1'));
+    }
+
+    /**
+     * Dense light “JHA briefing” slides (closer to the source hazard PPTXs).
+     *
+     * @param  array{type?: string, title: string, body: string, section_label?: string}  $slideData
+     */
+    private function addJhaContentSlide(PhpPresentation $presentation, array $slideData): void
+    {
+        $slide = $presentation->createSlide();
+        $this->applyJhaBackground($slide);
+
+        $y = 18;
+        $section = trim((string) ($slideData['section_label'] ?? ''));
+        if ($section !== '') {
+            $chip = $slide->createRichTextShape()
+                ->setHeight(20)
+                ->setWidth(self::CONTENT_WIDTH)
+                ->setOffsetX(self::MARGIN_X)
+                ->setOffsetY($y);
+            $this->lockTextBox($chip);
+            $chipRun = $chip->createTextRun(mb_strtoupper($section));
+            $chipRun->getFont()->setBold(true)->setSize(10)->setColor(new Color('FF92400E'));
+            $y += 20;
+        }
+
+        $titleText = (string) $slideData['title'];
+        $titleLines = $this->estimateWrappedLines($titleText, 16, indentChars: 0);
+        $titleHeight = $titleLines >= 2 ? 42 : 28;
+
+        $titleShape = $slide->createRichTextShape()
+            ->setHeight($titleHeight)
+            ->setWidth(self::CONTENT_WIDTH)
+            ->setOffsetX(self::MARGIN_X)
+            ->setOffsetY($y);
+        $this->lockTextBox($titleShape);
+        $titlePara = $titleShape->getActiveParagraph();
+        $titlePara->setLineSpacing(108);
+        $titlePara->setSpacingAfter(0);
+        $titleRun = $titleShape->createTextRun($titleText);
+        $titleRun->getFont()->setBold(true)->setSize(16)->setColor(new Color('FF1C1917'));
+        $y += $titleHeight + 6;
+
+        $bodyText = trim((string) ($slideData['body'] ?? ''));
+        if ($bodyText === '') {
+            return;
+        }
+
+        $bodyHeight = max(80, self::SLIDE_HEIGHT - $y - 18);
+        $body = $slide->createRichTextShape()
+            ->setHeight($bodyHeight)
+            ->setWidth(self::CONTENT_WIDTH)
+            ->setOffsetX(self::MARGIN_X)
+            ->setOffsetY($y);
+        $this->lockTextBox($body);
+
+        $lines = $this->normalizeBodyLines($bodyText);
+        $layout = $this->pickJhaBodyLayout($lines, $bodyHeight);
+        $firstParagraph = true;
+
+        foreach ($lines as $line) {
+            $isBullet = $line['bullet'];
+            $text = $line['text'];
+
+            $paragraph = $firstParagraph
+                ? $body->getActiveParagraph()
+                : $body->createParagraph();
+            $firstParagraph = false;
+
+            $this->styleJhaBodyParagraph($paragraph, $isBullet, $layout);
+
+            $run = $paragraph->createTextRun($text);
+            $run->getFont()
+                ->setSize($isBullet ? $layout['bulletFont'] : $layout['introFont'])
+                ->setColor(new Color($isBullet ? 'FF292524' : 'FF1C1917'));
+        }
     }
 
     /**
@@ -441,6 +523,90 @@ class ExportToolboxTalkPowerpoint
         return $lines;
     }
 
+    /**
+     * @param  list<array{bullet: bool, text: string}>  $lines
+     * @return array{bulletFont: int, introFont: int, lineSpacing: int, bulletBefore: int, bulletAfter: int, introBefore: int, introAfter: int}
+     */
+    private function pickJhaBodyLayout(array $lines, int $availableHeightPx): array
+    {
+        $candidates = [
+            [
+                'bulletFont' => 12,
+                'introFont' => 12,
+                'lineSpacing' => 108,
+                'bulletBefore' => 1,
+                'bulletAfter' => 1,
+                'introBefore' => 0,
+                'introAfter' => 3,
+            ],
+            [
+                'bulletFont' => 11,
+                'introFont' => 11,
+                'lineSpacing' => 104,
+                'bulletBefore' => 1,
+                'bulletAfter' => 1,
+                'introBefore' => 0,
+                'introAfter' => 2,
+            ],
+            [
+                'bulletFont' => 10,
+                'introFont' => 10,
+                'lineSpacing' => 100,
+                'bulletBefore' => 0,
+                'bulletAfter' => 1,
+                'introBefore' => 0,
+                'introAfter' => 2,
+            ],
+            [
+                'bulletFont' => 9,
+                'introFont' => 9,
+                'lineSpacing' => 98,
+                'bulletBefore' => 0,
+                'bulletAfter' => 0,
+                'introBefore' => 0,
+                'introAfter' => 1,
+            ],
+        ];
+
+        foreach ($candidates as $candidate) {
+            if ($this->estimateBodyHeightPx($lines, $candidate) <= $availableHeightPx) {
+                return $candidate;
+            }
+        }
+
+        return $candidates[array_key_last($candidates)];
+    }
+
+    /**
+     * @param  array{bulletFont: int, introFont: int, lineSpacing: int, bulletBefore: int, bulletAfter: int, introBefore: int, introAfter: int}  $layout
+     */
+    private function styleJhaBodyParagraph(Paragraph $paragraph, bool $isBullet, array $layout): void
+    {
+        $paragraph->setLineSpacingMode(Paragraph::LINE_SPACING_MODE_PERCENT);
+        $paragraph->setLineSpacing($layout['lineSpacing']);
+        $paragraph->setSpacingBefore($isBullet ? $layout['bulletBefore'] : $layout['introBefore']);
+        $paragraph->setSpacingAfter($isBullet ? $layout['bulletAfter'] : $layout['introAfter']);
+
+        $alignment = $paragraph->getAlignment();
+        $alignment->setHorizontal(Alignment::HORIZONTAL_LEFT);
+        $alignment->setVertical(Alignment::VERTICAL_TOP);
+
+        if ($isBullet) {
+            $alignment->setMarginLeft(18);
+            $alignment->setIndent(-12);
+
+            $bullet = new Bullet;
+            $bullet->setBulletType(Bullet::TYPE_BULLET)
+                ->setBulletChar('•')
+                ->setBulletColor(new Color('FFB45309'));
+            $paragraph->setBulletStyle($bullet);
+        } else {
+            $alignment->setMarginLeft(0);
+            $alignment->setIndent(0);
+            $paragraph->setBulletStyle((new Bullet)->setBulletType(Bullet::TYPE_NONE));
+        }
+    }
+
     private function applyCoverBackground($slide, ?int $carParkId, ?string $cover = null): void
     {
         $hero = $cover === 'jha'
@@ -456,6 +622,13 @@ class ExportToolboxTalkPowerpoint
         }
 
         $this->applyDarkBackground($slide);
+    }
+
+    private function applyJhaBackground($slide): void
+    {
+        $background = new BackgroundColor;
+        $background->setColor(new Color('FFFFFBEB'));
+        $slide->setBackground($background);
     }
 
     private function applyDarkBackground($slide): void

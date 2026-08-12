@@ -230,6 +230,24 @@ test('load standard jhas seeds all configured decks for a date', function () {
     }
 });
 
+test('full pdf with standard jhas stays one page per deck slide', function () {
+    $date = now()->toDateString();
+    makeCarPark('West Pdf Jha');
+    ToolboxTalk::firstOrCreateCore($date)->slides()->create([
+        'sort_order' => 0,
+        'title' => 'Core',
+        'body' => 'C',
+    ]);
+    app(LoadStandardJhas::class)->handle($date);
+
+    $deck = app(BuildToolboxTalkDeck::class)->handleFull($date);
+    $pdf = app(\App\Actions\ToolboxTalks\ExportToolboxTalkPdf::class)->handle($date);
+    $pdfPages = preg_match_all('/\/Type\s*\/Page[^s]/', $pdf['content']);
+
+    expect($pdfPages)->toBe(count($deck) + 1)
+        ->and(collect($deck)->contains(fn (array $s): bool => ($s['cover'] ?? null) === 'jha'))->toBeTrue();
+});
+
 test('full download deck appends jha cover after parks', function () {
     $date = now()->toDateString();
     $park = makeCarPark('West Jha');
