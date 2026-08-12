@@ -19,44 +19,48 @@
             background: #0f172a;
         }
 
-        /*
-         * DomPDF creates a blank trailing page when a fixed-height block
-         * is exactly the page height and also has page-break-after.
-         * Keep slide height slightly under the paper size (540pt).
-         */
         .slide {
             width: 960pt;
-            height: 520pt;
+            height: 540pt;
             margin: 0;
             padding: 0;
             overflow: hidden;
             page-break-inside: avoid;
             page-break-after: always;
             background: #0f172a;
+            position: relative;
         }
 
         .slide.last {
             page-break-after: auto;
         }
 
-        .cover-table {
-            width: 100%;
-            height: 520pt;
+        .cover-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 960pt;
+            height: 540pt;
+        }
+
+        .cover-copy {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 960pt;
+            height: 540pt;
+        }
+
+        .cover-copy-table {
+            width: 960pt;
+            height: 540pt;
             border-collapse: collapse;
         }
 
-        .cover-table td {
+        .cover-copy-table td {
             vertical-align: middle;
             text-align: center;
-            padding: 40pt 56pt;
-            background-color: #0f172a;
-        }
-
-        .cover-photo {
-            width: 960pt;
-            height: 220pt;
-            object-fit: cover;
-            display: block;
+            padding: 48pt 64pt;
         }
 
         .cover-kicker {
@@ -69,7 +73,7 @@
         }
 
         .cover-title {
-            font-size: 34pt;
+            font-size: 36pt;
             font-weight: bold;
             line-height: 1.15;
             color: #ffffff;
@@ -77,7 +81,7 @@
         }
 
         .cover-body {
-            margin: 14pt 0 0;
+            margin: 16pt 0 0;
             font-size: 15pt;
             line-height: 1.35;
             color: #ccfbf1;
@@ -134,22 +138,24 @@
     @endphp
     <div class="slide{{ $isLast ? ' last' : '' }}">
         @if($isCover)
-            <table class="cover-table">
-                <tr>
-                    <td>
-                        @if($bg)
-                            <img class="cover-photo" src="{{ $bg }}" alt="">
-                        @endif
-                        <div class="cover-kicker">
-                            {{ $slide['type'] === 'title' ? $slide['section_label'] : __('toolbox_talks.park_cover_kicker') }}
-                        </div>
-                        <h1 class="cover-title">{{ $slide['title'] }}</h1>
-                        @if(($slide['body'] ?? '') !== '')
-                            <p class="cover-body">{{ $slide['body'] }}</p>
-                        @endif
-                    </td>
-                </tr>
-            </table>
+            @if($bg)
+                <img class="cover-bg" src="{{ $bg }}" alt="">
+            @endif
+            <div class="cover-copy">
+                <table class="cover-copy-table">
+                    <tr>
+                        <td>
+                            <div class="cover-kicker">
+                                {{ $slide['type'] === 'title' ? $slide['section_label'] : __('toolbox_talks.park_cover_kicker') }}
+                            </div>
+                            <h1 class="cover-title">{{ $slide['title'] }}</h1>
+                            @if(($slide['body'] ?? '') !== '')
+                                <p class="cover-body">{{ $slide['body'] }}</p>
+                            @endif
+                        </td>
+                    </tr>
+                </table>
+            </div>
         @else
             <div class="content-inner">
                 @if(($slide['section_label'] ?? '') !== '')

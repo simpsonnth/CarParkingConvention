@@ -9,6 +9,10 @@ use Illuminate\Support\Carbon;
 
 class ExportToolboxTalkPdf
 {
+    private const SLIDE_WIDTH = 960;
+
+    private const SLIDE_HEIGHT = 540;
+
     public function __construct(
         private readonly BuildToolboxTalkDeck $buildDeck,
         private readonly ResolveToolboxTalkCover $resolveCover,
@@ -61,8 +65,7 @@ class ExportToolboxTalkPdf
         ])->render();
 
         $content = Pdf::loadHTML($html)
-            // Widescreen 16:9 in points (matches PPTX frame).
-            ->setPaper([0.0, 0.0, 960.0, 540.0])
+            ->setPaper([0.0, 0.0, (float) self::SLIDE_WIDTH, (float) self::SLIDE_HEIGHT])
             ->setOption('isRemoteEnabled', true)
             ->setOption('isHtml5ParserEnabled', true)
             ->setOption('dpi', 96)
@@ -74,6 +77,9 @@ class ExportToolboxTalkPdf
         ];
     }
 
+    /**
+     * Build a 16:9 cover image (cover-cropped + darkened) as a data URI for DomPDF.
+     */
     private function coverDataUri(?int $carParkId): ?string
     {
         $path = $this->resolveCover->absolutePath($carParkId);
@@ -81,14 +87,63 @@ class ExportToolboxTalkPdf
             return null;
         }
 
-        $bytes = file_get_contents($path);
-        if ($bytes === false) {
+        $source = @imagecreatefromstring((string) file_get_contents($path));
+        if ($source === false) {
             return null;
         }
 
-        $mime = mime_content_type($path) ?: 'image/png';
+        $srcW = imagesx($source);
+        $srcH = imagesy($source);
+        if ($srcW < 1 || $srcH < 1) {
+            imagedestroy($source);
 
-        return 'data:'.$mime.';base64,'.base64_encode($bytes);
+            return null;
+        }
+
+        $dstW = self::SLIDE_WIDTH;
+        $dstH = self::SLIDE_HEIGHT;
+        $dst = imagecreatetruecolor($dstW, $dstH);
+        if ($dst === false) {
+            imagedestroy($source);
+
+            return null;
+        }
+
+        // Cover-crop into 16:9 so the photo fills the slide (matches PPTX background).
+        $scale = max($dstW / $srcW, $dstH / $srcH);
+        $cropW = (int) round($dstW / $scale);
+        $cropH = (int) round($dstH / $scale);
+        $srcX = (int) max(0, floor(($srcW - $cropW) / 2));
+        $srcY = (int) max(0, floor(($srcH - $cropH) / 2));
+
+        imagecopyresampled(
+            $dst,
+            $source,
+            0,
+            0,
+            $srcX,
+            $srcY,
+            $dstW,
+            $dstH,
+            $cropW,
+            $cropH,
+        );
+
+        // Darken for readable white text over the photo.
+        imagefilter($dst, IMG_FILTER_BRIGHTNESS, -45);
+        imagefilter($dst, IMG_FILTER_CONTRAST, -8);
+
+        ob_start();
+        imagejpeg($dst, null, 82);
+        $bytes = ob_get_clean();
+        imagedestroy($source);
+        imagedestroy($dst);
+
+        if (! is_string($bytes) || $bytes === '') {
+            return null;
+        }
+
+        return 'data:image/jpeg;base64,'.base64_encode($bytes);
     }
 
     /**
