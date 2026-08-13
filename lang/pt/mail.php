@@ -13,6 +13,10 @@ return [
         'regards' => 'Com os melhores cumprimentos',
         'team' => 'Equipa de Estacionamento da Convenção',
     ],
+    'registration_broadcast' => [
+        'regards' => 'Com os melhores cumprimentos',
+        'team' => 'Equipa de Estacionamento da Convenção',
+    ],
     'radisson_ticket_print_hint' => 'Por favor, imprima o bilhete de estacionamento em anexo em papel A4.',
     'ticket_note_label' => 'Nota da equipa de estacionamento:',
 ];

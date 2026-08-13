@@ -436,5 +436,6 @@ return [
         'type_ticket_cancellation' => 'Cancelamento de bilhete',
         'type_ticket_change_decline' => 'Alteração recusada',
         'type_hotel_guest_decline' => 'Hóspede hotel recusado',
+        'type_registration_broadcast' => 'Mensagem a convidados',
     ],
 ];

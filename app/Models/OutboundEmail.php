@@ -18,6 +18,8 @@ class OutboundEmail extends Model
 
     public const TYPE_HOTEL_DECLINE = 'hotel_guest_decline';
 
+    public const TYPE_REGISTRATION_BROADCAST = 'registration_broadcast';
+
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_SENT = 'sent';

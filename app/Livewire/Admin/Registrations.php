@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin;
 
+use App\Actions\Registrations\QueueRegistrationBroadcastEmails;
 use App\Models\Congregation;
 use App\Models\ParkingRegistration;
 use App\Models\TicketChangeRequest;
@@ -87,6 +88,17 @@ class Registrations extends Component
     public bool $bulkAssignCarParkModalOpen = false;
 
     public bool $sendTicketsModalOpen = false;
+
+    public bool $broadcastModalOpen = false;
+
+    /** filters | selected */
+    public string $broadcastScope = 'filters';
+
+    public string $broadcastSubject = '';
+
+    public string $broadcastBody = '';
+
+    public bool $sendingBroadcast = false;
 
     public bool $resendModalOpen = false;
 
@@ -630,6 +642,103 @@ class Registrations extends Component
         $this->ticketEmailTo = '';
         $this->resetErrorBag('ticketEmailTo');
         $this->sendTicketsModalOpen = true;
+    }
+
+    public function openBroadcastModal(): void
+    {
+        abort_unless(auth()->user()?->can('registrations.manage'), 403);
+
+        $this->broadcastScope = ! empty($this->selectedIds) ? 'selected' : 'filters';
+        $this->broadcastSubject = '';
+        $this->broadcastBody = '';
+        $this->resetErrorBag(['broadcastSubject', 'broadcastBody', 'broadcastScope']);
+        $this->broadcastModalOpen = true;
+    }
+
+    public function updatedBroadcastScope(): void
+    {
+        $this->resetErrorBag('broadcastScope');
+    }
+
+    #[Computed]
+    public function broadcastRecipientCount(): int
+    {
+        return count($this->broadcastRecipients());
+    }
+
+    public function sendRegistrationBroadcast(QueueRegistrationBroadcastEmails $queue): void
+    {
+        abort_unless(auth()->user()?->can('registrations.manage'), 403);
+
+        $this->validate([
+            'broadcastScope' => 'required|in:filters,selected',
+            'broadcastSubject' => 'required|string|max:200',
+            'broadcastBody' => 'required|string|max:10000',
+        ]);
+
+        if ($this->broadcastScope === 'selected' && empty($this->selectedIds)) {
+            $this->addError('broadcastScope', __('registrations.select_items'));
+
+            return;
+        }
+
+        $ids = $this->broadcastRegistrationIds();
+        $this->sendingBroadcast = true;
+
+        try {
+            $result = $queue->handle($ids, $this->broadcastSubject, $this->broadcastBody);
+            $this->broadcastModalOpen = false;
+            $this->broadcastSubject = '';
+            $this->broadcastBody = '';
+
+            Flux::toast(
+                __('registrations.broadcast_queued', [
+                    'count' => $result['queued'],
+                ]),
+                variant: 'success',
+            );
+        } catch (ValidationException $e) {
+            foreach ($e->errors() as $field => $messages) {
+                foreach ($messages as $message) {
+                    $this->addError(is_string($field) ? $field : 'broadcastScope', $message);
+                }
+            }
+        } catch (Throwable $e) {
+            Flux::toast($e->getMessage(), variant: 'danger');
+        } finally {
+            $this->sendingBroadcast = false;
+        }
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function broadcastRegistrationIds(): array
+    {
+        if ($this->broadcastScope === 'selected') {
+            return array_values(array_unique(array_map('intval', $this->selectedIds)));
+        }
+
+        return $this->getRegistrationsQuery()
+            ->orderBy('id')
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+    }
+
+    /**
+     * @return list<array{email: string, name: string, registration_id: int}>
+     */
+    private function broadcastRecipients(): array
+    {
+        $ids = $this->broadcastRegistrationIds();
+        if ($ids === []) {
+            return [];
+        }
+
+        return app(QueueRegistrationBroadcastEmails::class)->uniqueRecipients(
+            ParkingRegistration::query()->whereIn('id', $ids)
+        );
     }
 
     public function openResendTicketModal(int $id): void

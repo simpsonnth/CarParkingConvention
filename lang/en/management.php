@@ -436,5 +436,6 @@ return [
         'type_ticket_cancellation' => 'Ticket cancellation',
         'type_ticket_change_decline' => 'Change request declined',
         'type_hotel_guest_decline' => 'Hotel guest declined',
+        'type_registration_broadcast' => 'Guest broadcast',
     ],
 ];

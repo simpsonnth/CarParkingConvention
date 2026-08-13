@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Actions\HotelGuestParking\SendHotelGuestParkingDeclinedEmail;
 use App\Actions\Registrations\SendCarParkTicketsEmail;
+use App\Actions\Registrations\SendRegistrationBroadcastEmail;
 use App\Actions\TicketChangeRequests\SendTicketCancellationEmail;
 use App\Actions\TicketChangeRequests\SendTicketChangeRequestDeclinedEmail;
 use App\Models\OutboundEmail;
@@ -262,6 +263,12 @@ class OutboundEmailProcessor
             OutboundEmail::TYPE_HOTEL_DECLINE => app(SendHotelGuestParkingDeclinedEmail::class)->execute(
                 toEmail: (string) $email->to_email,
                 requesterName: (string) ($payload['requester_name'] ?? ''),
+            ),
+            OutboundEmail::TYPE_REGISTRATION_BROADCAST => app(SendRegistrationBroadcastEmail::class)->execute(
+                toEmail: (string) $email->to_email,
+                recipientName: (string) ($payload['name'] ?? ''),
+                subject: (string) ($payload['subject'] ?? ''),
+                body: (string) ($payload['body'] ?? ''),
             ),
             default => throw new \InvalidArgumentException('Unknown outbound email type: '.$email->type),
         };

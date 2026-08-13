@@ -14,6 +14,11 @@
             <flux:button variant="primary" wire:click="create" icon="plus">
                 {{ __('registrations.add_registration') }}
             </flux:button>
+            @can('registrations.manage')
+                <flux:button variant="filled" wire:click="openBroadcastModal" icon="envelope">
+                    {{ __('registrations.email_guests') }}
+                </flux:button>
+            @endcan
             <a href="{{ $this->exportUrl }}" class="inline-flex items-center gap-2 rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700" download>
                 <flux:icon name="arrow-down-tray" class="size-4" />
                 {{ ($this->getAppliedFiltersCount() > 0 || $search !== '') ? __('registrations.export_excel_filtered') : __('registrations.export_excel') }}
@@ -777,6 +782,81 @@
     </flux:modal>
 
     {{-- Send car park tickets email modal --}}
+    @can('registrations.manage')
+        <flux:modal wire:model="broadcastModalOpen" class="w-[calc(100vw-2rem)] max-w-xl">
+            <div class="space-y-6">
+                <div>
+                    <flux:heading size="lg">{{ __('registrations.email_guests') }}</flux:heading>
+                    <flux:subheading>{{ __('registrations.email_guests_help') }}</flux:subheading>
+                </div>
+
+                <div class="space-y-2">
+                    <p class="text-sm font-medium text-zinc-700 dark:text-zinc-200">{{ __('registrations.broadcast_scope') }}</p>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                        <label class="inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700">
+                            <input type="radio" wire:model.live="broadcastScope" value="filters" class="text-indigo-600 focus:ring-indigo-500">
+                            <span>{{ __('registrations.broadcast_scope_filters') }}</span>
+                        </label>
+                        <label @class([
+                            'inline-flex items-center gap-2 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700',
+                            'opacity-50' => count($selectedIds) === 0,
+                        ])>
+                            <input type="radio" wire:model.live="broadcastScope" value="selected" @disabled(count($selectedIds) === 0) class="text-indigo-600 focus:ring-indigo-500">
+                            <span>{{ __('registrations.broadcast_scope_selected') }}</span>
+                        </label>
+                    </div>
+                    @error('broadcastScope')
+                        <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                    <p class="text-sm text-zinc-600 dark:text-zinc-300">
+                        {{ __('registrations.broadcast_recipient_count', ['count' => $this->broadcastRecipientCount]) }}
+                    </p>
+                </div>
+
+                <div class="space-y-2">
+                    <flux:input
+                        wire:model="broadcastSubject"
+                        label="{{ __('registrations.broadcast_subject') }}"
+                        maxlength="200"
+                    />
+                    @error('broadcastSubject')
+                        <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="space-y-2">
+                    <flux:textarea
+                        wire:model="broadcastBody"
+                        label="{{ __('registrations.broadcast_body') }}"
+                        rows="8"
+                        maxlength="10000"
+                    />
+                    <p class="text-xs text-zinc-500 dark:text-zinc-400">{{ __('registrations.broadcast_body_hint') }}</p>
+                    @error('broadcastBody')
+                        <p class="text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div class="flex justify-end gap-2">
+                    <flux:button variant="ghost" wire:click="$set('broadcastModalOpen', false)" wire:loading.attr="disabled">
+                        {{ __('registrations.cancel') }}
+                    </flux:button>
+                    <flux:button
+                        variant="primary"
+                        wire:click="sendRegistrationBroadcast"
+                        wire:confirm="{{ __('registrations.broadcast_confirm', ['count' => $this->broadcastRecipientCount]) }}"
+                        wire:loading.attr="disabled"
+                        wire:target="sendRegistrationBroadcast"
+                        :disabled="$this->broadcastRecipientCount < 1"
+                    >
+                        <span wire:loading.remove wire:target="sendRegistrationBroadcast">{{ __('registrations.broadcast_send') }}</span>
+                        <span wire:loading wire:target="sendRegistrationBroadcast">{{ __('registrations.broadcast_sending') }}</span>
+                    </flux:button>
+                </div>
+            </div>
+        </flux:modal>
+    @endcan
+
     <flux:modal wire:model="sendTicketsModalOpen" class="w-[calc(100vw-2rem)] max-w-md">
         <div class="space-y-6">
             <div>
