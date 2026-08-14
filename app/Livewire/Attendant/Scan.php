@@ -9,6 +9,7 @@ use App\Models\CarPark;
 use App\Models\Congregation;
 use App\Models\ParkingPass;
 use App\Models\ParkingRegistration;
+use App\Services\ParkingRegistrationDuplicateSignals;
 use Flux\Flux;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
@@ -185,18 +186,77 @@ class Scan extends Component
             ->with('carPark')
             ->first();
 
-        if ($congregation === null) {
-            $this->setResult('error', 'INVALID PASS', 'This code does not match any congregation.');
-            $this->reset('uuid');
+        if ($congregation !== null) {
+            $this->scannedCongregation = $congregation;
+            $this->step = 'confirm';
+            $this->quickCheckIn = false;
+            $this->walkInMode = false;
+            $this->reset('vehicleReg', 'elderlyInfirmParking', 'notes', 'existingParkedPass', 'scannedRegistration');
 
             return;
         }
 
-        $this->scannedCongregation = $congregation;
-        $this->step = 'confirm';
-        $this->quickCheckIn = false;
-        $this->walkInMode = false;
-        $this->reset('vehicleReg', 'elderlyInfirmParking', 'notes', 'existingParkedPass', 'scannedRegistration');
+        // Also accept plate or ticket number in the code box (same as Look up).
+        if ($this->tryScanRegistrationByPlateOrTicket($this->uuid)) {
+            return;
+        }
+
+        $this->setResult(
+            'error',
+            'NOT FOUND',
+            'No congregation code, ticket, or vehicle registration matched “'.$this->uuid.'”. Try the plate in Look up, or scan the ticket QR.',
+        );
+        $this->reset('uuid');
+    }
+
+    /**
+     * Resolve a parking registration from a plate or numeric ticket id typed into the code box.
+     */
+    protected function tryScanRegistrationByPlateOrTicket(string $raw): bool
+    {
+        $term = trim($raw);
+        if ($term === '') {
+            return false;
+        }
+
+        $registration = null;
+
+        if (ctype_digit($term)) {
+            $registration = ParkingRegistration::query()->find((int) $term);
+        }
+
+        if ($registration === null) {
+            $normalized = app(ParkingRegistrationDuplicateSignals::class)
+                ->normalizeVehicleRegistration($term);
+
+            if ($normalized !== null) {
+                $matches = ParkingRegistration::query()
+                    ->where('vehicle_registration', $normalized)
+                    ->orderBy('id')
+                    ->limit(2)
+                    ->get();
+
+                if ($matches->count() === 1) {
+                    $registration = $matches->first();
+                } elseif ($matches->count() > 1) {
+                    // Ambiguous plate — send attendant to Look up instead of guessing.
+                    $this->lookupQuery = $term;
+                    $this->lookup(app(LookupParkingRegistration::class));
+                    $this->reset('uuid');
+                    Flux::toast('Multiple tickets share that plate — pick one below.', variant: 'warning');
+
+                    return true;
+                }
+            }
+        }
+
+        if ($registration === null) {
+            return false;
+        }
+
+        $this->scanRegistration($registration);
+
+        return true;
     }
 
     public function scanRegistration(ParkingRegistration $registration): void
@@ -222,6 +282,8 @@ class Scan extends Component
             return;
         }
 
+        $this->lastScanResult = null;
+        $this->lastScanMessage = '';
         $this->scannedRegistration = $registration;
         $this->scannedCongregation = $congregation;
         $this->foundRegistration = $registration;
@@ -828,7 +890,16 @@ class Scan extends Component
             Flux::toast('Pass Scanned Successfully');
         }
         if ($type === 'error') {
-            Flux::toast('Invalid Pass', variant: 'danger');
+            $toast = match ($title) {
+                'NOT FOUND' => 'Not found — try plate in Look up or scan the ticket QR',
+                'INVALID PASS' => 'Invalid congregation code',
+                'INVALID TICKET' => 'Invalid ticket',
+                'NO CAR PARK' => 'No car park assigned',
+                'ALREADY PARKED' => 'Already parked',
+                'CAR PARK FULL' => 'Car park full',
+                default => $title !== '' ? $title : 'Check failed',
+            };
+            Flux::toast($toast, variant: 'danger');
         }
         if ($type === 'warning') {
             Flux::toast('Already Scanned', variant: 'warning');

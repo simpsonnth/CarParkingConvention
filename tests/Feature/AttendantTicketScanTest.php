@@ -331,3 +331,52 @@ test('edited ticket details are used when clocking in', function () {
         ->and($registration->vehicle_registration)->toBe('NE12WVR')
         ->and(ParkingRegistration::query()->where('vehicle_registration', 'TK12ET')->exists())->toBeFalse();
 });
+
+test('check code box accepts vehicle plate and opens ticket check-in', function () {
+    ['attendant' => $attendant, 'registration' => $registration] = createTicketScanFixtures();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class)
+        ->set('uuid', 'TK 12 ET')
+        ->call('scan')
+        ->assertSet('quickCheckIn', true)
+        ->assertSet('scannedRegistration.id', $registration->id)
+        ->assertSet('vehicleReg', 'TK12ET')
+        ->assertSet('step', 'confirm')
+        ->assertSet('lastScanResult', null);
+});
+
+test('check code box accepts ticket number', function () {
+    ['attendant' => $attendant, 'registration' => $registration] = createTicketScanFixtures();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class)
+        ->set('uuid', (string) $registration->id)
+        ->call('scan')
+        ->assertSet('quickCheckIn', true)
+        ->assertSet('scannedRegistration.id', $registration->id);
+});
+
+test('check code still accepts congregation uuid', function () {
+    ['attendant' => $attendant, 'congregation' => $congregation] = createTicketScanFixtures();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class)
+        ->set('uuid', $congregation->uuid)
+        ->call('scan')
+        ->assertSet('step', 'confirm')
+        ->assertSet('quickCheckIn', false)
+        ->assertSet('scannedCongregation.id', $congregation->id)
+        ->assertSet('scannedRegistration', null);
+});
+
+test('unknown code shows not found instead of invalid pass', function () {
+    ['attendant' => $attendant] = createTicketScanFixtures();
+
+    Livewire::actingAs($attendant)
+        ->test(Scan::class)
+        ->set('uuid', 'ZZ99ZZZ')
+        ->call('scan')
+        ->assertSet('lastScanResult', 'error')
+        ->assertSet('lastScanMessage', 'NOT FOUND');
+});

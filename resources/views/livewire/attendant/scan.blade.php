@@ -121,20 +121,23 @@
                                 <div class="w-full border-t border-zinc-200 dark:border-zinc-700"></div>
                             </div>
                             <div class="relative flex justify-center text-sm font-medium leading-6">
-                                <span class="bg-white dark:bg-zinc-800 px-4 text-zinc-500">or enter code</span>
+                                <span class="bg-white dark:bg-zinc-800 px-4 text-zinc-500">or type code / plate</span>
                             </div>
                         </div>
 
                         <flux:input
                             wire:model="uuid"
-                            placeholder="Type code here..."
+                            placeholder="Congregation code, ticket no., or plate (e.g. LY75 PXR)"
                             autofocus
                             autocomplete="off"
                             class="text-center text-xl h-14 bg-zinc-50 dark:bg-zinc-900 border-none rounded-xl focus:ring-2 focus:ring-indigo-500"
                         />
                         <flux:button type="submit" variant="primary" class="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-indigo-500/20">
-                            CHECK CODE
+                            CHECK CODE / PLATE
                         </flux:button>
+                        <p class="text-center text-xs text-zinc-500 dark:text-zinc-400">
+                            Accepts ticket QR codes, congregation codes, ticket numbers, or vehicle registrations.
+                        </p>
                     </form>
                 @endif
             </div>
@@ -146,14 +149,14 @@
             <div class="text-center space-y-1">
                 <div class="text-xs font-bold uppercase tracking-widest text-zinc-400">Find vehicle</div>
                 <p class="text-sm text-zinc-500 dark:text-zinc-400">
-                    Look up where a car should park by plate or ticket number
+                    Same plate/ticket lookup — shows car park first, then you choose Check in
                 </p>
             </div>
 
             <form wire:submit.prevent="lookup" class="space-y-4">
                 <flux:input
                     wire:model="lookupQuery"
-                    placeholder="Plate or ticket number..."
+                    placeholder="Plate or ticket number (e.g. LY75 PXR or 2331)"
                     autocomplete="off"
                     class="text-center text-xl h-14 bg-zinc-50 dark:bg-zinc-900 border-none rounded-xl font-mono tracking-wider uppercase focus:ring-2 focus:ring-indigo-500"
                 />
