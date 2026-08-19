@@ -103,6 +103,7 @@ return [
         'filter_day_all' => 'All days',
         'add' => 'Add lesson',
         'export' => 'Export Excel',
+        'export_pdf' => 'Export PDF',
         'edit' => 'Edit',
         'delete' => 'Delete',
         'delete_confirm' => 'Delete this lesson?',

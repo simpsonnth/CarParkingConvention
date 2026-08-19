@@ -255,3 +255,91 @@ test('admin can export lessons learned with image and voice note links', functio
 
     expect($sheet->getDrawingCollection()->count())->toBeGreaterThan(0);
 });
+
+test('guest cannot export lessons learned pdf', function () {
+    $this->get(route('admin.lessons-learned.export-pdf'))
+        ->assertRedirect();
+});
+
+test('admin can export lessons learned pdf with embedded image and voice link', function () {
+    $admin = User::factory()->create();
+    $admin->givePermissionTo('lessons-learned.view');
+
+    $lesson = LessonLearnedModel::query()->create([
+        'source' => LessonLearnedModel::SOURCE_PUBLIC,
+        'reporter_name' => 'Pdf Reporter',
+        'category' => LessonLearnedModel::CATEGORY_PARKING,
+        'convention_day' => 'all_days',
+        'title' => 'PDF export title',
+        'worked_well' => 'Clear signage',
+        'didnt_work_well' => 'Long queues',
+    ]);
+
+    $imageBinary = base64_decode(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
+    );
+    Storage::disk('local')->put('lessons-learned/'.$lesson->id.'/bay.png', $imageBinary);
+
+    LessonLearnedAttachment::query()->create([
+        'lesson_learned_id' => $lesson->id,
+        'disk' => 'local',
+        'path' => 'lessons-learned/'.$lesson->id.'/bay.png',
+        'original_name' => 'bay.png',
+        'mime_type' => 'image/png',
+        'size_bytes' => strlen($imageBinary),
+        'kind' => LessonLearnedAttachment::KIND_FILE,
+    ]);
+
+    Storage::disk('local')->put('lessons-learned/'.$lesson->id.'/voice.webm', 'fake-audio');
+
+    LessonLearnedAttachment::query()->create([
+        'lesson_learned_id' => $lesson->id,
+        'disk' => 'local',
+        'path' => 'lessons-learned/'.$lesson->id.'/voice.webm',
+        'original_name' => 'voice.webm',
+        'mime_type' => 'audio/webm',
+        'size_bytes' => 10,
+        'kind' => LessonLearnedAttachment::KIND_VOICE_NOTE,
+    ]);
+
+    $result = app(\App\Actions\LessonsLearned\ExportLessonsLearnedPdf::class)->handle();
+
+    expect($result['filename'])->toEndWith('.pdf')
+        ->and($result['content'])->toStartWith('%PDF')
+        ->and(strlen($result['content']))->toBeGreaterThan(500);
+
+    $this->actingAs($admin)
+        ->get(route('admin.lessons-learned.export-pdf'))
+        ->assertSuccessful()
+        ->assertHeader('content-type', 'application/pdf');
+
+    $html = view('admin.lessons-learned-pdf', [
+        'lessons' => [[
+            'submitted' => '2026-08-19 09:00',
+            'source' => 'Public',
+            'category' => 'Parking',
+            'day' => 'All days',
+            'title' => 'PDF export title',
+            'reporter' => 'Pdf Reporter',
+            'worked_well' => 'Clear signage',
+            'didnt_work_well' => 'Long queues',
+            'images' => [[
+                'name' => 'bay.png',
+                'data_uri' => 'data:image/png;base64,'.base64_encode($imageBinary),
+                'url' => 'https://example.test/bay.png',
+            ]],
+            'voice_notes' => [[
+                'name' => 'voice.webm',
+                'url' => 'https://example.test/voice.webm',
+            ]],
+            'other_files' => [],
+        ]],
+        'exportedAt' => '2026-08-19 09:00',
+        'total' => 1,
+    ])->render();
+
+    expect($html)->toContain('PDF export title')
+        ->and($html)->toContain('data:image/png;base64,')
+        ->and($html)->toContain('Listen: voice.webm')
+        ->and($html)->toContain('https://example.test/voice.webm');
+});

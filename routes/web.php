@@ -367,6 +367,9 @@ Route::middleware(['auth'])->group(function () {
         })
             ->middleware('permission:lessons-learned.view')
             ->name('lessons-learned.export');
+        Route::get('/lessons-learned/export-pdf', App\Http\Controllers\Admin\LessonsLearnedPdfDownloadController::class)
+            ->middleware('permission:lessons-learned.view')
+            ->name('lessons-learned.export-pdf');
         Route::get('/lessons-learned/attachments/{attachment}/download', App\Http\Controllers\Admin\LessonLearnedAttachmentDownloadController::class)
             ->middleware('permission:lessons-learned.view')
             ->name('lessons-learned.attachments.download');
