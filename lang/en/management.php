@@ -102,6 +102,7 @@ return [
         'filter_all' => 'All categories',
         'filter_day_all' => 'All days',
         'add' => 'Add lesson',
+        'export' => 'Export Excel',
         'edit' => 'Edit',
         'delete' => 'Delete',
         'delete_confirm' => 'Delete this lesson?',

@@ -102,6 +102,7 @@ return [
         'filter_all' => 'Todas las categorías',
         'filter_day_all' => 'Todos los días',
         'add' => 'Añadir lección',
+        'export' => 'Exportar Excel',
         'edit' => 'Editar',
         'delete' => 'Eliminar',
         'delete_confirm' => '¿Eliminar esta lección?',

@@ -356,6 +356,17 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/lessons-learned', App\Livewire\Admin\LessonsLearned::class)
             ->middleware('permission:lessons-learned.view')
             ->name('lessons-learned');
+        Route::get('/lessons-learned/export', function () {
+            $filename = 'lessons-learned-'.now()->format('Y-m-d-His').'.xlsx';
+
+            return \Maatwebsite\Excel\Facades\Excel::download(
+                new \App\Exports\LessonsLearnedExport,
+                $filename,
+                \Maatwebsite\Excel\Excel::XLSX
+            );
+        })
+            ->middleware('permission:lessons-learned.view')
+            ->name('lessons-learned.export');
         Route::get('/lessons-learned/attachments/{attachment}/download', App\Http\Controllers\Admin\LessonLearnedAttachmentDownloadController::class)
             ->middleware('permission:lessons-learned.view')
             ->name('lessons-learned.attachments.download');
